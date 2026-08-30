@@ -20,6 +20,7 @@ function apply(renderer,state){
   }
   state.appliedTier=state.governor.tier;
   state.pixelRatio=ratio;
+  globalThis.__AGCB_PERF_TIER=state.governor.tier;
 }
 
 THREE.WebGLRenderer.prototype.render=function(scene,camera){
@@ -42,6 +43,6 @@ THREE.WebGLRenderer.prototype.render=function(scene,camera){
 
 globalThis.__AGCB_RENDER_PERF={
   states,
-  description:'adaptive pixel ratio + paced shadow refresh; world data untouched',
+  description:'adaptive pixel ratio + paced shadow refresh; publishes live tier; world data untouched',
   shadowStrideFor
 };
