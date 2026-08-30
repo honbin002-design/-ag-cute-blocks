@@ -14,7 +14,7 @@ function drawFog(now,kind){
   const strength=kind==='fog'?.12:.045;ctx.fillStyle=`rgba(235,245,245,${strength})`;ctx.fillRect(0,0,w,h);
   const x=(Math.sin(now*.00008)*.5+.5)*w;const grad=ctx.createRadialGradient(x,h*.46,0,x,h*.46,w*.58);grad.addColorStop(0,`rgba(255,255,255,${kind==='fog'?.09:.035})`);grad.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
 }
-function drawParticles(now,kind,q){
+function drawParticles(kind,q){
   const count=targetCount(kind,q);ensure(kind,count);ctx.lineCap='round';
   for(const p of particles){
     if(kind==='rain'){
@@ -27,12 +27,11 @@ function drawParticles(now,kind,q){
   }
 }
 function loop(now){
-  requestAnimationFrame(loop);frame++;const kind=weather(),q=tier();if(q==='low'&&frame%2)return;ctx.clearRect(0,0,w,h);
-  if(kind==='sunny'){particles.length=0;return}
+  requestAnimationFrame(loop);frame++;const kind=weather(),q=tier();if(q==='low'&&frame%2)return;if(kind!==lastWeather){particles.length=0;lastWeather=kind}ctx.clearRect(0,0,w,h);
+  if(kind==='sunny')return;
   if(kind==='cloudy'||kind==='fog')drawFog(now,kind);
-  if(kind==='rain'){drawFog(now,'cloudy');drawParticles(now,'rain',q)}
-  if(kind==='snow'){drawFog(now,'cloudy');drawParticles(now,'snow',q)}
-  if(kind!==lastWeather){particles.length=0;lastWeather=kind}
+  if(kind==='rain'){drawFog(now,'cloudy');drawParticles('rain',q)}
+  if(kind==='snow'){drawFog(now,'cloudy');drawParticles('snow',q)}
 }
 requestAnimationFrame(loop);
 globalThis.__AGCB_WEATHER_VISUAL={canvas,get weather(){return weather()},get quality(){return tier()}};
