@@ -1,4 +1,4 @@
-# AG Cute Blocks — V0.4.4 Life Detail Checkpoint
+# AG Cute Blocks — V0.4.4 Life Detail + Runtime Systems Checkpoint
 
 Date: 2026-08-30
 Branch: `dev-v0.1`
@@ -21,45 +21,51 @@ Branch: `dev-v0.1`
 - Optional coin shop with no debt, login streaks, daily-task pressure or required grind.
 - V0.3/V0.4 save continuity remains supported.
 
-## Furniture life interactions
+## Furniture and sleep life details
 - Chair and sofa can be sat on; beds can be lain on.
 - Character snaps to a defined furniture anchor and faces the furniture-defined direction.
 - Moving or jumping exits the furniture state safely.
 - First-person furniture use temporarily moves to a visible-character camera and restores the previous mode after standing.
 - Furniture being actively used cannot be removed until the character leaves it.
 - Save snapshots deliberately do not persist a stuck seated/lying runtime state.
-- Furniture metadata now distinguishes chair, sofa, bed and garden swing and advertises secondary life actions.
+- Dining-chair, sofa-relax and garden-swing secondary actions are connected through the furniture life layer.
+- Bed sleep-to-morning routine saves first, advances to 06:00 next day, settles shipping, advances gentle crops/trees/livestock readiness and places the player safely beside the bed after reload.
+- Character pose engine supports `sit`, `lie`, `sleep`, `dine`, `swing` with locked-pose micro-animation.
 
-## V0.4.4 detail batch integrated
-- Character pose engine supports `sit`, `lie`, `sleep`, `dine` and `swing` in addition to normal locomotion.
-- Locked furniture poses now animate through the render lifecycle even while the normal walking animation loop is paused.
-- Lying has subtle breathing; sleep uses slower breathing; dining uses a small arm-to-mouth motion; the garden swing uses a gentle body/leg pendulum motion.
-- Chairs placed close to a table expose an optional `用餐` detail action after sitting. This is purely atmospheric and does not introduce hunger or forced meals.
-- Garden swing seating switches to its own swing pose and gentle rocking motion.
-- Sofa seating exposes a simple relax detail without creating a stamina requirement.
-- Bed sleep-to-morning is active: while lying on a bed the player can choose `睡到早上`.
-- Sleeping first invokes the existing world save, advances one day to 06:00, settles pending shipping income, advances gentle crop/tree growth, restores livestock product readiness where applicable, then writes the persistent state before reload.
-- After sleeping, the saved player position is moved beside the nearest bed rather than reopening inside the bed collider.
-- PWA cache now includes the sleep and furniture-life detail modules.
-
-## Crop / animal systems already available as modules
+## Crop / orchard systems
+- Distinct crop models exist for carrot, corn, pumpkin, tomato, strawberry, cabbage and potato.
+- Apple, orange and peach trees have different palettes/blossom/fruit behavior.
 - Crop-care module supports optional watering as a growth bonus only; rain also helps. Missing one day never kills a crop.
-- Animal-state module defines idle/walk/eat/drink/sleep/pet-response selection.
-- Deer/rabbit/fox wildlife models and species-specific locomotion hooks exist.
+
+## Livestock visual-state batch now committed
+- Cow/sheep/chicken model animation now has explicit visual states for `idle`, `walk`, `eat`, `drink`, `sleep`, and `petResponse`.
+- Sleep lowers body/head and folds legs instead of freezing a standing animal.
+- Eat/drink lower the head with species-specific motion; chicken peck cadence remains distinct.
+- Pet response gives a small head/body response; tail/wing behavior remains species-specific.
+- Backward compatibility is preserved: before the live state selector is wired, current runtime movement speed still automatically selects the walk animation rather than accidentally freezing livestock.
+
+## Wildlife runtime + mobile performance batch now committed
+- `wildlife-runtime-system.js` defines deterministic natural zones, species preferences, roaming radius, player-avoidance behavior and a hard active-world budget.
+- First wildlife set remains deer/rabbit/fox with separate model silhouettes and locomotion hooks.
+- Wildlife LOD now has full / medium / low / hidden distance bands so far-away wildlife does not keep full animation cost on phones.
+- `mobile-performance-system.js` adds an adaptive quality governor that can step between high / normal / low budgets from measured frame time without altering saved world content.
+- Performance budgets cover pixel ratio, shadow size, wildlife count, creature animation/cull distance, weather-particle count and update stride.
+- PWA cache now includes wildlife runtime and mobile performance modules.
 
 ## Explicitly not PASS yet
 - Final character/pet/livestock/wildlife art quality still requires real-device visual validation and further refinement.
-- Dining/swing/sleep are integrated but still require real-device positioning and clipping validation before PASS.
-- Crop watering module is not yet wired to the live interaction button and visible wet-soil feedback.
-- Animal sleep/eat/drink/rest state module is not yet fully wired into the active world runtime.
-- Wildlife is not yet spawned into natural zones in the active runtime.
+- Crop watering module is not yet wired to the live interaction button and true in-world wet-soil/water-drop feedback.
+- Animal state selector exists and livestock visual state poses exist, but the active `app-v043.js` world loop still has to feed actual `eat/drink/sleep/petResponse` states into those model hooks.
+- Wildlife spawn/LOD runtime exists as a module but deer/rabbit/fox are not yet instantiated in the active world scene.
+- Adaptive performance governor exists as a module but the active renderer has not yet adopted its budgets.
 - Multiplayer/shared cloud persistence is not implemented.
 - V0.4.4 still requires concentrated iPhone runtime validation before milestone PASS.
 
 ## NEXT
-1. Wire optional watering -> wet-soil/water-drop feedback -> growth bonus.
-2. Wire ranch/pet idle/eat/drink/sleep/pet-response states into active animation.
-3. Spawn deer/rabbit/fox in natural zones with distance/LOD limits for mobile performance.
-4. Continue character hair/clothing variants and animal anatomy refinement.
-5. Expand orchard lifecycle and optional coin-shop rewards.
-6. Continue third-person camera collision and mobile performance tuning.
+1. Expose a small runtime bridge from the active world loop so care/animal/wildlife modules can be wired without rewriting unrelated gameplay code.
+2. Wire optional watering -> crop care state -> visible wet-soil/water-drop feedback -> daily growth bonus.
+3. Feed animal-state selection into cow/sheep/chicken animations and add pet sleep/rest/response states.
+4. Instantiate deer/rabbit/fox in deterministic natural zones using wildlife LOD and hard active-count limits.
+5. Apply adaptive performance budgets to pixel ratio, particles, shadows and creature update cadence.
+6. Continue character hair/clothing variants and animal anatomy refinement.
+7. Continue third-person camera collision and mobile performance tuning.
