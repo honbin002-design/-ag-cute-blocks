@@ -1,4 +1,4 @@
-# AG Cute Blocks — V0.4.5 Live Life + Wildlife Checkpoint
+# AG Cute Blocks — V0.4.5 Life / Wildlife / Orchard Checkpoint
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
@@ -24,6 +24,7 @@ Branch: `dev-v0.1`
 - Watering gives wet-soil feedback plus a small water-droplet splash.
 - One watering bonus per game day; rain counts as natural watering.
 - Watering accelerates growth but is never required for crop survival.
+- Watering state is persisted separately from the lossy base world snapshot so a reload does not silently forget today's watering.
 
 ## V0.4.5 animal life
 - Cow/sheep/chicken visual states support idle / walk / eat / drink / sleep / petResponse.
@@ -34,33 +35,39 @@ Branch: `dev-v0.1`
 ## V0.4.5 wildlife + mobile LOD
 - Deer/rabbit/fox have separate original models and locomotion hooks.
 - Deterministic natural zones avoid the six homestead areas.
-- `wildlife-live-runtime.js` now instantiates wildlife into the active world through the live avatar/world bridge.
-- The animal-life layer imports the wildlife runtime, so no extra HTML loader is required.
+- `wildlife-live-runtime.js` instantiates wildlife into the active world through the live avatar/world bridge.
 - Wildlife uses hard active-count budgets plus distance culling and full/medium/low/hidden LOD.
 - Far wildlife stops high-cost animation; beyond the active distance it is hidden.
-- Wildlife facing now follows its actual movement vector rather than pointing toward its home point.
-- Hidden LOD state is now written back to the live entity instead of returning an unused copy.
-- Creature shadow changes are only traversed when the shadow state changes, reducing repeated per-frame traversal.
+- Wildlife facing follows its actual movement vector.
+- Deer, rabbit and fox now receive distinct walk / idle / eat / drink / sleep poses instead of sharing one generic idle motion.
+- Rabbit hopping, deer head-lowering and fox resting are kept species-specific while remaining lightweight procedural animation.
+- Creature shadow changes are traversed only when the shadow state changes.
+
+## V0.4.5 orchard consistency
+- `orchard-runtime.js` is now loaded by the active page.
+- Fruit harvesting is guarded by the same visible fruit readiness supplied by `crop-models.js`; a mature-looking but season-ineligible tree can no longer silently yield invisible fruit.
+- When the visual fruit-ready threshold is reached, the holder is aligned to the interaction threshold so visible ripe fruit is immediately pickable.
+- Orange keeps autumn/winter fruiting behavior and receives gentle winter daily growth even though the older generic tree loop pauses trees in winter.
+- Orchard growth corrections are persisted back to the local world snapshot.
 
 ## PWA / validation
-- PWA cache `ag-cute-blocks-v045-runtime1` now explicitly precaches the active crop-care, animal-life and wildlife-live runtimes as well as their supporting modules.
-- A package-free GitHub Actions JavaScript syntax-check workflow has been added. It parses every root `.js` file as an ES module using Node 22; workflow execution still needs to be observed before counting syntax validation as PASS.
-- Previous Pages deployment for wildlife module commit `4ee34edd...` completed successfully. Newer V0.4.5 integration commits require a fresh Pages status check.
+- PWA cache is now `ag-cute-blocks-v045-runtime2` and explicitly includes crop care, animal life, wildlife live runtime, orchard runtime and supporting modules.
+- GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
+- Syntax/import checks completed successfully for the wildlife pose commit and the orchard runtime commit.
+- The latest Pages deployment for cache/head `8237b7b...` was queued at the last check; do not count the latest integration as deployed PASS until that run completes.
 
 ## Explicitly not PASS yet
 - Static deployment success does not prove browser runtime behavior.
 - V0.4.5 still needs concentrated iPhone real-device validation before milestone PASS.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
-- Wildlife eat/drink/rest visual animation needs more species-specific refinement.
-- Adaptive performance governor currently controls wildlife budgets; renderer pixel ratio, weather particles and global shadow map are not yet dynamically governed.
-- Orchard harvest/runtime logic still needs full consistency with season-specific visible fruit readiness.
+- Adaptive performance governor controls wildlife budgets, but the base renderer pixel ratio and global shadow map are not yet dynamically governed.
+- Weather currently has state/UI but does not yet have a full adaptive particle system worth tuning.
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Observe syntax-check and latest Pages runs; fix any failure before adding more runtime code.
-2. Make wildlife idle/eat/drink/rest animation species-specific and keep locomotion/facing foot-safe.
-3. Apply adaptive performance budget to renderer pixel ratio, weather particles and global shadows without altering saved content.
-4. Fix orchard harvest so only visibly fruit-ready trees can be harvested, including orange winter behavior.
-5. Continue character hair/clothing/shoe/face refinement and animal anatomy refinement.
-6. Continue camera collision and mobile performance tuning.
-7. Only after a stable concentrated checkpoint, request iPhone real-device validation.
+1. Observe syntax/import checks and latest Pages run; fix any failure before milestone validation.
+2. Integrate adaptive quality into the base renderer pixel ratio and global shadow policy without changing saved world content.
+3. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
+4. Improve camera collision and cache collision bounds so movement does not allocate new Box3 objects every frame.
+5. Add gentle visual weather effects with performance budgets after renderer governance is stable.
+6. Only after a stable concentrated checkpoint, request iPhone real-device validation.
