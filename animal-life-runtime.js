@@ -1,3 +1,4 @@
+import './collision-cache-runtime.js';
 import './wildlife-live-runtime.js';
 import {decideAnimalState} from './animal-state-system.js';
 import {setAnimalVisualState} from './animal-models.js';
