@@ -7,6 +7,9 @@ import './raycast-budget-runtime.js';
 // Main world establishes the live scene/player/object registries used by extension runtimes.
 import './app-v043.js';
 
+// Heading correction is installed after base initialization but before the first animation frame.
+import './heading-runtime.js';
+
 // Input and life extensions attach after the main HUD/world handlers exist.
 import './mobile-input-runtime.js';
 import './animal-life-runtime.js';
