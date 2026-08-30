@@ -31,6 +31,8 @@ Branch: `dev-v0.1`
 - Pet dog/cat support idle / sleep / petResponse.
 - Animal life runtime selects states from time/environment and is loaded by the active bootstrap.
 - Sleep/rest states hold position so animals do not slide while sleeping.
+- Animal-life no longer side-effect-imports renderer/input/collision/wildlife runtimes; bootstrap is the only runtime activation owner.
+- Movement detection threshold was corrected so the slow ranch wandering speed is recognized as movement instead of being repeatedly mistaken for idle.
 
 ## V0.4.5 wildlife + mobile LOD
 - Deer/rabbit/fox have separate original models and locomotion hooks.
@@ -42,6 +44,8 @@ Branch: `dev-v0.1`
 - Deer, rabbit and fox receive distinct walk / idle / eat / drink / sleep poses instead of sharing one generic idle motion.
 - Rabbit hopping, deer head-lowering and fox resting are kept species-specific while remaining lightweight procedural animation.
 - Creature shadow changes are traversed only when the shadow state changes.
+- Wildlife now consumes the renderer's single live quality tier instead of running a second independent performance governor.
+- Live avatar lookup is cached and only rescanned when the current avatar is detached.
 
 ## V0.4.5 orchard consistency
 - `orchard-runtime.js` is loaded by the active bootstrap.
@@ -58,23 +62,30 @@ Branch: `dev-v0.1`
 - Delayed physical compatibility clicks are suppressed so one press cannot fire twice.
 - Blur, page hide, visibility loss and lost pointer capture clear the tracked movement pointer so a cancelled iOS touch cannot leave movement stuck.
 - Existing click capture/bubble logic is preserved through programmatic click dispatch, so crop/orchard interaction guards still run.
-- `render-performance-runtime.js` governs the live WebGL renderer pixel ratio without touching saved world content.
+- `heading-runtime.js` corrects the base player's/pets'/livestock's scalar angle interpolation at the -PI/+PI boundary so they take the shortest turn instead of visually rotating the long way/backwards.
+- `render-performance-runtime.js` governs the live WebGL renderer pixel ratio without touching saved world content and publishes one live quality tier for dependent systems.
 - Shadow refresh is paced by adaptive tier: high every frame, normal every 2 frames, low every 3 frames. Geometry/lighting remains enabled; only shadow refresh cadence is reduced under mobile load.
-- Static collision bounds remain cached through `collision-cache-runtime.js` to reduce repeated Box3 traversal during movement/camera checks.
-- `raycast-budget-runtime.js` leaves aim/build rays unchanged but culls obviously distant solid meshes from the short third-person/farm camera collision ray before geometry intersection.
+- Static collision bounds remain cached through `collision-cache-runtime.js`; the cache now compares numeric transforms directly instead of allocating transform-key strings on every collision check.
+- `raycast-budget-runtime.js` leaves aim/build rays unchanged but culls obviously distant solid meshes from the short third-person/farm camera collision ray after the first rendered frame.
+
+## Furniture exit safety
+- Furniture anchor/exit transforms now force an up-to-date world matrix before `localToWorld`, avoiding stale rotated seat coordinates.
+- Furniture definitions expose front/right/left/back exit candidates.
+- `furniture-safety-runtime.js` remembers the pre-seat position and checks the core stand-up result against world bounds, water and other solid objects.
+- If the default stand-up point is blocked, it tries alternate furniture-relative exits and finally the remembered pre-seat position. This is runtime-integrated but still needs concentrated device validation before PASS.
 
 ## Runtime activation correction
 - A runtime audit found that the live `index.html` was still directly loading the base app plus only some life extensions, while mobile-input/performance/collision/wildlife modules were merely present in the PWA cache. Cache presence alone is not accepted as proof that a runtime is active.
 - `bootstrap-v045.js` is now the single live module entrypoint.
-- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife extensions.
+- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> heading/furniture safety -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife extensions.
 - This prevents later index edits from silently dropping a runtime while leaving its file cached.
 
 ## PWA / validation
-- PWA cache is now `ag-cute-blocks-v045-runtime7` and includes the deterministic bootstrap plus mobile-input, adaptive render, collision cache, camera raycast budget, crop care, animal life, wildlife, orchard and supporting modules.
+- PWA cache is now `ag-cute-blocks-v045-runtime11` and includes deterministic bootstrap, mobile-input, adaptive render, collision cache, camera raycast budget, heading correction, furniture safety, crop care, animal life, wildlife, orchard and supporting modules.
 - GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
-- The first bootstrap/cache activation batch passed the JavaScript syntax/import workflow.
+- Earlier deterministic-bootstrap batches passed JavaScript syntax/import validation; runtime11 must also pass before this batch is considered integration-complete.
 - Walk + Jump simultaneous control has real iPhone PASS evidence.
-- Other simultaneous action combinations, adaptive shadow cadence and the newly activated deterministic bootstrap still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
+- Other simultaneous action combinations, heading boundary behavior, furniture safe exit, adaptive shadow cadence and the newly activated deterministic bootstrap still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
 
 ## Explicitly not PASS yet
 - V0.4.5 as a whole still needs concentrated iPhone real-device validation before milestone PASS.
@@ -84,9 +95,9 @@ Branch: `dev-v0.1`
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Observe syntax/import checks and Pages deployment for runtime7; fix failures before asking for device validation.
-2. Continue reducing creature and camera per-frame work while preserving the already-PASS multitouch path.
-3. Improve turn/movement response without changing the confirmed two-finger control behavior.
-4. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
-5. Add gentle visual weather effects with performance budgets after renderer governance is stable.
+1. Observe syntax/import checks and Pages deployment for runtime11; fix failures before asking for device validation.
+2. Continue reducing camera/world collision per-frame work while preserving the already-PASS multitouch path.
+3. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
+4. Add gentle visual weather effects with performance budgets after renderer governance is stable.
+5. Centralize remaining duplicated daily progression/sleep logic and fix remaining product-day persistence in the base life loop.
 6. Only request another concentrated iPhone check when a stable checkpoint contains enough new behavior to justify it.
