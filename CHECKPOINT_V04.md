@@ -1,4 +1,4 @@
-# AG Cute Blocks — V0.4.5 Life / Wildlife / Orchard Checkpoint
+# AG Cute Blocks — V0.4.5 Life / Wildlife / Orchard / Mobile Control Checkpoint
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
@@ -39,35 +39,45 @@ Branch: `dev-v0.1`
 - Wildlife uses hard active-count budgets plus distance culling and full/medium/low/hidden LOD.
 - Far wildlife stops high-cost animation; beyond the active distance it is hidden.
 - Wildlife facing follows its actual movement vector.
-- Deer, rabbit and fox now receive distinct walk / idle / eat / drink / sleep poses instead of sharing one generic idle motion.
+- Deer, rabbit and fox receive distinct walk / idle / eat / drink / sleep poses instead of sharing one generic idle motion.
 - Rabbit hopping, deer head-lowering and fox resting are kept species-specific while remaining lightweight procedural animation.
 - Creature shadow changes are traversed only when the shadow state changes.
 
 ## V0.4.5 orchard consistency
-- `orchard-runtime.js` is now loaded by the active page.
+- `orchard-runtime.js` is loaded by the active page.
 - Fruit harvesting is guarded by the same visible fruit readiness supplied by `crop-models.js`; a mature-looking but season-ineligible tree can no longer silently yield invisible fruit.
 - When the visual fruit-ready threshold is reached, the holder is aligned to the interaction threshold so visible ripe fruit is immediately pickable.
 - Orange keeps autumn/winter fruiting behavior and receives gentle winter daily growth even though the older generic tree loop pauses trees in winter.
 - Orchard growth corrections are persisted back to the local world snapshot.
 
+## V0.4.5 mobile controls + smoothness
+- User-reported blocker: while one finger holds the movement joystick, other gameplay buttons such as Jump did not reliably fire on iPhone.
+- `mobile-input-runtime.js` now converts Jump / Place / Remove / Rotate / Life Interaction to immediate pointer-down actions rather than relying on the delayed compatibility click generated after touch release.
+- The movement joystick keeps its own pointer capture only for its movement finger, so a second finger remains available for action buttons.
+- Delayed physical compatibility clicks are suppressed so one press cannot fire twice.
+- Existing click capture/bubble logic is preserved through programmatic click dispatch, so crop/orchard interaction guards still run.
+- `render-performance-runtime.js` now applies the existing adaptive quality governor to the live WebGL renderer pixel ratio. It starts at the normal mobile budget and can move between low/normal/high without touching saved world content.
+- Static collision bounds remain cached through `collision-cache-runtime.js` to reduce repeated Box3 traversal during movement/camera checks.
+
 ## PWA / validation
-- PWA cache is now `ag-cute-blocks-v045-runtime2` and explicitly includes crop care, animal life, wildlife live runtime, orchard runtime and supporting modules.
+- PWA cache is now `ag-cute-blocks-v045-runtime4` and explicitly includes mobile-input, adaptive render, collision cache, crop care, animal life, wildlife, orchard and supporting modules.
 - GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
-- Syntax/import checks completed successfully for the wildlife pose commit and the orchard runtime commit.
-- The latest Pages deployment for cache/head `8237b7b...` was queued at the last check; do not count the latest integration as deployed PASS until that run completes.
+- Syntax/import checks completed successfully for head `cd240b4493...`, including the new multitouch and adaptive renderer runtimes.
+- Latest Pages deployment for `cd240b4493...` was still in progress at the last check; do not count device behavior as PASS until deployment and iPhone validation finish.
 
 ## Explicitly not PASS yet
 - Static deployment success does not prove browser runtime behavior.
+- Simultaneous joystick + jump still needs one concentrated iPhone real-device check after Pages finishes.
 - V0.4.5 still needs concentrated iPhone real-device validation before milestone PASS.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
-- Adaptive performance governor controls wildlife budgets, but the base renderer pixel ratio and global shadow map are not yet dynamically governed.
+- Adaptive renderer currently governs pixel ratio; global shadow policy is not yet dynamically governed.
 - Weather currently has state/UI but does not yet have a full adaptive particle system worth tuning.
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Observe syntax/import checks and latest Pages run; fix any failure before milestone validation.
-2. Integrate adaptive quality into the base renderer pixel ratio and global shadow policy without changing saved world content.
-3. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
-4. Improve camera collision and cache collision bounds so movement does not allocate new Box3 objects every frame.
-5. Add gentle visual weather effects with performance budgets after renderer governance is stable.
-6. Only after a stable concentrated checkpoint, request iPhone real-device validation.
+1. Confirm latest Pages deployment; then validate on iPhone that movement + jump/place/remove/rotate/interact work concurrently.
+2. If multitouch still fails on iOS, replace the joystick/action path with explicit touch-identifier tracking rather than adding another click-layer workaround.
+3. Extend adaptive performance to global shadow cadence without visibly degrading the cozy art style.
+4. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
+5. Further reduce camera/collision per-frame allocations and improve turn/movement response.
+6. Add gentle visual weather effects with performance budgets after renderer governance is stable.
