@@ -33,6 +33,8 @@ Branch: `dev-v0.1`
 - Sleep/rest states hold position so animals do not slide while sleeping.
 - Animal-life no longer side-effect-imports renderer/input/collision/wildlife runtimes; bootstrap is the only runtime activation owner.
 - Movement detection threshold was corrected so the slow ranch wandering speed is recognized as movement instead of being repeatedly mistaken for idle.
+- The runtime now detects a livestock product-ready -> collected transition, records `lastProductDay`, and patches the saved object immediately so milk/egg/wool readiness cannot accidentally restart from an old day after reload.
+- Pet affection increases now trigger the visible `petResponse` state; the older base interaction increased affection but did not provide the state bridge expected by the animal-life layer.
 
 ## V0.4.5 wildlife + mobile LOD
 - Deer/rabbit/fox have separate original models and locomotion hooks.
@@ -74,30 +76,36 @@ Branch: `dev-v0.1`
 - `furniture-safety-runtime.js` remembers the pre-seat position and checks the core stand-up result against world bounds, water and other solid objects.
 - If the default stand-up point is blocked, it tries alternate furniture-relative exits and finally the remembered pre-seat position. This is runtime-integrated but still needs concentrated device validation before PASS.
 
+## Weather visuals
+- `weather-visual-runtime.js` is now active and follows the existing world weather selector without changing saved world rules.
+- Rain uses lightweight screen-space streaks; snow uses drifting flakes; fog/cloudy use a soft moving haze layer.
+- Particle counts follow the renderer's live quality tier, and low tier draws the overlay every second frame to protect mobile frame time.
+- This is the first gentle visual-weather pass; thunderstorm and deeper 3D environmental response remain future work.
+
 ## Runtime activation correction
 - A runtime audit found that the live `index.html` was still directly loading the base app plus only some life extensions, while mobile-input/performance/collision/wildlife modules were merely present in the PWA cache. Cache presence alone is not accepted as proof that a runtime is active.
 - `bootstrap-v045.js` is now the single live module entrypoint.
-- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> heading/furniture safety -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife extensions.
+- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> heading/furniture safety -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife/weather extensions.
 - This prevents later index edits from silently dropping a runtime while leaving its file cached.
 
 ## PWA / validation
-- PWA cache is now `ag-cute-blocks-v045-runtime11` and includes deterministic bootstrap, mobile-input, adaptive render, collision cache, camera raycast budget, heading correction, furniture safety, crop care, animal life, wildlife, orchard and supporting modules.
+- PWA cache is now `ag-cute-blocks-v045-runtime13` and includes deterministic bootstrap, mobile-input, adaptive render, collision cache, camera raycast budget, heading correction, furniture safety, crop care, animal life, wildlife, orchard, weather visuals and supporting modules.
 - GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
-- Earlier deterministic-bootstrap batches passed JavaScript syntax/import validation; runtime11 must also pass before this batch is considered integration-complete.
+- The runtime containing the new weather module and all preceding V0.4.5 JavaScript changes passed syntax/import validation before the final cache-only bump; the latest cache commit is still observed separately for deployment status.
 - Walk + Jump simultaneous control has real iPhone PASS evidence.
-- Other simultaneous action combinations, heading boundary behavior, furniture safe exit, adaptive shadow cadence and the newly activated deterministic bootstrap still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
+- Other simultaneous action combinations, heading boundary behavior, furniture safe exit, weather visual quality and adaptive shadow cadence still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
 
 ## Explicitly not PASS yet
 - V0.4.5 as a whole still needs concentrated iPhone real-device validation before milestone PASS.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
 - Adaptive pixel ratio + shadow cadence are integrated, but subjective smoothness and visual shadow quality still need later device validation.
-- Weather currently has state/UI but does not yet have a full adaptive particle system worth tuning.
+- Weather has its first adaptive visual layer, but thunderstorm and deeper world response are not yet implemented.
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Observe syntax/import checks and Pages deployment for runtime11; fix failures before asking for device validation.
+1. Observe syntax/import checks and Pages deployment for runtime13; fix failures before asking for device validation.
 2. Continue reducing camera/world collision per-frame work while preserving the already-PASS multitouch path.
 3. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
-4. Add gentle visual weather effects with performance budgets after renderer governance is stable.
-5. Centralize remaining duplicated daily progression/sleep logic and fix remaining product-day persistence in the base life loop.
+4. Add thunderstorm plus gentle environment response after the first weather layer is stable.
+5. Centralize remaining duplicated daily progression/sleep logic.
 6. Only request another concentrated iPhone check when a stable checkpoint contains enough new behavior to justify it.
