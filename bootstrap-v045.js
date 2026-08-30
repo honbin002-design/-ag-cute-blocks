@@ -19,5 +19,6 @@ import './orchard-runtime.js';
 import './furniture-life-details.js';
 import './sleep-routine.js';
 import './wildlife-live-runtime.js';
+import './weather-visual-runtime.js';
 
 globalThis.__AGCB_BOOTSTRAP={version:'0.4.5',loaded:true};
