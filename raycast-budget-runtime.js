@@ -9,7 +9,9 @@ const stats={calls:0,cameraCalls:0,candidates:0,tested:0};
 THREE.Raycaster.prototype.intersectObjects=function(objects,recursive=false,intersects=[]){
   stats.calls++;
   const far=Number(this.far);
-  if(!Number.isFinite(far)||far>16||!Array.isArray(objects)||objects.length<12){
+  // Before the first renderer pass, matrixWorld can still be stale. Stay fully conservative until
+  // render governance publishes a live tier, which happens only after a real render has completed.
+  if(!globalThis.__AGCB_PERF_TIER||!Number.isFinite(far)||far>16||!Array.isArray(objects)||objects.length<12){
     return original.call(this,objects,recursive,intersects);
   }
   stats.cameraCalls++;stats.candidates+=objects.length;
@@ -17,13 +19,10 @@ THREE.Raycaster.prototype.intersectObjects=function(objects,recursive=false,inte
   for(const object of objects){
     if(!object?.matrixWorld){nearby.push(object);continue}
     const e=object.matrixWorld.elements,dx=e[12]-origin.x,dy=e[13]-origin.y,dz=e[14]-origin.z;
-    // A not-yet-rendered object may still have an identity matrix; keep it rather than risk
-    // missing a first-frame wall. Once matrices are current, distant meshes are culled cheaply.
-    const matrixLooksFresh=object.matrixWorldAutoUpdate===false||object.parent===null||e[12]!==0||e[13]!==0||e[14]!==0||object.position.lengthSq()===0;
-    if(!matrixLooksFresh||dx*dx+dy*dy+dz*dz<=maxSq)nearby.push(object);
+    if(dx*dx+dy*dy+dz*dz<=maxSq)nearby.push(object);
   }
   stats.tested+=nearby.length;
   return original.call(this,nearby,recursive,intersects);
 };
 
-globalThis.__AGCB_RAYCAST_BUDGET={stats,description:'short camera rays cull distant solid meshes; aim rays unchanged'};
+globalThis.__AGCB_RAYCAST_BUDGET={stats,description:'short camera rays cull distant solid meshes after first render; aim rays unchanged'};
