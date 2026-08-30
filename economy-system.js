@@ -11,12 +11,12 @@ export const SELL_VALUES={
   apple:24,orange:26,peach:30,egg:18,milk:34,wool:38
 };
 export const SHOP_ITEMS=[
-  {id:'seed-strawberry',name:'草莓種子',price:35,kind:'seed',icon:'🍓'},
-  {id:'sapling-peach',name:'桃樹苗',price:180,kind:'sapling',icon:'🌳'},
+  {id:'sapling-peach',name:'特選桃樹苗',price:180,kind:'sapling',icon:'🌳'},
   {id:'pet-bed-round',name:'圓圓寵物床',price:220,kind:'furniture',icon:'🧺'},
+  {id:'lamp-cloud',name:'雲朵燈',price:280,kind:'decoration',icon:'☁️'},
+  {id:'arch-flower',name:'花朵拱門',price:360,kind:'decoration',icon:'🌸'},
   {id:'swing-garden',name:'花園鞦韆',price:420,kind:'decoration',icon:'🌿'},
-  {id:'bed-star',name:'星星床',price:520,kind:'furniture',icon:'⭐'},
-  {id:'lamp-cloud',name:'雲朵燈',price:280,kind:'decoration',icon:'☁️'}
+  {id:'bed-star',name:'星星床',price:520,kind:'furniture',icon:'⭐'}
 ];
 
 export function createEconomyState(saved={}){
@@ -31,4 +31,4 @@ export function shipAllSellable(state){let count=0,value=0;for(const itemId of O
 export function pendingShippingValue(state){return state.shipping.reduce((sum,x)=>sum+(SELL_VALUES[x.itemId]||x.unit||0)*(x.qty||1),0)}
 export function settleShipping(state){const earned=pendingShippingValue(state);state.shipping=[];state.coins+=earned;return earned}
 export function ownedCount(state,itemId){return state.owned.reduce((n,x)=>n+(x.itemId===itemId?1:0),0)}
-export function buyShopItem(state,itemId){const item=SHOP_ITEMS.find(x=>x.id===itemId);if(!item)return {ok:false,reason:'missing'};if(state.coins<item.price)return {ok:false,reason:'coins',need:item.price-state.coins};state.coins-=item.price;state.owned.push({itemId,boughtAt:Date.now()});return {ok:true,item}}
+export function buyShopItem(state,itemId){const item=SHOP_ITEMS.find(x=>x.id===itemId);if(!item)return {ok:false,reason:'missing'};if(ownedCount(state,itemId)>0)return {ok:false,reason:'owned'};if(state.coins<item.price)return {ok:false,reason:'coins',need:item.price-state.coins};state.coins-=item.price;state.owned.push({itemId,boughtAt:Date.now()});return {ok:true,item}}
