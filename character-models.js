@@ -1,15 +1,56 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-const mat=(color,roughness=.82)=>new THREE.MeshStandardMaterial({color,roughness,metalness:.02});
-const skin=mat(0xf4c6a8,.9);const eye=mat(0x28323c,.65);const white=mat(0xffffff,.78);const shoe=mat(0x6f7d91,.8);
+const mat=(color,roughness=.84)=>new THREE.MeshStandardMaterial({color,roughness,metalness:.015});
+const skin=mat(0xf2c5a5,.9),eye=mat(0x27313a,.66),white=mat(0xfffdf8,.8),shoe=mat(0x665f5b,.88);
 function ellipsoid(parent,r,x,y,z,color,scale=[1,1,1],segments=20){const m=new THREE.Mesh(new THREE.SphereGeometry(r,segments,Math.max(12,segments-6)),typeof color==='number'?mat(color):color);m.position.set(x,y,z);m.scale.set(...scale);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
-function roundedLimb(parent,r,length,x,y,z,color,axis='y'){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);const body=new THREE.Mesh(new THREE.CapsuleGeometry(r,Math.max(.01,length-r*2),6,12),typeof color==='number'?mat(color):color);if(axis==='x')body.rotation.z=Math.PI/2;if(axis==='z')body.rotation.x=Math.PI/2;body.castShadow=true;g.add(body);return g}
-export function createCuteChildAvatar(style='girl',options={}){const g=new THREE.Group(),girl=style==='girl',hairColor=options.hairColor??(girl?0x5a4038:0x493832),shirtColor=options.shirtColor??(girl?0xf39ab8:0x6fb8e8),bottomColor=options.bottomColor??(girl?0x8174b8:0x4d6f98),hair=mat(hairColor,.92),shirt=mat(shirtColor,.86),bottom=mat(bottomColor,.88);
-ellipsoid(g,.39,0,1.78,0,skin,[1,.98,.92],24);ellipsoid(g,.405,0,1.89,.015,hair,[1,.68,.93],24);if(girl){ellipsoid(g,.19,-.29,1.66,.04,hair,[.85,1.45,.75],18);ellipsoid(g,.19,.29,1.66,.04,hair,[.85,1.45,.75],18)}else for(let i=0;i<5;i++)ellipsoid(g,.12,(i-2)*.12,2.05,-.01,hair,[1,.8,1],14);
-ellipsoid(g,.042,-.135,1.82,-.36,eye,[1,.9,.5],12);ellipsoid(g,.042,.135,1.82,-.36,eye,[1,.9,.5],12);ellipsoid(g,.013,-.12,1.835,-.386,white,[1,1,.4],10);ellipsoid(g,.013,.15,1.835,-.386,white,[1,1,.4],10);const smile=new THREE.Mesh(new THREE.TorusGeometry(.075,.012,8,18,Math.PI),mat(0xb96868,.78));smile.rotation.z=Math.PI;smile.position.set(0,1.68,-.365);g.add(smile);ellipsoid(g,.055,-.25,1.72,-.335,0xf5a8a7,[1.2,.55,.45],12);ellipsoid(g,.055,.25,1.72,-.335,0xf5a8a7,[1.2,.55,.45],12);
-ellipsoid(g,.42,0,1.14,0,shirt,[.78,1.08,.58],22);const leftArm=roundedLimb(g,.105,.62,-.43,1.15,0,shirt,'y');leftArm.rotation.z=-.12;const rightArm=roundedLimb(g,.105,.62,.43,1.15,0,shirt,'y');rightArm.rotation.z=.12;ellipsoid(g,.12,-.47,.80,0,skin,[.9,1,.9],14);ellipsoid(g,.12,.47,.80,0,skin,[.9,1,.9],14);
-if(girl){const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,.34,18),bottom);skirt.position.y=.75;skirt.castShadow=true;g.add(skirt)}else ellipsoid(g,.36,0,.76,0,bottom,[1,.55,.7],18);const leftLeg=roundedLimb(g,.12,.58,-.18,.44,0,skin,'y'),rightLeg=roundedLimb(g,.12,.58,.18,.44,0,skin,'y');ellipsoid(leftLeg,.16,0,-.34,-.05,shoe,[1,.62,1.45],16);ellipsoid(rightLeg,.16,0,-.34,-.05,shoe,[1,.62,1.45],16);g.userData={avatarStyle:style,animatedParts:{leftArm,rightArm,leftLeg,rightLeg}};return g}
-function createPetBase(type,colors){const g=new THREE.Group(),bodyMat=mat(colors.body,.94),detailMat=mat(colors.detail,.94),noseMat=mat(0x2d3035,.72),dog=type==='dog';ellipsoid(g,dog?.38:.34,0,.46,0,bodyMat,[1.32,.82,.92],22);ellipsoid(g,dog?.29:.27,0,.64,-.39,bodyMat,[1,.96,.94],22);const legs=[];for(const x of[-.22,.22]){legs.push(roundedLimb(g,.075,.34,x,.20,-.14,bodyMat,'y'));legs.push(roundedLimb(g,.075,.34,x,.20,.18,bodyMat,'y'))}ellipsoid(g,.075,0,.62,-.68,noseMat,[1.05,.7,.8],12);ellipsoid(g,.038,-.11,.72,-.62,eye,[1,1,.55],10);ellipsoid(g,.038,.11,.72,-.62,eye,[1,1,.55],10);let tail;if(dog){const le=ellipsoid(g,.18,-.23,.79,-.34,detailMat,[.55,1.25,.4],16);le.rotation.z=-.28;const re=ellipsoid(g,.18,.23,.79,-.34,detailMat,[.55,1.25,.4],16);re.rotation.z=.28;tail=roundedLimb(g,.055,.42,0,.60,.48,bodyMat,'z');tail.rotation.x=-.72;ellipsoid(g,.11,0,.58,-.55,colors.muzzle,[1.45,.75,.65],14)}else{const earGeo=new THREE.ConeGeometry(.13,.28,4);for(const x of[-.18,.18]){const e=new THREE.Mesh(earGeo,bodyMat);e.position.set(x,.94,-.34);e.rotation.y=Math.PI/4;e.castShadow=true;g.add(e)}tail=new THREE.Mesh(new THREE.TorusGeometry(.28,.05,8,18,Math.PI*1.35),bodyMat);tail.position.set(0,.55,.47);tail.rotation.set(Math.PI/2,.3,0);tail.castShadow=true;g.add(tail);for(let s=-1;s<=1;s+=2)for(let i=0;i<3;i++){const w=new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,.35,6),detailMat);w.rotation.z=Math.PI/2;w.position.set(s*.16,.60,-.66);w.rotation.y=(i-1)*.13;g.add(w)}}g.userData={petType:type,animatedParts:{tail,legs}};return g}
-export function createCuteDog(variant='golden'){const p={golden:{body:0xe8b579,detail:0xc98a52,muzzle:0xf1d3ad},cream:{body:0xead9bd,detail:0xc9aa83,muzzle:0xf4e5cf},brown:{body:0x9d6746,detail:0x74452f,muzzle:0xc99a76}};return createPetBase('dog',p[variant]||p.golden)}
-export function createCuteCat(variant='gray'){const p={gray:{body:0xb9bdc5,detail:0x777d88,muzzle:0xd9dce1},orange:{body:0xe2a267,detail:0xb96f3f,muzzle:0xf0c79f},white:{body:0xeeeeea,detail:0x9b8f86,muzzle:0xffffff}};return createPetBase('cat',p[variant]||p.gray)}
-export function animateCuteCharacter(group,time,moving=false,speed=1){const p=group?.userData?.animatedParts;if(!p)return;const rate=.011*Math.max(.65,speed),swing=moving?Math.sin(time*rate)*.5:Math.sin(time*.003)*.025;if(p.leftArm)p.leftArm.rotation.x=swing;if(p.rightArm)p.rightArm.rotation.x=-swing;if(p.leftLeg)p.leftLeg.rotation.x=-swing*.72;if(p.rightLeg)p.rightLeg.rotation.x=swing*.72;if(Array.isArray(p.legs))p.legs.forEach((leg,i)=>leg.rotation.x=moving?Math.sin(time*rate+(i%2?Math.PI:0))*.42:0);if(p.tail)p.tail.rotation.y=Math.sin(time*(moving?.012:.006))*.42}
+function capsule(parent,r,length,x,y,z,color){const pivot=new THREE.Group();pivot.position.set(x,y,z);const m=new THREE.Mesh(new THREE.CapsuleGeometry(r,Math.max(.01,length-r*2),6,12),typeof color==='number'?mat(color):color);m.castShadow=true;pivot.add(m);parent.add(pivot);return pivot}
+function cone(parent,r,h,x,y,z,color,rot=[0,0,0]){const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,10),typeof color==='number'?mat(color):color);m.position.set(x,y,z);m.rotation.set(...rot);m.castShadow=true;parent.add(m);return m}
+
+export function createCuteChildAvatar(style='girl',options={}){
+  const g=new THREE.Group(),girl=style==='girl';
+  const hair=mat(options.hairColor??(girl?0x68483b:0x4f3c34),.93),shirt=mat(options.shirtColor??(girl?0xf1a4b5:0x74afd7),.88),denim=mat(options.bottomColor??0x6685a3,.9),cream=mat(0xfff3d8,.9);
+  // Original farm-life chibi proportions: readable at mobile distance without copying a specific game character.
+  ellipsoid(g,.34,0,1.72,-.01,skin,[.96,1.02,.91],24);
+  ellipsoid(g,.35,0,1.84,.02,hair,[1,.63,.94],24);
+  if(girl){ellipsoid(g,.15,-.27,1.67,.05,hair,[.72,1.35,.7],18);ellipsoid(g,.15,.27,1.67,.05,hair,[.72,1.35,.7],18);ellipsoid(g,.07,-.27,1.48,.05,0xf2b1be,[1.2,.55,1],12);ellipsoid(g,.07,.27,1.48,.05,0xf2b1be,[1.2,.55,1],12)}
+  else{for(let i=0;i<6;i++)ellipsoid(g,.105,(i-2.5)*.095,1.99+(i%2)*.02,-.015,hair,[.9,.72,.9],14)}
+  ellipsoid(g,.036,-.115,1.75,-.315,eye,[1,.95,.55],12);ellipsoid(g,.036,.115,1.75,-.315,eye,[1,.95,.55],12);
+  ellipsoid(g,.011,-.104,1.762,-.336,white,[1,1,.4],10);ellipsoid(g,.011,.126,1.762,-.336,white,[1,1,.4],10);
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(.055,.009,7,16,Math.PI),mat(0xb96f69,.8));smile.rotation.z=Math.PI;smile.position.set(0,1.63,-.317);g.add(smile);
+  ellipsoid(g,.037,-.22,1.66,-.292,0xf1aaa3,[1.25,.48,.38],10);ellipsoid(g,.037,.22,1.66,-.292,0xf1aaa3,[1.25,.48,.38],10);
+  // Shirt + overalls/apron-like farm outfit.
+  ellipsoid(g,.35,0,1.14,0,shirt,[.78,1.02,.56],22);ellipsoid(g,.29,0,1.02,-.205,denim,[.86,.78,.24],18);
+  const strapL=capsule(g,.035,.45,-.16,1.22,-.22,denim),strapR=capsule(g,.035,.45,.16,1.22,-.22,denim);strapL.rotation.z=-.04;strapR.rotation.z=.04;
+  ellipsoid(g,.035,-.13,1.03,-.245,cream,[1,1,.5],10);ellipsoid(g,.035,.13,1.03,-.245,cream,[1,1,.5],10);
+  const leftArm=capsule(g,.085,.56,-.37,1.14,0,shirt);leftArm.rotation.z=-.11;const rightArm=capsule(g,.085,.56,.37,1.14,0,shirt);rightArm.rotation.z=.11;
+  ellipsoid(g,.095,-.40,.82,0,skin,[.9,1,.9],14);ellipsoid(g,.095,.40,.82,0,skin,[.9,1,.9],14);
+  ellipsoid(g,.31,0,.76,0,denim,[1,.48,.72],18);const leftLeg=capsule(g,.105,.55,-.16,.43,0,skin),rightLeg=capsule(g,.105,.55,.16,.43,0,skin);
+  ellipsoid(leftLeg,.145,0,-.32,-.055,shoe,[1,.58,1.38],16);ellipsoid(rightLeg,.145,0,-.32,-.055,shoe,[1,.58,1.38],16);
+  g.userData={avatarStyle:style,animatedParts:{leftArm,rightArm,leftLeg,rightLeg}};return g;
+}
+
+function paw(parent,x,z,color){ellipsoid(parent,.085,x,.075,z,color,[1.05,.48,1.35],12)}
+function createPetBase(type,colors){
+  const g=new THREE.Group(),bodyMat=mat(colors.body,.94),detailMat=mat(colors.detail,.94),muzzleMat=mat(colors.muzzle,.94),noseMat=mat(0x2b2c2d,.72),dog=type==='dog';
+  const body=ellipsoid(g,dog?.36:.32,0,.48,.08,bodyMat,dog?[1.55,.78,.88]:[1.48,.76,.84],24);
+  ellipsoid(g,dog?.23:.215,0,.62,-.49,bodyMat,dog?[1.05,1,.94]:[1,.98,.9],22);
+  // Chest/neck transition keeps the animal from looking like disconnected balls.
+  ellipsoid(g,.19,0,.50,-.28,bodyMat,[.95,1.22,.9],18);
+  const legs=[];for(const [x,z] of [[-.22,-.12],[.22,-.12],[-.22,.30],[.22,.30]]){const p=capsule(g,dog?.055:.05,.34,x,.23,z,bodyMat);legs.push(p);paw(g,x,z-.035,detailMat)}
+  ellipsoid(g,dog?.105:.085,0,.57,-.69,muzzleMat,dog?[1.25,.72,1.12]:[1.15,.65,1.05],16);ellipsoid(g,.047,0,.60,-.78,noseMat,[1.08,.72,.8],12);
+  for(const x of[-.095,.095]){ellipsoid(g,.031,x,.69,-.67,eye,[1,.98,.58],10);ellipsoid(g,.009,x+.009,.70,-.686,white,[1,1,.4],8)}
+  let tail;
+  if(dog){
+    // Soft hanging ears and longer muzzle make the dog silhouette unmistakable.
+    const le=ellipsoid(g,.14,-.20,.72,-.43,detailMat,[.62,1.25,.48],16),re=ellipsoid(g,.14,.20,.72,-.43,detailMat,[.62,1.25,.48],16);le.rotation.z=-.25;re.rotation.z=.25;
+    tail=capsule(g,.045,.46,0,.55,.55,bodyMat);tail.rotation.x=-.78;tail.position.z=.52;
+  }else{
+    cone(g,.105,.25,-.15,.88,-.47,bodyMat,[0,0,-.08]);cone(g,.105,.25,.15,.88,-.47,bodyMat,[0,0,.08]);
+    tail=new THREE.Group();tail.position.set(0,.50,.54);const t1=capsule(tail,.038,.48,0,.12,.12,bodyMat);t1.rotation.x=-.88;const t2=capsule(tail,.034,.42,0,.18,.36,bodyMat);t2.rotation.x=-.38;g.add(tail);
+    for(let s=-1;s<=1;s+=2)for(let i=0;i<3;i++){const w=new THREE.Mesh(new THREE.CylinderGeometry(.0045,.0045,.28,5),detailMat);w.rotation.z=Math.PI/2;w.position.set(s*.13,.56,-.72);w.rotation.y=(i-1)*.12;g.add(w)}
+  }
+  g.userData={petType:type,animatedParts:{tail,legs},body};return g;
+}
+export function createCuteDog(variant='golden'){const p={golden:{body:0xd9a66f,detail:0xb97949,muzzle:0xe9c79d},cream:{body:0xdfd0b7,detail:0xbda17f,muzzle:0xeee1ce},brown:{body:0x916044,detail:0x67412f,muzzle:0xb98b6d}};return createPetBase('dog',p[variant]||p.golden)}
+export function createCuteCat(variant='gray'){const p={gray:{body:0xaeb4bd,detail:0x737a85,muzzle:0xd5d8dd},orange:{body:0xd99a61,detail:0xad693e,muzzle:0xeac29a},white:{body:0xe9e9e5,detail:0x968b83,muzzle:0xf7f7f4}};return createPetBase('cat',p[variant]||p.gray)}
+export function animateCuteCharacter(group,time,moving=false,speed=1){const p=group?.userData?.animatedParts;if(!p)return;const rate=.011*Math.max(.65,speed),swing=moving?Math.sin(time*rate)*.46:Math.sin(time*.003)*.018;if(p.leftArm)p.leftArm.rotation.x=swing;if(p.rightArm)p.rightArm.rotation.x=-swing;if(p.leftLeg)p.leftLeg.rotation.x=-swing*.78;if(p.rightLeg)p.rightLeg.rotation.x=swing*.78;if(Array.isArray(p.legs))p.legs.forEach((leg,i)=>leg.rotation.x=moving?Math.sin(time*rate+(i===0||i===3?0:Math.PI))*.34:0);if(p.tail)p.tail.rotation.y=Math.sin(time*(moving?.011:.0055))*.30}
