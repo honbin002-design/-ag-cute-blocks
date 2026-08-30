@@ -1,7 +1,7 @@
 // AG Cute Blocks wildlife runtime planning for a large shared world.
 // Pure state/LOD logic: rendering stays in wildlife-models.js and the active world runtime.
 
-export const WILDLIFE_SCHEMA=1;
+export const WILDLIFE_SCHEMA=2;
 export const WILDLIFE_MAX_ACTIVE=9;
 
 const HOME_PLOTS=[[-58,-30],[-58,28],[-4,-54],[-2,53],[52,-8],[55,48]];
@@ -35,18 +35,16 @@ export function wildlifeLOD(distance,quality='normal'){
 }
 
 export function createWildlifePopulation(worldSeed='world-1',saved=[]){
-  if(Array.isArray(saved)&&saved.length)return saved.map((x,i)=>({...x,id:x.id||`wild-${i}`,schema:WILDLIFE_SCHEMA}));
-  const seed=hashString(String(worldSeed)),out=[];
-  let ordinal=0;
+  if(Array.isArray(saved)&&saved.length)return saved.map((x,i)=>({...x,id:x.id||`wild-${i}`,schema:WILDLIFE_SCHEMA,moveX:Number(x.moveX)||0,moveZ:Number(x.moveZ)||-1}));
+  const seed=hashString(String(worldSeed)),out=[];let ordinal=0;
   for(const zone of WILDLIFE_ZONES){
     const candidates=Object.entries(SPECIES).filter(([,r])=>r.preferred.includes(zone.kind));
-    const count=zone.kind==='meadow'?2:2;
+    const count=2;
     for(let i=0;i<count&&out.length<WILDLIFE_MAX_ACTIVE;i++){
       const pick=candidates[Math.floor(hash01(seed+ordinal*7.7)*candidates.length)]||candidates[0];
       const type=pick[0],a=hash01(seed+ordinal*11.1)*Math.PI*2,r=zone.radius*(.22+.55*hash01(seed+ordinal*13.9));
-      let x=zone.x+Math.cos(a)*r,z=zone.z+Math.sin(a)*r;
-      if(nearHome(x,z,6)){x=zone.x;z=zone.z}
-      out.push({schema:WILDLIFE_SCHEMA,id:`wild-${zone.id}-${ordinal}`,type,zoneId:zone.id,x,z,homeX:x,homeZ:z,phase:hash01(seed+ordinal*19.3)*Math.PI*2,state:'idle'});ordinal++;
+      let x=zone.x+Math.cos(a)*r,z=zone.z+Math.sin(a)*r;if(nearHome(x,z,6)){x=zone.x;z=zone.z}
+      out.push({schema:WILDLIFE_SCHEMA,id:`wild-${zone.id}-${ordinal}`,type,zoneId:zone.id,x,z,homeX:x,homeZ:z,moveX:0,moveZ:-1,phase:hash01(seed+ordinal*19.3)*Math.PI*2,state:'idle'});ordinal++;
     }
   }
   return out;
@@ -54,18 +52,18 @@ export function createWildlifePopulation(worldSeed='world-1',saved=[]){
 
 export function updateWildlifeEntity(entity,{playerX=0,playerZ=0,timeSeconds=0,dt=1,quality='normal'}={}){
   const rules=wildlifeSpeciesRules(entity.type),dxp=playerX-entity.x,dzp=playerZ-entity.z,playerDist=Math.hypot(dxp,dzp),lod=wildlifeLOD(playerDist,quality);
-  if(!lod.visible)return {...entity,lod,state:'idle'};
+  entity.lod=lod;
+  if(!lod.visible){entity.state='idle';return entity}
   const phase=(entity.phase||0)+dt*.0025,angle=phase+(hashString(entity.id)%628)/100;
-  let targetX=entity.homeX+Math.sin(angle)*rules.roamRadius,targetZ=entity.homeZ+Math.cos(angle*.83)*rules.roamRadius;
-  let state='walk';
-  if(playerDist<rules.avoidPlayer){targetX=entity.x-dxp;targetZ=entity.z-dzp;state='walk'}
+  let targetX=entity.homeX+Math.sin(angle)*rules.roamRadius,targetZ=entity.homeZ+Math.cos(angle*.83)*rules.roamRadius,state='walk';
+  if(playerDist<rules.avoidPlayer){targetX=entity.x-dxp;targetZ=entity.z-dzp}
   else if(Math.sin(timeSeconds*.11+phase)>.72)state=entity.type==='rabbit'?'idle':'eat';
   if(nearWaterApprox(entity.x,entity.z)&&Math.sin(timeSeconds*.07+phase)>.88)state='drink';
   if(state==='walk'){
-    const dx=targetX-entity.x,dz=targetZ-entity.z,d=Math.hypot(dx,dz)||1,s=rules.walkSpeed*dt*(entity.type==='rabbit'?1.25:1);
-    entity.x+=dx/d*s;entity.z+=dz/d*s;
+    const dx=targetX-entity.x,dz=targetZ-entity.z,d=Math.hypot(dx,dz)||1,s=rules.walkSpeed*dt*(entity.type==='rabbit'?1.25:1),nx=dx/d,nz=dz/d;
+    entity.x+=nx*s;entity.z+=nz*s;entity.moveX=nx;entity.moveZ=nz;
   }
-  entity.phase=phase;entity.state=state;entity.lod=lod;return entity;
+  entity.phase=phase;entity.state=state;return entity;
 }
 
 export function wildlifeNearPlayer(population,playerX,playerZ,max=WILDLIFE_MAX_ACTIVE){
