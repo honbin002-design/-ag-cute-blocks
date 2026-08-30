@@ -1,3 +1,4 @@
+import './wildlife-live-runtime.js';
 import {decideAnimalState} from './animal-state-system.js';
 import {setAnimalVisualState} from './animal-models.js';
 import {setCutePetState} from './character-models.js';
@@ -23,8 +24,7 @@ function updatePets(now){
   for(const model of pets()){
     const type=model.userData.petType,parent=model.parent,petting=Number(parent?.userData?.pettedUntil||0)>now;
     if(petting){setCutePetState(model,'petResponse',now+1300);continue}
-    const sleeping=type==='cat'?(h<6.4||h>=21.2):(h<6.2||h>=21.6);
-    const next=sleeping?'sleep':'idle';if(model.userData.petState!==next)setCutePetState(model,next,0);
+    const sleeping=type==='cat'?(h<6.4||h>=21.2):(h<6.2||h>=21.6),next=sleeping?'sleep':'idle';if(model.userData.petState!==next)setCutePetState(model,next,0);
   }
 }
 
