@@ -17,7 +17,9 @@ export function createCuteChildAvatar(style='girl',options={}){
   const strapL=capsule(g,.035,.45,-.16,1.22,-.22,denim),strapR=capsule(g,.035,.45,.16,1.22,-.22,denim);strapL.rotation.z=-.04;strapR.rotation.z=.04;ellipsoid(g,.035,-.13,1.03,-.245,cream,[1,1,.5],10);ellipsoid(g,.035,.13,1.03,-.245,cream,[1,1,.5],10);
   const leftArm=capsule(g,.085,.56,-.37,1.14,0,shirt);leftArm.rotation.z=-.11;const rightArm=capsule(g,.085,.56,.37,1.14,0,shirt);rightArm.rotation.z=.11;ellipsoid(g,.095,-.40,.82,0,skin,[.9,1,.9],14);ellipsoid(g,.095,.40,.82,0,skin,[.9,1,.9],14);
   ellipsoid(g,.31,0,.76,0,denim,[1,.48,.72],18);const leftLeg=capsule(g,.105,.55,-.16,.43,0,skin),rightLeg=capsule(g,.105,.55,.16,.43,0,skin);ellipsoid(leftLeg,.145,0,-.32,-.055,shoe,[1,.58,1.38],16);ellipsoid(rightLeg,.145,0,-.32,-.055,shoe,[1,.58,1.38],16);
-  const visual=new THREE.Group();while(g.children.length)visual.add(g.children[0]);g.add(visual);g.userData={avatarStyle:style,visual,pose:'idle',animatedParts:{leftArm,rightArm,leftLeg,rightLeg}};return g;
+  const visual=new THREE.Group();while(g.children.length)visual.add(g.children[0]);g.add(visual);g.userData={avatarStyle:style,visual,pose:'idle',animatedParts:{leftArm,rightArm,leftLeg,rightLeg}};
+  globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(g,pose);
+  return g;
 }
 
 function paw(parent,x,z,color){ellipsoid(parent,.085,x,.075,z,color,[1.05,.48,1.35],12)}
@@ -26,18 +28,21 @@ export function createCuteDog(variant='golden'){const p={golden:{body:0xd9a66f,d
 export function createCuteCat(variant='gray'){const p={gray:{body:0xaeb4bd,detail:0x737a85,muzzle:0xd5d8dd},orange:{body:0xd99a61,detail:0xad693e,muzzle:0xeac29a},white:{body:0xe9e9e5,detail:0x968b83,muzzle:0xf7f7f4}};return createPetBase('cat',p[variant]||p.gray)}
 
 export function setCuteCharacterPose(group,pose='idle'){
-  const u=group?.userData;if(!u?.animatedParts)return;const p=u.animatedParts,v=u.visual;u.pose=pose;
+  const u=group?.userData;if(!u?.animatedParts)return;const p=u.animatedParts,v=u.visual;u.pose=pose;group.onBeforeRender=null;
   if(v){v.position.set(0,0,0);v.rotation.set(0,0,0)}
   p.leftArm.rotation.set(0,0,-.11);p.rightArm.rotation.set(0,0,.11);p.leftLeg.rotation.set(0,0,0);p.rightLeg.rotation.set(0,0,0);
   if(pose==='sit'||pose==='swing'||pose==='dine'){p.leftLeg.rotation.x=-1.22;p.rightLeg.rotation.x=-1.22;p.leftArm.rotation.x=pose==='dine'?-1.02:-.18;p.rightArm.rotation.x=pose==='dine'?-1.02:-.18}
   else if(pose==='lie'||pose==='sleep'){if(v){v.rotation.z=Math.PI/2;v.position.set(.66,0,0)}p.leftArm.rotation.x=pose==='sleep'?.34:.08;p.rightArm.rotation.x=pose==='sleep'?.26:-.08;p.leftLeg.rotation.x=.05;p.rightLeg.rotation.x=-.05}
+  if(['lie','sleep','swing','dine'].includes(pose))group.onBeforeRender=()=>animateLockedPose(group,performance.now());
+}
+function animateLockedPose(group,time){
+  const u=group?.userData,p=u?.animatedParts,v=u?.visual;if(!p||!v)return;
+  if(u.pose==='lie'){v.position.y=Math.sin(time*.0024)*.012}
+  else if(u.pose==='sleep'){v.position.y=Math.sin(time*.0018)*.018;v.rotation.x=Math.sin(time*.0012)*.01}
+  else if(u.pose==='swing'){const a=Math.sin(time*.0024);v.rotation.x=a*.055;v.position.z=a*.035;p.leftLeg.rotation.x=-1.18+a*.08;p.rightLeg.rotation.x=-1.18-a*.08}
+  else if(u.pose==='dine'){const bite=Math.max(0,Math.sin(time*.004));p.leftArm.rotation.x=-.86-bite*.22;p.rightArm.rotation.x=-.98+Math.sin(time*.0032)*.08}
 }
 export function animateCuteCharacter(group,time,moving=false,speed=1){
-  const u=group?.userData,p=u?.animatedParts;if(!p)return;
-  if(u.pose==='sit')return;
-  if(u.pose==='lie'){const breath=Math.sin(time*.0024)*.012;if(u.visual)u.visual.position.y=breath;return}
-  if(u.pose==='sleep'){const breath=Math.sin(time*.0018)*.018;if(u.visual){u.visual.position.y=breath;u.visual.rotation.x=Math.sin(time*.0012)*.01}return}
-  if(u.pose==='swing'){const a=Math.sin(time*.0024);if(u.visual){u.visual.rotation.x=a*.055;u.visual.position.z=a*.035}p.leftLeg.rotation.x=-1.18+a*.08;p.rightLeg.rotation.x=-1.18-a*.08;return}
-  if(u.pose==='dine'){const bite=Math.max(0,Math.sin(time*.004));p.leftArm.rotation.x=-.86-bite*.22;p.rightArm.rotation.x=-.98+Math.sin(time*.0032)*.08;return}
+  const u=group?.userData,p=u?.animatedParts;if(!p)return;if(['sit','lie','sleep','swing','dine'].includes(u.pose))return;
   const rate=.011*Math.max(.65,speed),swing=moving?Math.sin(time*rate)*.46:Math.sin(time*.003)*.018;p.leftArm.rotation.x=swing;p.rightArm.rotation.x=-swing;p.leftLeg.rotation.x=-swing*.78;p.rightLeg.rotation.x=swing*.78;if(Array.isArray(p.legs))p.legs.forEach((leg,i)=>leg.rotation.x=moving?Math.sin(time*rate+(i===0||i===3?0:Math.PI))*.34:0);if(p.tail)p.tail.rotation.y=Math.sin(time*(moving?.011:.0055))*.30;
 }
