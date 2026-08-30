@@ -2,6 +2,7 @@
 // Performance/collision patches must be active before the main world creates its renderer.
 import './render-performance-runtime.js';
 import './collision-cache-runtime.js';
+import './raycast-budget-runtime.js';
 
 // Main world establishes the live scene/player/object registries used by extension runtimes.
 import './app-v043.js';
