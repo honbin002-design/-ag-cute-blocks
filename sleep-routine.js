@@ -35,11 +35,12 @@ function advanceOneDay(world,settings){
 
 btn.onclick=()=>{
   if(!isLying())return;
+  globalThis.AGCBCharacterPose?.('sleep');
   $('#saveNow')?.click();btn.disabled=true;fade.classList.add('on');
   setTimeout(()=>{
     const world=read(WORLD_KEY,null),settings=read(SETTINGS_KEY,{});if(!world){fade.innerHTML='<div>找不到世界存檔<small>請先離開床再試一次</small></div>';btn.disabled=false;return}
     advanceOneDay(world,settings);write(WORLD_KEY,world);write(SETTINGS_KEY,settings);
     fade.innerHTML='<div>☀️ 早安！<small>新的一天準備好了</small></div>';
     setTimeout(()=>location.reload(),650);
-  },180);
+  },260);
 };
