@@ -29,7 +29,7 @@ Branch: `dev-v0.1`
 ## V0.4.5 animal life
 - Cow/sheep/chicken visual states support idle / walk / eat / drink / sleep / petResponse.
 - Pet dog/cat support idle / sleep / petResponse.
-- Animal life runtime selects states from time/environment and is loaded by the active page.
+- Animal life runtime selects states from time/environment and is loaded by the active bootstrap.
 - Sleep/rest states hold position so animals do not slide while sleeping.
 
 ## V0.4.5 wildlife + mobile LOD
@@ -44,7 +44,7 @@ Branch: `dev-v0.1`
 - Creature shadow changes are traversed only when the shadow state changes.
 
 ## V0.4.5 orchard consistency
-- `orchard-runtime.js` is loaded by the active page.
+- `orchard-runtime.js` is loaded by the active bootstrap.
 - Fruit harvesting is guarded by the same visible fruit readiness supplied by `crop-models.js`; a mature-looking but season-ineligible tree can no longer silently yield invisible fruit.
 - When the visual fruit-ready threshold is reached, the holder is aligned to the interaction threshold so visible ripe fruit is immediately pickable.
 - Orange keeps autumn/winter fruiting behavior and receives gentle winter daily growth even though the older generic tree loop pauses trees in winter.
@@ -56,17 +56,25 @@ Branch: `dev-v0.1`
 - `mobile-input-runtime.js` converts Jump / Place / Remove / Rotate / Life Interaction plus camera/life buttons to immediate pointer-down actions instead of relying on delayed compatibility click after touch release.
 - The movement joystick keeps its own pointer capture only for its movement finger, so a second finger remains available for action buttons.
 - Delayed physical compatibility clicks are suppressed so one press cannot fire twice.
-- Blur, page hide, visibility loss and lost pointer capture now clear the tracked movement pointer so a cancelled iOS touch cannot leave movement stuck.
+- Blur, page hide, visibility loss and lost pointer capture clear the tracked movement pointer so a cancelled iOS touch cannot leave movement stuck.
 - Existing click capture/bubble logic is preserved through programmatic click dispatch, so crop/orchard interaction guards still run.
 - `render-performance-runtime.js` governs the live WebGL renderer pixel ratio without touching saved world content.
-- Shadow refresh is now paced by adaptive tier: high every frame, normal every 2 frames, low every 3 frames. Geometry/lighting remains enabled; only shadow refresh cadence is reduced under mobile load.
+- Shadow refresh is paced by adaptive tier: high every frame, normal every 2 frames, low every 3 frames. Geometry/lighting remains enabled; only shadow refresh cadence is reduced under mobile load.
 - Static collision bounds remain cached through `collision-cache-runtime.js` to reduce repeated Box3 traversal during movement/camera checks.
+- `raycast-budget-runtime.js` leaves aim/build rays unchanged but culls obviously distant solid meshes from the short third-person/farm camera collision ray before geometry intersection.
+
+## Runtime activation correction
+- A runtime audit found that the live `index.html` was still directly loading the base app plus only some life extensions, while mobile-input/performance/collision/wildlife modules were merely present in the PWA cache. Cache presence alone is not accepted as proof that a runtime is active.
+- `bootstrap-v045.js` is now the single live module entrypoint.
+- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife extensions.
+- This prevents later index edits from silently dropping a runtime while leaving its file cached.
 
 ## PWA / validation
-- PWA cache is now `ag-cute-blocks-v045-runtime5` and explicitly includes mobile-input, adaptive render, collision cache, crop care, animal life, wildlife, orchard and supporting modules.
+- PWA cache is now `ag-cute-blocks-v045-runtime7` and includes the deterministic bootstrap plus mobile-input, adaptive render, collision cache, camera raycast budget, crop care, animal life, wildlife, orchard and supporting modules.
 - GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
+- The first bootstrap/cache activation batch passed the JavaScript syntax/import workflow.
 - Walk + Jump simultaneous control has real iPhone PASS evidence.
-- Other simultaneous action combinations and the new shadow cadence still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
+- Other simultaneous action combinations, adaptive shadow cadence and the newly activated deterministic bootstrap still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
 
 ## Explicitly not PASS yet
 - V0.4.5 as a whole still needs concentrated iPhone real-device validation before milestone PASS.
@@ -76,8 +84,8 @@ Branch: `dev-v0.1`
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Observe syntax/import checks and Pages deployment for the new shadow/input hardening commits; fix failures before further validation.
-2. Continue reducing camera/collision and creature per-frame work while preserving the already-PASS multitouch path.
+1. Observe syntax/import checks and Pages deployment for runtime7; fix failures before asking for device validation.
+2. Continue reducing creature and camera per-frame work while preserving the already-PASS multitouch path.
 3. Improve turn/movement response without changing the confirmed two-finger control behavior.
 4. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
 5. Add gentle visual weather effects with performance budgets after renderer governance is stable.
