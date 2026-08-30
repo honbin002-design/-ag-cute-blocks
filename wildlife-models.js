@@ -10,12 +10,11 @@ export function createDeer(){
   const body=ell(g,.33,0,.72,.10,coat,[1.72,.82,.82],22);ell(g,.20,0,.82,-.38,coat,[.78,1.55,.72],18);
   const head=new THREE.Group();head.position.set(0,1.05,-.55);g.add(head);ell(head,.20,0,0,0,coat,[.86,1.05,.84],20);ell(head,.09,0,-.08,-.20,cream,[1.05,.64,1.25],14);ell(head,.035,0,-.06,-.30,dark,[1,.7,.8],10);for(const x of[-.085,.085])eye(head,x,.04,-.19);
   for(const x of[-.15,.15]){const e=ell(head,.085,x,.13,.01,coat,[1.15,.55,1.65],12);e.rotation.z=x<0?-.28:.28}
-  // Simple branching antlers keep the silhouette clearly deer-like without excessive triangles.
   for(const side of[-1,1]){const ant=cap(head,.018,.38,side*.09,.28,.02,dark);ant.rotation.z=side*.18;for(const [yy,zz] of [[.08,-.02],[.18,.01]]){const branch=cap(ant,.013,.20,side*.06,yy,zz,dark);branch.rotation.z=side*.72}}
   const legs=[cap(g,.045,.70,-.22,.38,-.16,coat),cap(g,.045,.70,.22,.38,-.16,coat),cap(g,.048,.72,-.24,.38,.35,coat),cap(g,.048,.72,.24,.38,.35,coat)];
   for(const [x,z] of [[-.22,-.16],[.22,-.16],[-.24,.35],[.24,.35]])ell(g,.055,x,.055,z,hoof,[1,.45,1.35],10);
   const tail=ell(g,.10,0,.78,.58,cream,[.72,1.10,.55],12);tail.rotation.x=-.45;
-  g.userData={wildlifeType:'deer',legs,head,body,tail,phase:Math.random()*6.28};return g;
+  g.userData={wildlifeType:'deer',legs,head,body,tail,phase:Math.random()*6.28,baseY:0};return g;
 }
 
 export function createRabbit(){
@@ -25,7 +24,7 @@ export function createRabbit(){
   ell(head,.075,0,-.05,-.17,light,[1.25,.62,.95],12);for(const x of[-.075,.075])eye(head,x,.035,-.16);ell(head,.025,0,-.025,-.235,pink,[1,.70,.8],9);
   const hind=[cap(g,.065,.30,-.16,.20,.28,fur),cap(g,.065,.30,.16,.20,.28,fur)],front=[cap(g,.045,.27,-.10,.17,-.13,fur),cap(g,.045,.27,.10,.17,-.13,fur)];
   for(const x of[-.16,.16])ell(g,.10,x,.07,.36,fur,[.95,.45,1.65],12);ell(g,.105,0,.33,.48,light,[1,1,1],12);
-  g.userData={wildlifeType:'rabbit',legs:[...front,...hind],head,body,phase:Math.random()*6.28};return g;
+  g.userData={wildlifeType:'rabbit',legs:[...front,...hind],head,body,phase:Math.random()*6.28,baseY:0};return g;
 }
 
 export function createFox(){
@@ -36,15 +35,29 @@ export function createFox(){
   const legs=[cap(g,.045,.40,-.18,.23,-.14,orange),cap(g,.045,.40,.18,.23,-.14,orange),cap(g,.05,.42,-.20,.23,.30,orange),cap(g,.05,.42,.20,.23,.30,orange)];
   for(const [x,z] of [[-.18,-.14],[.18,-.14],[-.20,.30],[.20,.30]])ell(g,.06,x,.055,z,dark,[1,.45,1.35],10);
   const tail=new THREE.Group();tail.position.set(0,.46,.44);g.add(tail);const t1=cap(tail,.085,.54,0,.06,.16,orange);t1.rotation.x=-1.02;ell(tail,.13,0,.12,.48,cream,[.75,.70,1.45],14);
-  g.userData={wildlifeType:'fox',legs,head,body,tail,phase:Math.random()*6.28};return g;
+  g.userData={wildlifeType:'fox',legs,head,body,tail,phase:Math.random()*6.28,baseY:0};return g;
 }
 
-export function animateWildlife(g,time,speed=0){
-  const u=g.userData||{},type=u.wildlifeType,phase=u.phase||0,moving=speed>.001,rate=type==='rabbit'?.017:type==='deer'?.012:.013;
-  const step=moving?Math.sin(time*rate+phase):0;
-  (u.legs||[]).forEach((leg,i)=>{if(type==='rabbit'){leg.rotation.x=(i<2?-step:step)*.34}else leg.rotation.x=(i===0||i===3?step:-step)*.30});
-  if(u.head){if(moving)u.head.rotation.x=Math.sin(time*rate*.65+phase)*.035;else{const look=Math.sin(time*.0017+phase);u.head.rotation.y=look*.20;u.head.rotation.x=Math.max(0,Math.sin(time*.0021+phase)-.55)*.25}}
-  if(u.body)u.body.rotation.z=moving*Math.sin(time*rate+phase)*.012;
-  if(u.tail)u.tail.rotation.y=Math.sin(time*(moving?.009:.004)+phase)*.18;
-  if(type==='rabbit'&&moving)g.position.y=Math.abs(Math.sin(time*rate+phase))*.045;else g.position.y=moving?Math.abs(step)*.008:0;
+export function animateWildlife(g,time,speed=0,state='auto'){
+  const u=g.userData||{},type=u.wildlifeType,phase=u.phase||0,moving=speed>.001,stateNow=state==='auto'?(moving?'walk':'idle'):state,rate=type==='rabbit'?.017:type==='deer'?.012:.013;
+  const step=stateNow==='walk'?Math.sin(time*rate+phase):0,legs=u.legs||[];
+  legs.forEach((leg,i)=>{
+    let pose=0;
+    if(stateNow==='walk')pose=type==='rabbit'?(i<2?-step:step)*.34:(i===0||i===3?step:-step)*.30;
+    else if(stateNow==='sleep')pose=type==='rabbit'?(i<2?.42:-.58):(i<2?.32:-.42);
+    else if(stateNow==='eat'||stateNow==='drink')pose=type==='rabbit'?(i<2?.10:-.08):(i<2?.08:-.05);
+    leg.rotation.x=THREE.MathUtils.lerp(leg.rotation.x,pose,.18);
+  });
+  if(u.head){
+    let hx=0,hy=0;
+    if(stateNow==='walk')hx=Math.sin(time*rate*.65+phase)*.035;
+    else if(stateNow==='eat')hx=type==='rabbit'?.22:.62+Math.sin(time*.008+phase)*.08;
+    else if(stateNow==='drink')hx=type==='rabbit'?.34:.78+Math.sin(time*.006+phase)*.035;
+    else if(stateNow==='sleep'){hx=type==='deer'?.34:type==='fox'?.22:.14;hy=type==='fox'?.22:0}
+    else{hy=Math.sin(time*.0017+phase)*.20;hx=Math.max(0,Math.sin(time*.0021+phase)-.55)*.18}
+    u.head.rotation.x=THREE.MathUtils.lerp(u.head.rotation.x,hx,.12);u.head.rotation.y=THREE.MathUtils.lerp(u.head.rotation.y,hy,.10);
+  }
+  if(u.body){const sway=stateNow==='walk'?Math.sin(time*rate+phase)*.012:stateNow==='sleep'?(type==='rabbit'?.08:.035):0;u.body.rotation.z=THREE.MathUtils.lerp(u.body.rotation.z,sway,.12)}
+  if(u.tail){const wag=stateNow==='sleep'?.025:stateNow==='walk'?.18:.09;u.tail.rotation.y=Math.sin(time*(stateNow==='walk'?.009:.004)+phase)*wag}
+  if(type==='rabbit'&&stateNow==='walk')g.position.y=Math.abs(Math.sin(time*rate+phase))*.045;else if(stateNow==='walk')g.position.y=Math.abs(step)*.008;else if(stateNow==='sleep')g.position.y=THREE.MathUtils.lerp(g.position.y,type==='rabbit'?-.035:-.02,.12);else g.position.y=THREE.MathUtils.lerp(g.position.y,0,.15);
 }
