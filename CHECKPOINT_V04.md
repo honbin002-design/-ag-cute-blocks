@@ -1,35 +1,40 @@
-# AG Cute Blocks — V0.4 Integrated Checkpoint
+# AG Cute Blocks — V0.4.1 Integrated Checkpoint
 
 Date: 2026-08-30
 Branch: `dev-v0.1`
 
-## Integrated in the active V0.4 runtime
-- Rounded child avatars with visible face, hair, clothes and alternating arm/leg gait.
-- Dog and cat models with species-specific silhouettes, legs and tail motion.
-- Ranch animals: chicken, cow and sheep with recognizable bodies and leg gait while wandering.
-- Recognizable crop models for carrot, corn, pumpkin, tomato, strawberry, cabbage and potato.
-- Crop visual growth stages advance with world days; rain gives a gentle growth bonus.
-- Orchard models: apple, orange and peach trees with fruit and seasonal crown changes.
-- Primitive building expanded with slope and roof pieces.
-- Architecture objects now include doors and windows alongside fences.
-- Gentle economy foundation is persistent; shipping-box object is available in the world catalogue.
-- V0.3 save migration remains supported, including existing furniture and appliances.
-- PWA cache upgraded to V0.4 module set so Home Screen installations can receive the new runtime.
+## Art direction correction
+- Character direction is now an original cozy farm-life chibi style: attractive, rounded, readable on mobile, with farm clothing cues. It may use the general appeal of farm-life games as a gameplay/art-direction reference, but must not copy any recognizable character, costume, model, UI or protected visual design from Story of Seasons / Harvest Moon or another game.
+- Dog, cat, cow, sheep and chicken are being pushed toward believable animal anatomy while retaining a soft child-friendly stylization. Species must be immediately recognizable and must not look like generic balls/boxes.
+
+## Camera and movement modes
+- Camera control is now three-mode: First Person -> Third Person -> Farm View.
+- Third Person: free look remains available; the visible character turns toward the actual movement vector.
+- Farm View: elevated fixed-angle follow camera with screen-relative joystick movement; the character turns toward the actual movement vector.
+- The previous `yaw + PI` orientation error that made the avatar appear to walk backward has been removed.
+- Pet and livestock heading calculations were corrected for models whose forward axis is -Z, so animals no longer intentionally travel backward while facing away from their movement.
+
+## Integrated V0.4 foundation retained
+- Recognizable crop models for carrot, corn, pumpkin, tomato, strawberry, cabbage and potato with growth stages.
+- Orchard models: apple, orange and peach trees with seasonal crown changes.
+- Primitive building includes slope and roof pieces; architecture includes doors/windows/fences.
+- Gentle economy foundation and shipping-box object exist.
+- V0.3 save migration remains supported, including furniture and appliances.
+- PWA cache bumped to V0.4.1 so Home Screen installations can receive corrected controls/models without replacing the shortcut.
 
 ## Explicitly not complete yet
-- Harvest interaction, inventory, putting harvested goods into the shipping box, settlement animation and shop UI are not yet wired end-to-end.
-- Crop watering/harvest interaction needs dedicated child-friendly controls rather than relying only on passive day growth.
-- Orchard trees need fuller blossom/fruit lifecycle and harvesting interaction.
-- Animal idle/eat/sleep/pet interactions need additional animation states.
+- Final character and animal art quality is not PASS; procedural models remain an intermediate implementation and need further visual refinement after real-device viewing.
+- Harvest -> inventory -> shipping box -> settlement -> shop is not yet wired end-to-end.
+- Watering/harvest interaction, orchard blossom/harvest states, animal idle/eat/sleep/pet states remain pending.
 - Third-person camera wall avoidance still needs improvement.
 - Multiplayer/shared cloud persistence is not implemented.
-- V0.4 still requires real-device runtime validation before PASS.
+- V0.4.1 requires real-device runtime validation before PASS.
 
 ## NEXT
-1. Add a dedicated interact/action control without crowding the mobile HUD.
-2. Wire harvest -> inventory -> shipping box -> coin settlement -> shop purchase end-to-end.
-3. Add crop watering feedback and mature/harvest feedback.
-4. Add animal idle/eat/sleep/pet states and improve foot-contact timing.
-5. Add orchard blossom/fruit/harvest states.
-6. Improve third-person camera collision.
-7. Continue catalogue expansion and mobile performance tuning.
+1. Continue character silhouette/clothing/hair refinement without copying protected game assets.
+2. Continue pet/livestock anatomy, paws/hooves/faces/tails and animation refinement.
+3. Add dedicated interact/action control.
+4. Wire harvest -> inventory -> shipping box -> coin settlement -> shop purchase end-to-end.
+5. Add watering, mature/harvest feedback and orchard blossom/fruit/harvest states.
+6. Add animal idle/eat/sleep/pet states.
+7. Improve third-person camera collision and mobile performance.
