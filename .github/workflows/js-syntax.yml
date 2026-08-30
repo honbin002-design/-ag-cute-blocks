@@ -22,3 +22,32 @@ jobs:
             echo "Checking $file"
             node --input-type=module --check < "$file"
           done
+      - name: Validate relative named imports
+        shell: python
+        run: |
+          import pathlib,re,sys
+          files={p.name:p.read_text(encoding='utf-8') for p in pathlib.Path('.').glob('*.js')}
+          failures=[]
+          export_re=re.compile(r'export\s+(?:async\s+)?(?:function|class|const|let|var)\s+([A-Za-z_$][\w$]*)')
+          export_list_re=re.compile(r'export\s*\{([^}]+)\}')
+          import_re=re.compile(r'import\s*\{([^}]+)\}\s*from\s*[\'\"](\./[^\'\"]+)[\'\"]')
+          for source_name,source in files.items():
+            for names,target in import_re.findall(source):
+              target_name=pathlib.Path(target).name
+              if target_name not in files:
+                failures.append(f'{source_name}: missing relative module {target}')
+                continue
+              target_src=files[target_name]
+              exports=set(export_re.findall(target_src))
+              for block in export_list_re.findall(target_src):
+                for item in block.split(','):
+                  raw=item.strip().split(' as ')[0].strip()
+                  if raw: exports.add(raw)
+              for item in names.split(','):
+                imported=item.strip().split(' as ')[0].strip()
+                if imported and imported not in exports:
+                  failures.append(f'{source_name}: imports {imported} from {target_name}, but it is not exported')
+          if failures:
+            print('\n'.join(failures))
+            sys.exit(1)
+          print('Relative named-import validation passed.')
