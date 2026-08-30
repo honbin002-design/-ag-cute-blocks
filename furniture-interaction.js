@@ -9,8 +9,13 @@ const DEFINITIONS={
 };
 
 export function getFurnitureInteraction(type){return DEFINITIONS[type]||null}
-export function furnitureAnchorWorld(object){const d=getFurnitureInteraction(object?.userData?.type);if(!d)return null;return object.localToWorld(d.anchor.clone())}
-export function furnitureExitWorld(object){const d=getFurnitureInteraction(object?.userData?.type);if(!d)return null;return object.localToWorld(d.exit.clone())}
+function worldPoint(object,local){if(!object)return null;object.updateMatrixWorld(true);return object.localToWorld(local.clone())}
+export function furnitureAnchorWorld(object){const d=getFurnitureInteraction(object?.userData?.type);return d?worldPoint(object,d.anchor):null}
+export function furnitureExitWorld(object){const d=getFurnitureInteraction(object?.userData?.type);return d?worldPoint(object,d.exit):null}
+export function furnitureExitCandidates(object){
+  const d=getFurnitureInteraction(object?.userData?.type);if(!d)return[];const z=Math.max(.95,Math.abs(d.exit.z||1)),x=Math.max(.95,z*.82);
+  return[[0,0,z],[x,0,0],[-x,0,0],[0,0,-z]].map(v=>worldPoint(object,new THREE.Vector3(...v)));
+}
 export function furnitureYaw(object){const d=getFurnitureInteraction(object?.userData?.type);return object.rotation.y+(d?.yaw||0)}
 export function isFurnitureInteractable(type){return !!DEFINITIONS[type]}
 export function furnitureSupports(type,action){return !!DEFINITIONS[type]?.secondary?.includes(action)}
