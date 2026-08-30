@@ -1,18 +1,16 @@
-import './collision-cache-runtime.js';
-import './render-performance-runtime.js';
-import './mobile-input-runtime.js';
-import './wildlife-live-runtime.js';
 import {decideAnimalState} from './animal-state-system.js';
 import {setAnimalVisualState} from './animal-models.js';
 import {setCutePetState} from './character-models.js';
 
+// Runtime activation is owned by bootstrap-v045.js. This module only owns animal-life decisions;
+// it no longer side-effect-imports input, renderer, collision or wildlife runtimes.
 const livestock=()=>[...(globalThis.__AGCB_LIVE_LIVESTOCK||[])].filter(m=>m?.parent?.parent);
 const pets=()=>[...(globalThis.__AGCB_LIVE_PETS||[])].filter(m=>m?.parent?.parent);
 const lastPos=new WeakMap();
 const seedOf=m=>{const s=String(m?.parent?.userData?.id||m?.uuid||'1');let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h||1};
 function hour(){const t=document.querySelector('#clock')?.textContent||'12:00',m=t.match(/(\d{1,2}):(\d{2})/);return m?Number(m[1])+Number(m[2])/60:12}
 function nearWater(x,z){const riverX=-38+z*.1,dx=(x-42)/1.35,dz=(z+38)/.78;return Math.abs(x-riverX)<9||dx*dx+dz*dz<24*24}
-function movedEnough(model){const p=model.parent?.position;if(!p)return false;const old=lastPos.get(model);lastPos.set(model,{x:p.x,z:p.z});return !!old&&Math.hypot(p.x-old.x,p.z-old.z)>.55}
+function movedEnough(model){const p=model.parent?.position;if(!p)return false;const old=lastPos.get(model);lastPos.set(model,{x:p.x,z:p.z});return !!old&&Math.hypot(p.x-old.x,p.z-old.z)>.06}
 
 function updateLivestock(now){
   const h=hour(),seconds=now/1000;
