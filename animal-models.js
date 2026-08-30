@@ -33,9 +33,15 @@ export function setAnimalVisualState(g,state='idle',now=performance.now()){
   if(['sleep','eat','drink','petResponse'].includes(state)&&g.parent&&!u.holdPosition)u.holdPosition=g.parent.position.clone();
   if(state==='walk'||state==='idle')u.holdPosition=null;
 }
+function animalAnimationDue(u,time,moving,forced){
+  if(forced)return true;
+  const tier=globalThis.__AGCB_PERF_TIER||'normal',gap=tier==='low'?(moving?48:96):tier==='high'?16:(moving?32:70);
+  if(u._lastAnimAt&&time-u._lastAnimAt<gap)return false;u._lastAnimAt=time;return true;
+}
 export function animateAnimal(g,time,speed=0,state='auto'){
   const u=g.userData||{},legs=u.legs;if(!legs)return;const type=u.animalType;if(state!=='auto'&&state!==u.state)setAnimalVisualState(g,state,time);const forced=['sleep','eat','drink','petResponse'].includes(u.state),s=state==='auto'?(forced?u.state:(speed>.001?'walk':'idle')):state;
   if(forced&&u.holdPosition&&g.parent)g.parent.position.copy(u.holdPosition);
+  if(!animalAnimationDue(u,time,s==='walk',forced))return;
   const moving=s==='walk'&&speed>.001,phase=u.phase||0,walkRate=type==='chicken'?.015:.0105,swing=moving?Math.sin(time*walkRate+phase)*(type==='chicken'?.46:.34):0;legs.forEach((p,i)=>{p.rotation.z=0;p.rotation.x=type==='chicken'?(i%2?swing:-swing):(i===0||i===3?swing:-swing)});
   const head=u.headPivot,body=u.body,baseHeadY=u.baseHeadY??(type==='cow'?.83:type==='sheep'?.73:.65),baseBodyY=u.baseBodyY??(type==='cow'?.73:type==='sheep'?.62:.39);if(head){head.position.y=baseHeadY;head.rotation.set(0,0,0)}if(body){body.position.y=baseBodyY;body.rotation.set(0,0,0)}if(u.wings){u.wings[0].rotation.z=.15;u.wings[1].rotation.z=-.15}g.position.y=0;
   if(s==='walk'){if(head)head.rotation.x=type==='chicken'?Math.sin(time*.015+phase)*.10:Math.sin(time*.0105+phase)*.045;if(body)body.rotation.z=Math.sin(time*walkRate+phase)*.018;g.position.y=Math.abs(Math.sin(time*walkRate+phase))*(type==='chicken'?.013:.008)}
