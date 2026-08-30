@@ -28,11 +28,13 @@ function bindImmediatePress(el){
   },true);
 }
 
+function dispatchMovementCancel(joy,pointerId){
+  try{joy.dispatchEvent(new PointerEvent('pointercancel',{pointerId,pointerType:'touch'}))}catch{}
+}
 function cancelMovementPointer(){
   const joy=document.querySelector('#joy');
   if(!joy||movementPointer===null)return;
-  try{joy.dispatchEvent(new PointerEvent('pointercancel',{pointerId:movementPointer,pointerType:'touch'}))}catch{}
-  movementPointer=null;
+  const pointerId=movementPointer;movementPointer=null;dispatchMovementCancel(joy,pointerId);
 }
 
 function install(){
@@ -45,7 +47,10 @@ function install(){
     joy.addEventListener('pointerdown',event=>{movementPointer=event.pointerId},{passive:true});
     joy.addEventListener('pointerup',event=>{if(event.pointerId===movementPointer)movementPointer=null},{passive:true});
     joy.addEventListener('pointercancel',event=>{if(event.pointerId===movementPointer)movementPointer=null},{passive:true});
-    joy.addEventListener('lostpointercapture',event=>{if(event.pointerId===movementPointer)movementPointer=null},{passive:true});
+    joy.addEventListener('lostpointercapture',event=>{
+      if(event.pointerId!==movementPointer)return;
+      const pointerId=movementPointer;movementPointer=null;dispatchMovementCancel(joy,pointerId);
+    },{passive:true});
   }
 }
 
