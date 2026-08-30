@@ -2,8 +2,9 @@
 // iOS browsers may defer/suppress a normal click while another finger keeps the joystick active.
 // Fire gameplay actions on pointer-down instead, while preserving the app's existing click pipeline.
 
-const ACTION_SELECTORS=['#jump','#add','#del','#rot','#lifeInteract'];
+const ACTION_SELECTORS=['#jump','#add','#del','#rot','#lifeInteract','#cam','#lifeBtn'];
 const bound=new WeakSet();
+let movementPointer=null;
 
 function bindImmediatePress(el){
   if(!el||bound.has(el))return;
@@ -27,16 +28,32 @@ function bindImmediatePress(el){
   },true);
 }
 
+function cancelMovementPointer(){
+  const joy=document.querySelector('#joy');
+  if(!joy||movementPointer===null)return;
+  try{joy.dispatchEvent(new PointerEvent('pointercancel',{pointerId:movementPointer,pointerType:'touch'}))}catch{}
+  movementPointer=null;
+}
+
 function install(){
   for(const selector of ACTION_SELECTORS)bindImmediatePress(document.querySelector(selector));
   const joy=document.querySelector('#joy');
-  if(joy){
+  if(joy&&!joy.dataset.agcbMultitouch){
+    joy.dataset.agcbMultitouch='1';
     joy.style.touchAction='none';
     joy.style.webkitUserSelect='none';
+    joy.addEventListener('pointerdown',event=>{movementPointer=event.pointerId},{passive:true});
+    joy.addEventListener('pointerup',event=>{if(event.pointerId===movementPointer)movementPointer=null},{passive:true});
+    joy.addEventListener('pointercancel',event=>{if(event.pointerId===movementPointer)movementPointer=null},{passive:true});
+    joy.addEventListener('lostpointercapture',event=>{if(event.pointerId===movementPointer)movementPointer=null},{passive:true});
   }
 }
 
 install();
-// life UI is created by the main module, but keep one short observer-safe retry path for slow devices.
-let retries=0;const timer=setInterval(()=>{install();if(++retries>20||ACTION_SELECTORS.every(s=>document.querySelector(s)))clearInterval(timer)},100);
-globalThis.__AGCB_MOBILE_INPUT={mode:'pointerdown-multitouch',actions:ACTION_SELECTORS};
+// Life UI is created by the main module; keep a short retry path for slow devices.
+let retries=0;const timer=setInterval(()=>{install();if(++retries>30||ACTION_SELECTORS.every(s=>document.querySelector(s)))clearInterval(timer)},100);
+addEventListener('blur',cancelMovementPointer);
+addEventListener('pagehide',cancelMovementPointer);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelMovementPointer()});
+
+globalThis.__AGCB_MOBILE_INPUT={mode:'pointerdown-multitouch-v2',actions:ACTION_SELECTORS,cancelMovementPointer};
