@@ -1,13 +1,15 @@
 // Lightweight screen-space weather for the mobile build. It is intentionally visual-only:
 // world rules remain in the existing season/weather systems, while this layer follows the same UI state.
+const SETTINGS_KEY='ag_cute_blocks_settings_v03';
 const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');Object.assign(canvas.style,{position:'fixed',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});
 const hud=document.querySelector('.hud');hud?.parentNode?.insertBefore(canvas,hud);const ctx=canvas.getContext('2d',{alpha:true});
 const particles=[];let w=1,h=1,lastWeather='',frame=0,nextFlashAt=0,flashUntil=0;
 function resize(){w=Math.max(1,visualViewport?.width||innerWidth);h=Math.max(1,visualViewport?.height||innerHeight);canvas.width=Math.round(w);canvas.height=Math.round(h)}
 addEventListener('resize',resize);visualViewport?.addEventListener('resize',resize);resize();
-function weather(){return document.querySelector('#weather')?.value||'sunny'}
+function savedWeather(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}').weather||''}catch{return ''}}
+function weather(){return document.querySelector('#weather')?.value||savedWeather()||'sunny'}
 function tier(){return globalThis.__AGCB_PERF_TIER||'normal'}
-function installThunderstormOption(){const select=document.querySelector('#weather');if(!select||select.querySelector('option[value="thunderstorm"]'))return;const o=document.createElement('option');o.value='thunderstorm';o.textContent='⛈️ 雷雨';const rain=select.querySelector('option[value="rain"]');rain?.after(o);if(!rain)select.appendChild(o)}
+function installThunderstormOption(){const select=document.querySelector('#weather');if(!select)return;if(!select.querySelector('option[value="thunderstorm"]')){const o=document.createElement('option');o.value='thunderstorm';o.textContent='⛈️ 雷雨';const rain=select.querySelector('option[value="rain"]');rain?.after(o);if(!rain)select.appendChild(o)}const saved=savedWeather();if(saved==='thunderstorm'&&!select.value)select.value=saved}
 installThunderstormOption();
 function targetCount(kind,q){
   if(kind==='rain')return q==='high'?105:q==='low'?48:76;
