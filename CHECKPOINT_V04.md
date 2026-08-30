@@ -51,33 +51,34 @@ Branch: `dev-v0.1`
 - Orchard growth corrections are persisted back to the local world snapshot.
 
 ## V0.4.5 mobile controls + smoothness
-- User-reported blocker: while one finger holds the movement joystick, other gameplay buttons such as Jump did not reliably fire on iPhone.
-- `mobile-input-runtime.js` now converts Jump / Place / Remove / Rotate / Life Interaction to immediate pointer-down actions rather than relying on the delayed compatibility click generated after touch release.
+- Original iPhone blocker: while one finger held the movement joystick, other gameplay buttons such as Jump did not reliably fire.
+- REAL DEVICE PASS (2026-08-31): user confirmed the character can now keep walking while Jump is pressed with the other finger. This specific walk + jump multitouch behavior is locked PASS and must not regress.
+- `mobile-input-runtime.js` converts Jump / Place / Remove / Rotate / Life Interaction plus camera/life buttons to immediate pointer-down actions instead of relying on delayed compatibility click after touch release.
 - The movement joystick keeps its own pointer capture only for its movement finger, so a second finger remains available for action buttons.
 - Delayed physical compatibility clicks are suppressed so one press cannot fire twice.
+- Blur, page hide, visibility loss and lost pointer capture now clear the tracked movement pointer so a cancelled iOS touch cannot leave movement stuck.
 - Existing click capture/bubble logic is preserved through programmatic click dispatch, so crop/orchard interaction guards still run.
-- `render-performance-runtime.js` now applies the existing adaptive quality governor to the live WebGL renderer pixel ratio. It starts at the normal mobile budget and can move between low/normal/high without touching saved world content.
+- `render-performance-runtime.js` governs the live WebGL renderer pixel ratio without touching saved world content.
+- Shadow refresh is now paced by adaptive tier: high every frame, normal every 2 frames, low every 3 frames. Geometry/lighting remains enabled; only shadow refresh cadence is reduced under mobile load.
 - Static collision bounds remain cached through `collision-cache-runtime.js` to reduce repeated Box3 traversal during movement/camera checks.
 
 ## PWA / validation
-- PWA cache is now `ag-cute-blocks-v045-runtime4` and explicitly includes mobile-input, adaptive render, collision cache, crop care, animal life, wildlife, orchard and supporting modules.
+- PWA cache is now `ag-cute-blocks-v045-runtime5` and explicitly includes mobile-input, adaptive render, collision cache, crop care, animal life, wildlife, orchard and supporting modules.
 - GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
-- Syntax/import checks completed successfully for head `cd240b4493...`, including the new multitouch and adaptive renderer runtimes.
-- Latest Pages deployment for `cd240b4493...` was still in progress at the last check; do not count device behavior as PASS until deployment and iPhone validation finish.
+- Walk + Jump simultaneous control has real iPhone PASS evidence.
+- Other simultaneous action combinations and the new shadow cadence still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
 
 ## Explicitly not PASS yet
-- Static deployment success does not prove browser runtime behavior.
-- Simultaneous joystick + jump still needs one concentrated iPhone real-device check after Pages finishes.
-- V0.4.5 still needs concentrated iPhone real-device validation before milestone PASS.
+- V0.4.5 as a whole still needs concentrated iPhone real-device validation before milestone PASS.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
-- Adaptive renderer currently governs pixel ratio; global shadow policy is not yet dynamically governed.
+- Adaptive pixel ratio + shadow cadence are integrated, but subjective smoothness and visual shadow quality still need later device validation.
 - Weather currently has state/UI but does not yet have a full adaptive particle system worth tuning.
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Confirm latest Pages deployment; then validate on iPhone that movement + jump/place/remove/rotate/interact work concurrently.
-2. If multitouch still fails on iOS, replace the joystick/action path with explicit touch-identifier tracking rather than adding another click-layer workaround.
-3. Extend adaptive performance to global shadow cadence without visibly degrading the cozy art style.
+1. Observe syntax/import checks and Pages deployment for the new shadow/input hardening commits; fix failures before further validation.
+2. Continue reducing camera/collision and creature per-frame work while preserving the already-PASS multitouch path.
+3. Improve turn/movement response without changing the confirmed two-finger control behavior.
 4. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
-5. Further reduce camera/collision per-frame allocations and improve turn/movement response.
-6. Add gentle visual weather effects with performance budgets after renderer governance is stable.
+5. Add gentle visual weather effects with performance budgets after renderer governance is stable.
+6. Only request another concentrated iPhone check when a stable checkpoint contains enough new behavior to justify it.
