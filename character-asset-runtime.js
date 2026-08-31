@@ -18,14 +18,28 @@ function loadVariant(key){
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
 function bodyScale(c){return c.body==='tall'?1.04:c.body==='petite'?.91:1}
+function setAssetMaterialPolish(root,c){
+  root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
+}
+function addAssetDetailLayer(parent,c,box){
+  const size=box.getSize(new THREE.Vector3()),min=box.min,layer=new THREE.Group();layer.name='agcb-face-clothing-detail-layer';layer.renderOrder=8;
+  const faceY=min.y+size.y*.78,faceZ=min.z-.018,cheekMat=new THREE.MeshBasicMaterial({color:0xf09b9d,transparent:true,opacity:.48,depthWrite:false}),skinMat=new THREE.MeshBasicMaterial({color:0xe8a184}),smileMat=new THREE.MeshBasicMaterial({color:0x743f48}),frameMat=new THREE.MeshBasicMaterial({color:0x40343d});
+  for(const x of[-size.x*.18,size.x*.18]){const cheek=new THREE.Mesh(new THREE.CircleGeometry(Math.max(.025,size.y*.023),20),cheekMat);cheek.rotation.y=Math.PI;cheek.scale.set(1.45,.62,1);cheek.position.set(x,faceY-size.y*.055,faceZ);layer.add(cheek)}
+  const nose=new THREE.Mesh(new THREE.SphereGeometry(Math.max(.018,size.y*.017),12,8),skinMat);nose.position.set(0,faceY-size.y*.005,faceZ-.016);layer.add(nose);
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(Math.max(.035,size.y*.034),Math.max(.004,size.y*.0048),7,18,Math.PI),smileMat);smile.rotation.y=Math.PI;smile.position.set(0,faceY-size.y*.10,faceZ-.022);layer.add(smile);
+  if(c.glasses==='round'){for(const x of[-size.x*.17,size.x*.17]){const ring=new THREE.Mesh(new THREE.TorusGeometry(Math.max(.045,size.y*.047),Math.max(.005,size.y*.006),8,20),frameMat);ring.rotation.y=Math.PI;ring.scale.x=1.12;ring.position.set(x,faceY,faceZ-.025);layer.add(ring)}const bridge=new THREE.Mesh(new THREE.BoxGeometry(size.x*.10,size.y*.009,.012),frameMat);bridge.position.set(0,faceY,faceZ-.026);layer.add(bridge)}
+  const torsoZ=min.z+size.z*.17,pocketMat=new THREE.MeshBasicMaterial({color:c.outfit==='hoodie'?0x78afd1:c.outfit==='dress'?0xd87996:0xc58b58});const pocket=new THREE.Mesh(new THREE.BoxGeometry(size.x*.28,size.y*.105,.026),pocketMat);pocket.position.set(0,min.y+size.y*.46,torsoZ);layer.add(pocket);
+  if(c.accessory==='scarf'){const scarf=new THREE.Mesh(new THREE.TorusGeometry(size.x*.18,size.y*.022,8,22),new THREE.MeshBasicMaterial({color:0xe48791}));scarf.rotation.x=Math.PI/2;scarf.position.set(0,min.y+size.y*.62,0);layer.add(scarf)}else if(c.accessory==='bow'){const bowMat=new THREE.MeshBasicMaterial({color:0xe48791});for(const x of[-size.x*.10,size.x*.10]){const b=new THREE.Mesh(new THREE.SphereGeometry(size.y*.065,12,8),bowMat);b.scale.set(1.25,.72,.30);b.position.set(x,min.y+size.y*.55,torsoZ-.02);layer.add(b)}}else if(c.accessory==='backpack'){const pack=new THREE.Mesh(new THREE.BoxGeometry(size.x*.30,size.y*.24,size.z*.10),new THREE.MeshBasicMaterial({color:0xf09a68}));pack.position.set(0,min.y+size.y*.38,box.max.z+size.z*.04);layer.add(pack)}
+  parent.add(layer);return layer;
+}
 function applyAsset(group,c,gltf){
   if(!group?.parent)return;
-  const u=group.userData;if(u.assetRoot)u.visual.remove(u.assetRoot);
+  const u=group.userData;if(u.assetRoot)u.visual.remove(u.assetRoot);if(u.assetDetailLayer)u.visual.remove(u.assetDetailLayer);
   const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   const rawBox=new THREE.Box3().setFromObject(root),rawSize=rawBox.getSize(new THREE.Vector3());
   const scale=2.18/Math.max(rawSize.y,.001)*bodyScale(c);root.scale.setScalar(scale);root.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(root);root.position.y-=box.min.y;root.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);const detailLayer=addAssetDetailLayer(u.visual,c,box);
   const mixer=new THREE.AnimationMixer(root),clips=gltf.animations||[],actions={
     idle:findClip(clips,/idle|stand|breath|rest/i),
     walk:findClip(clips,/walk|move/i),
@@ -38,7 +52,7 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=detailLayer;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
