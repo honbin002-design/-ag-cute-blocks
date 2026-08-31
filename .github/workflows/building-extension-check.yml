@@ -45,7 +45,7 @@ jobs:
           must_collision=['geometryToken','geometryInvalidations','explicitInvalidations','invalidateGeometry:invalidate','__agcbGeometryRevision']
           must_ray=['const nearby=[]','nearby.length=0','bufferReuses','persistent camera target registry']
           must_app=['cameraTargets=[]','cameraTargetSet=new Set()','registerCameraTarget','unregisterCameraTarget','collisionPoint=new THREE.Vector3()','collisionBox=new THREE.Box3()','camRay.intersectObjects(cameraTargets,false)','pets.forEach','moveForward.set','desiredCamera.set','SOLID_CELL=4','solidGrid=new Map()','solidCells=new WeakMap()','registerSolid','unregisterSolid','reindexSolid','solidGrid.get(solidCellKey','__AGCB_WORLD_HOTPATH={schema:2']
-          must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','schema:3']
+          must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','function whisker','dog-muzzle-paws','cat-whiskers-paws','cow-horns-udder','chicken-beak-feet','schema:4']
           must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
           must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
           must_care=["w==='rain'||w==='thunderstorm'"]
@@ -67,8 +67,8 @@ jobs:
           if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
           if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
           if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
-          if "runtime33" not in sw: missing.append('runtime33 cache version')
+          if "runtime34" not in sw: missing.append('runtime34 cache version')
           if missing:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
-          print('Building, O(1) cache, persistent camera path, spatial collision broad-phase, articulated polish and gentle thunderstorm invariants passed.')
+          print('Building, O(1) cache, spatial collision, persistent camera path, anatomy polish and gentle thunderstorm invariants passed.')
