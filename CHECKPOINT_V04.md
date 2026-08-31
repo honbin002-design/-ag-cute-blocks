@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime40`
+Active PWA cache: `ag-cute-blocks-v045-runtime41`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -82,6 +82,11 @@ Active PWA cache: `ag-cute-blocks-v045-runtime40`
 - Distance-driven player/pet locomotion now uses a smoothed motion envelope; legs, arms, body bob and pet tail settle progressively when travel stops instead of snapping to rest.
 - This remains an integrated runtime change only; turn feel, stop feel, paw contact and subjective sliding still require concentrated real-device evidence.
 
+## Build Aim target registry — runtime41
+- Build raycast roots are maintained incrementally for ground, water, blocks and object groups.
+- `aim()` reuses the registry with recursive raycast traversal instead of rebuilding and traversing every target array on each placement/removal action.
+- Object and block creation/removal keep the registry synchronized; existing placement and save pipelines remain unchanged.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -109,9 +114,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime40`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
-- Runtime40 JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime40 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop invariant checks: SUCCESS.
-- Runtime40 Pages build/deployment/report steps: SUCCESS.
+- Runtime41 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime41 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim invariant checks: SUCCESS.
+- Runtime41 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
@@ -123,7 +128,6 @@ Active PWA cache: `ag-cute-blocks-v045-runtime40`
 - Full world/chunk streaming is not implemented.
 
 ## NEXT
-1. Reduce build-aim target assembly after interaction lookup is stabilized.
-2. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
-3. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
-4. Group enough stable changes before requesting the next concentrated iPhone validation.
+1. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
+2. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
+3. Group enough stable changes before requesting the next concentrated iPhone validation.
