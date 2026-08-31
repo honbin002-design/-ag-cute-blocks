@@ -14,27 +14,7 @@ export function createCuteChildAvatar(style='girl',options={}){
   const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');
   const original=createAGOriginalCharacter(c,options);
   if(original){original.userData={...original.userData,avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'ag-original-connected-v1',pose:'idle'};LIVE_AVATARS.add(original);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(original,pose);return original;}
-  const g=new THREE.Group(),girl=c.gender==='girl';
-  const skin=mat(options.skinColor??SKIN_PALETTE[c.skin],.9),hair=mat(options.hairColor??HAIR_PALETTE[c.hair],.93),shirt=mat(options.shirtColor??TOP_PALETTE[c.top],.88),denim=mat(options.bottomColor??BOTTOM_PALETTE[c.bottom],.9),cream=mat(0xfff3d8,.9),sock=mat(0xf8f4ec,.92),legMat=c.outfit==='dress'?skin:denim;
-  // Head/ears/hair silhouette: rounded farm-life chibi proportions, front is local -Z.
-  ellipsoid(g,.43,0,1.75,-.01,skin,[1.00,1.06,.95],28);ellipsoid(g,.055,-.33,1.72,-.01,skin,[.55,1,.45],12);ellipsoid(g,.055,.33,1.72,-.01,skin,[.55,1,.45],12);ellipsoid(g,.45,0,1.88,.02,hair,[1.08,.70,1.00],28);
-  // Layered fringe keeps the face readable from gameplay distance instead of a helmet-like hair cap.
-  ellipsoid(g,.17,-.23,1.91,-.405,hair,[1.10,.78,.46],18);ellipsoid(g,.19,-.06,1.96,-.425,hair,[1.12,.82,.44],18);ellipsoid(g,.17,.12,1.94,-.415,hair,[1.10,.78,.46],18);ellipsoid(g,.14,.26,1.88,-.385,hair,[1.04,.78,.44],16);
-  if(c.hairStyle==='bob'){ellipsoid(g,.15,-.27,1.67,.05,hair,[.72,1.35,.7],18);ellipsoid(g,.15,.27,1.67,.05,hair,[.72,1.35,.7],18);ellipsoid(g,.07,-.27,1.48,.05,0xf2b1be,[1.2,.55,1],12);ellipsoid(g,.07,.27,1.48,.05,0xf2b1be,[1.2,.55,1],12)}else if(c.hairStyle==='long'){ellipsoid(g,.17,-.30,1.63,.06,hair,[.76,1.78,.72],18);ellipsoid(g,.17,.30,1.63,.06,hair,[.76,1.78,.72],18)}else if(c.hairStyle==='ponytail'){ellipsoid(g,.15,.29,1.66,.06,hair,[.72,1.35,.70],18);ellipsoid(g,.18,.34,1.96,.18,hair,[.72,1.15,.72],16)}else if(c.hairStyle==='curly'){for(let i=0;i<9;i++)ellipsoid(g,.105,(i-4)*.09,1.96+(i%3)*.04,.01,hair,[.95,.78,.92],14)}else for(let i=0;i<6;i++)ellipsoid(g,.105,(i-2.5)*.095,1.99+(i%2)*.02,-.015,hair,[.9,.72,.9],14);
-  // Eyes + catchlights + brows + tiny nose/mouth/blush make the face legible rather than mask-like.
-  ellipsoid(g,.060,-.14,1.77,-.455,eye,[1,.98,.54],16);ellipsoid(g,.060,.14,1.77,-.455,eye,[1,.98,.54],16);ellipsoid(g,.018,-.122,1.792,-.492,white,[1,1,.4],10);ellipsoid(g,.018,.158,1.792,-.492,white,[1,1,.4],10);
-  const browMat=hair;for(const x of[-.115,.115]){const brow=new THREE.Mesh(new THREE.CapsuleGeometry(.008,.055,4,8),browMat);brow.rotation.z=Math.PI/2;brow.position.set(x,1.85,-.445);g.add(brow)}ellipsoid(g,.024,0,1.69,-.455,0xe5a989,[.65,.7,.42],10);
-  const smile=new THREE.Mesh(new THREE.TorusGeometry(.055,.009,7,16,Math.PI),mat(0xb96f69,.8));smile.rotation.z=Math.PI;smile.position.set(0,1.625,-.455);g.add(smile);ellipsoid(g,.040,-.22,1.66,-.435,0xf1aaa3,[1.25,.48,.38],10);ellipsoid(g,.040,.22,1.66,-.435,0xf1aaa3,[1.25,.48,.38],10);
-  // Clothing has a clear collar/overall layer instead of one undifferentiated body blob.
-  ellipsoid(g,.39,0,1.17,0,shirt,[.86,1.08,.62],26);ellipsoid(g,.40,0,1.24,.015,shirt,[.88,.82,.58],22);ellipsoid(g,.095,-.11,1.405,-.245,cream,[1,.42,.30],12);ellipsoid(g,.095,.11,1.405,-.245,cream,[1,.42,.30],12);
-  ellipsoid(g,.29,0,1.02,-.205,denim,[.86,.78,.24],18);const bib=ellipsoid(g,.19,0,1.13,-.275,denim,[1,.85,.18],16);
-  const strapL=capsule(g,.035,.45,-.16,1.22,-.22,denim),strapR=capsule(g,.035,.45,.16,1.22,-.22,denim);strapL.rotation.z=-.04;strapR.rotation.z=.04;ellipsoid(g,.035,-.13,1.03,-.245,cream,[1,1,.5],10);ellipsoid(g,.035,.13,1.03,-.245,cream,[1,1,.5],10);
-  const leftArm=capsule(g,.108,.64,-.41,1.16,0,shirt);leftArm.rotation.z=-.11;const rightArm=capsule(g,.108,.64,.41,1.16,0,shirt);rightArm.rotation.z=.11;ellipsoid(g,.122,-.45,.80,0,skin,[.94,1.05,.94],16);ellipsoid(g,.122,.45,.80,0,skin,[.94,1.05,.94],16);
-  // Shorts/skirt silhouette, socks and shoes with separate soles improve the walking read.
-  ellipsoid(g,.35,0,.78,0,denim,[1.05,.52,.78],20);if(girl){const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.38,.46,.24,20),denim);skirt.position.set(0,.72,0);skirt.castShadow=true;g.add(skirt)}
-  const leftLeg=capsule(g,.135,.54,-.17,.43,0,legMat),rightLeg=capsule(g,.135,.54,.17,.43,0,legMat);ellipsoid(leftLeg,.115,0,-.245,-.01,sock,[1,.62,1],14);ellipsoid(rightLeg,.115,0,-.245,-.01,sock,[1,.62,1],14);ellipsoid(leftLeg,.175,0,-.31,-.055,shoe,[1.06,.64,1.48],18);ellipsoid(rightLeg,.175,0,-.31,-.055,shoe,[1.06,.64,1.48],18);ellipsoid(leftLeg,.158,0,-.375,-.070,sole,[1.06,.28,1.46],16);ellipsoid(rightLeg,.158,0,-.375,-.070,sole,[1.06,.28,1.46],16);
-  addAvatarAccessories(g,c,hair,shirt);const visual=new THREE.Group();while(g.children.length)visual.add(g.children[0]);g.add(visual);const bodyScale={round:[1.05,1,1.02],tall:[.95,1.07,.97],petite:[.94,.94,.95]}[c.body]||[1,1,1];g.scale.set(...bodyScale);g.userData={avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'premium-chibi-v4',visual,pose:'idle',animatedParts:{leftArm,rightArm,leftLeg,rightLeg,bib}};
-  LIVE_AVATARS.add(g);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(g,pose);globalThis.__AGCB_UPGRADE_AVATAR?.(g,c);return g;
+  throw new Error('AG original character factory did not return a character');
 }
 
 function paw(parent,x,z,color,front=false){const p=ellipsoid(parent,.085,x,.075,z,color,[1.05,.48,front?1.42:1.32],12);ellipsoid(parent,.026,x-.032,.086,z-.080,color,[.62,.40,.72],8);ellipsoid(parent,.026,x+.032,.086,z-.080,color,[.62,.40,.72],8);return p}
