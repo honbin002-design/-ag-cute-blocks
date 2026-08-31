@@ -8,9 +8,10 @@ import './raycast-budget-runtime.js';
 // Midnight progression now calls daily-progression-system.js directly inside the core app.
 import './app-v043.js';
 
-// Core corrections attach after base initialization but before the first animation frame.
+// Core corrections and visual surface upgrades attach after base initialization.
 import './heading-runtime.js';
 import './furniture-safety-runtime.js';
+import './procedural-material-runtime.js';
 
 // Input and life extensions attach after the main HUD/world handlers exist.
 import './mobile-input-runtime.js';
