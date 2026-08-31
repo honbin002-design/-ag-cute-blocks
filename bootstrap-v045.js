@@ -10,6 +10,7 @@ import './app-v043.js';
 // Core corrections attach after base initialization but before the first animation frame.
 import './heading-runtime.js';
 import './furniture-safety-runtime.js';
+import './daily-progression-runtime.js';
 
 // Input and life extensions attach after the main HUD/world handlers exist.
 import './mobile-input-runtime.js';
