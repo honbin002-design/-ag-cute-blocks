@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime46`
+Active PWA cache: `ag-cute-blocks-v045-runtime47`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -117,8 +117,15 @@ Active PWA cache: `ag-cute-blocks-v045-runtime46`
 ## Premium chibi visual refinement — runtime46
 - The avatar model now follows the requested complete chibi-character direction: larger readable eyes, layered facial depth, swept hair locks, clearer outerwear panels, buttons and stronger outfit silhouette.
 - Hats, round glasses and accessories remain inside the animated visual container, so they follow sit/lie/sleep poses with the character.
-- The model is tagged `premium-chibi-v2`; the original reference is used for quality direction only, not copied as a protected character or pirate design.
+- The model was tagged `premium-chibi-v2` during the previous refinement; runtime47 supersedes it with the larger `premium-chibi-v3` base model. The original reference remains quality direction only, not a copied protected character or pirate design.
 - This remains **INTERMEDIATE ART** pending iPhone visual review and later final art refinement.
+
+## Clearly readable premium chibi base model — runtime47
+- Responding to the iPhone visual review, the avatar base proportions were changed rather than only adding face accessories.
+- The head, torso, shoulder mass, arms, hands, legs, skirt/shorts and shoes now use larger rounded chibi volumes that remain readable at gameplay distance.
+- Eye whites, irises and catchlights, swept hair locks, layered overall panels, collar, buttons, belt and separate shoe soles were enlarged together.
+- The model is tagged `premium-chibi-v3`; this is an original quality direction inspired by the supplied reference, not a copy of its pirate character.
+- This remains **INTERMEDIATE ART** pending the next iPhone visual review and later final art refinement.
 
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
@@ -149,6 +156,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime46`
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
 - Runtime46 JavaScript syntax/import/rule/HUD checks: SUCCESS.
 - Runtime46 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi invariant checks: SUCCESS.
+- Runtime47 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime47 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi-v3 invariant checks: SUCCESS.
+- Runtime47 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33384436505`).
 - Runtime44 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
@@ -173,5 +183,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime46`
 - **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
 
 ## NEXT
-1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is premium-chibi avatar visual review and customization persistence.
+1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is runtime47 premium-chibi base-model visual review and customization persistence.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
