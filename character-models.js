@@ -30,7 +30,7 @@ export function createCuteChildAvatar(style='girl',options={}){
   // Shorts/skirt silhouette, socks and shoes with separate soles improve the walking read.
   ellipsoid(g,.31,0,.76,0,denim,[1,.48,.72],18);if(girl){const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.34,.40,.20,18),denim);skirt.position.set(0,.70,0);skirt.castShadow=true;g.add(skirt)}
   const leftLeg=capsule(g,.105,.55,-.16,.43,0,skin),rightLeg=capsule(g,.105,.55,.16,.43,0,skin);ellipsoid(leftLeg,.115,0,-.245,-.01,sock,[1,.62,1],14);ellipsoid(rightLeg,.115,0,-.245,-.01,sock,[1,.62,1],14);ellipsoid(leftLeg,.145,0,-.32,-.055,shoe,[1,.58,1.38],16);ellipsoid(rightLeg,.145,0,-.32,-.055,shoe,[1,.58,1.38],16);ellipsoid(leftLeg,.135,0,-.365,-.066,sole,[1,.25,1.36],14);ellipsoid(rightLeg,.135,0,-.365,-.066,sole,[1,.25,1.36],14);
-  addAvatarAccessories(g,c,hair,shirt);const visual=new THREE.Group();while(g.children.length)visual.add(g.children[0]);g.add(visual);const bodyScale={round:[1.05,1,1.02],tall:[.95,1.07,.97],petite:[.94,.94,.95]}[c.body]||[1,1,1];g.scale.set(...bodyScale);g.userData={avatarStyle:c.gender,avatarCustomization:c,visual,pose:'idle',animatedParts:{leftArm,rightArm,leftLeg,rightLeg,bib}};
+  addAvatarAccessories(g,c,hair,shirt);const visual=new THREE.Group();while(g.children.length)visual.add(g.children[0]);g.add(visual);const bodyScale={round:[1.05,1,1.02],tall:[.95,1.07,.97],petite:[.94,.94,.95]}[c.body]||[1,1,1];g.scale.set(...bodyScale);g.userData={avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'premium-chibi-v2',visual,pose:'idle',animatedParts:{leftArm,rightArm,leftLeg,rightLeg,bib}};
   LIVE_AVATARS.add(g);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(g,pose);return g;
 }
 
@@ -80,8 +80,8 @@ export function animateCuteCharacter(group,time,moving=false,speed=1){
   if(p.tail)p.tail.rotation.y=Math.sin(time*(moving?.011:.0055))*.30;
 }
 
-export const AVATAR_CUSTOMIZATION_SCHEMA=1;
-export const DEFAULT_AVATAR_CUSTOMIZATION={schema:1,gender:'girl',body:'round',skin:'light',hairStyle:'bob',hair:'chestnut',outfit:'overall',top:'pink',bottom:'denim',hat:'none',glasses:'none',accessory:'none'};
+export const AVATAR_CUSTOMIZATION_SCHEMA=2;
+export const DEFAULT_AVATAR_CUSTOMIZATION={schema:2,gender:'girl',body:'round',skin:'light',hairStyle:'bob',hair:'chestnut',outfit:'overall',top:'pink',bottom:'denim',hat:'none',glasses:'none',accessory:'none'};
 const SKIN_PALETTE={light:0xf2c5a5,warm:0xc88963,deep:0x8c5a3c,rosy:0xf0b09e};
 const HAIR_PALETTE={chestnut:0x68483b,black:0x2c2528,honey:0xb87845,plum:0x543c67};
 const TOP_PALETTE={pink:0xf1a4b5,sky:0x74afd7,mint:0x8acbb9,lavender:0xbfa4e7};
@@ -90,12 +90,16 @@ export function normalizeAvatarCustomization(input={},legacyStyle='girl'){
   const src=input&&typeof input==='object'?input:{};
   const pick=(v,allowed,fallback)=>allowed.includes(v)?v:fallback;
   const gender=src.gender==='boy'||src.gender==='girl'?src.gender:legacyStyle==='boy'?'boy':'girl';
-  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:1,gender,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:pick(src.hairStyle,['bob','short','long','curly','ponytail'],gender==='girl'?'bob':'short'),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:pick(src.outfit,['overall','dress','hoodie'],'overall'),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
+  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:2,gender,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:pick(src.hairStyle,['bob','short','long','curly','ponytail'],gender==='girl'?'bob':'short'),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:pick(src.outfit,['overall','dress','hoodie'],'overall'),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
 }
 function addAvatarAccessories(g,c,hair,shirt){
-  const hatMat=mat(c.hat==='beanie'?0x8bb8d8:0xf0c86d,.88),frame=mat(0x4a3d4a,.72),accent=mat(c.accessory==='scarf'?0xe8898f:0xf3c95f,.82);
+  const hatMat=mat(c.hat==='beanie'?0x8bb8d8:0xf0c86d,.88),frame=mat(0x4a3d4a,.72),accent=mat(c.accessory==='scarf'?0xe8898f:0xf3c95f,.82),vest=mat(c.outfit==='hoodie'?TOP_PALETTE[c.top]:0x9a6745,.86);
+  // premium-chibi-v2: larger readable eyes, swept hair locks and layered clothing details.
+  for(const x of[-.115,.115])ellipsoid(g,.074,x,1.75,-.286,white,[1,.92,.40],16);
+  for(const [x,y,r,sx] of[[-.29,2.01,-.48,.72],[-.19,2.07,-.25,.88],[-.06,2.10,-.08,.92],[.09,2.09,.12,.90],[.21,2.03,.34,.78]]){const lock=ellipsoid(g,.105,x,y,-.235,hair,[sx,.74,.44],16);lock.rotation.z=r}
   if(c.hat==='sun'){const brim=new THREE.Mesh(new THREE.CylinderGeometry(.34,.38,.045,20),hatMat);brim.position.set(0,2.09,0);brim.castShadow=true;g.add(brim);const crown=new THREE.Mesh(new THREE.CylinderGeometry(.21,.25,.17,16),hatMat);crown.position.set(0,2.18,.01);crown.castShadow=true;g.add(crown)}else if(c.hat==='beanie'){ellipsoid(g,.235,0,2.08,.01,hatMat,[1.05,.66,.98],18);const brim=new THREE.Mesh(new THREE.TorusGeometry(.20,.025,8,18),hatMat);brim.rotation.x=Math.PI/2;brim.position.set(0,2.02,-.01);g.add(brim)}
   if(c.glasses==='round'){for(const x of[-.115,.115]){const lens=new THREE.Mesh(new THREE.TorusGeometry(.068,.010,8,18),frame);lens.position.set(x,1.75,-.348);lens.castShadow=true;g.add(lens)}const bridge=new THREE.Mesh(new THREE.BoxGeometry(.075,.012,.012),frame);bridge.position.set(0,1.75,-.348);g.add(bridge)}
+  if(c.outfit==='overall'){for(const x of[-.17,.17]){const panel=new THREE.Mesh(new THREE.BoxGeometry(.12,.38,.035),vest);panel.position.set(x,1.13,-.30);panel.castShadow=true;g.add(panel)}for(const y of[1.24,1.12,1.00]){const button=new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),mat(0xf5d17a,.65));button.position.set(-.17,y,-.325);g.add(button)}}
   if(c.outfit==='dress'){const dress=new THREE.Mesh(new THREE.CylinderGeometry(.30,.43,.28,18),shirt);dress.position.set(0,.76,0);dress.castShadow=true;g.add(dress);ellipsoid(g,.18,0,1.09,-.275,shirt,[1,.80,.20],14)}else if(c.outfit==='hoodie'){ellipsoid(g,.26,0,1.34,.09,shirt,[1.05,.72,.72],18);ellipsoid(g,.15,0,.98,-.29,accent,[1.15,.72,.18],14)}
   if(c.accessory==='scarf'){ellipsoid(g,.34,0,1.38,0,accent,[.72,.18,.58],16);const tail=ellipsoid(g,.08,.21,1.18,-.03,accent,[.65,1.8,.65],12);tail.rotation.z=-.12}else if(c.accessory==='backpack'){const pack=new THREE.Mesh(new THREE.BoxGeometry(.28,.34,.14),mat(0xf09c6d,.9));pack.position.set(0,1.04,.34);pack.castShadow=true;g.add(pack)}else if(c.accessory==='bow'){ellipsoid(g,.10,-.12,1.55,-.34,accent,[1.25,.80,.32],12);ellipsoid(g,.10,.12,1.55,-.34,accent,[1.25,.80,.32],12);ellipsoid(g,.035,0,1.55,-.36,hatMat,[1,1,.6],10)}
 }
