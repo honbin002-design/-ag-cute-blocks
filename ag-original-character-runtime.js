@@ -75,8 +75,11 @@ function addFaceAndHair(visual,c,bones){
   const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.14,.02);sphere(hair,.43,0,.10,.02,hairMat,[1.08,.68,.94]);for(const x of[-.34,-.22,-.08,.08,.23,.35]){const lock=sphere(hair,.13,x,.04,-.33,hairMat,[.95,.82,.54]);lock.rotation.z=(x/.35)*.18}
   if(c.hairStyle==='ponytail'||c.hairStyle==='long'){sphere(hair,.18,.34,.02,.25,hairMat,[.8,1.45,.8]);sphere(hair,.16,.28,-.18,.20,hairMat,[.9,1.3,.8])}
   if(c.hat==='beanie'){sphere(hair,.29,0,.36,.02,new THREE.MeshStandardMaterial({color:0x8bb8d8,roughness:.86}),[1.08,.72,1])}
+  if(c.hat==='sun'){const hatMat=new THREE.MeshStandardMaterial({color:0xf0c56b,roughness:.88});const brim=new THREE.Mesh(new THREE.TorusGeometry(.34,.055,8,24),hatMat);brim.rotation.x=Math.PI/2;brim.position.set(0,.31,-.01);hair.add(brim);const crown=new THREE.Mesh(new THREE.CylinderGeometry(.20,.23,.20,20),hatMat);crown.position.set(0,.39,.01);hair.add(crown)}
   if(c.glasses==='round'){const frame=new THREE.MeshStandardMaterial({color:0x453d48,roughness:.62});for(const x of[-.145,.145]){const ring=new THREE.Mesh(new THREE.TorusGeometry(.086,.012,8,20),frame);ring.position.set(x,.05,-.102);face.add(ring)}const bridge=new THREE.Mesh(new THREE.BoxGeometry(.10,.012,.012),frame);bridge.position.set(0,.05,-.103);face.add(bridge)}
   if(c.accessory==='scarf'){const scarf=new THREE.Mesh(new THREE.TorusGeometry(.25,.035,8,24),new THREE.MeshStandardMaterial({color:0xe48791,roughness:.84}));scarf.rotation.x=Math.PI/2;scarf.position.set(0,-.23,.02);head.add(scarf)}
+  if(c.accessory==='bow'){const bow=new THREE.Group();bow.name='agcb-bow-accessory';for(const x of[-.10,.10])sphere(bow,.12,x,0,-.02,new THREE.MeshStandardMaterial({color:0xe48791,roughness:.84}),[1.25,.75,.35]);sphere(bow,.045,0,0,-.05,new THREE.MeshStandardMaterial({color:0xd96779,roughness:.82}),[1,.8,.5]);bow.position.set(0,-.18,-.34);head.add(bow)}
+  if(c.accessory==='backpack'){const pack=new THREE.Mesh(new THREE.BoxGeometry(.32,.38,.12),new THREE.MeshStandardMaterial({color:0xf09a68,roughness:.88}));pack.name='agcb-backpack-accessory';pack.position.set(0,.02,.31);head.add(pack)}
   return {face,hair};
 }
 function addPaperDollMarkers(visual,c){
