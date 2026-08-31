@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime41`
+Active PWA cache: `ag-cute-blocks-v045-runtime42`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -87,6 +87,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime41`
 - `aim()` reuses the registry with recursive raycast traversal instead of rebuilding and traversing every target array on each placement/removal action.
 - Object and block creation/removal keep the registry synchronized; existing placement and save pipelines remain unchanged.
 
+## Wet ground / puddle response — runtime42
+- Rain and thunderstorm now show a small visual-only puddle layer on the world ground.
+- Puddle count is performance-tiered at high/normal/low quality and uses shared geometry/material resources.
+- The layer refreshes only when weather or performance tier changes; puddles are non-solid, excluded from build raycast and excluded from persistence.
+- No farming rule, collision, interaction, mobile input or save format was changed.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -114,9 +120,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime41`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
-- Runtime41 JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime41 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim invariant checks: SUCCESS.
-- Runtime41 Pages build/deployment/report steps: SUCCESS.
+- Runtime42 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime42 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground invariant checks: SUCCESS.
+- Runtime42 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
@@ -128,6 +134,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime41`
 - Full world/chunk streaming is not implemented.
 
 ## NEXT
-1. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
-2. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
-3. Group enough stable changes before requesting the next concentrated iPhone validation.
+1. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
+2. Group enough stable changes before requesting the next concentrated iPhone validation.
