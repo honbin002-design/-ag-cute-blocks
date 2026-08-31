@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime51`
+Active PWA cache: `ag-cute-blocks-v045-runtime52`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -222,8 +222,20 @@ Active PWA cache: `ag-cute-blocks-v045-runtime51`
 - This is a structural visibility bug fix, not a new final-art claim. The CC0 KayKit model remains a temporary zero-cost technical replacement and is not the final original AG character style.
 - Runtime50 still needs concentrated iPhone evidence: confirm the new body/limbs/joints are visibly different, then separately review animation, heading, stop/turn feel and loading fallback behavior.
 
+## Runtime52 — Farm View orbit and character detail layer
+- Farm View now keeps a saved horizontal orbit angle: one-finger horizontal drag changes left/right orbit, vertical drag changes pitch, and two-finger pinch changes distance.
+- Movement still uses the actual screen-relative Farm View vector and existing turn-heading formula; the locked movement + Jump multi-touch path was not changed.
+- The rigged technical avatar receives restrained material and face/clothing detail polish. This remains intermediate technical art and is not Final Character Art.
+
+## New hard art/customization gate — 2026-08-31
+- The next character inspection default must be a genuine connected base body in underwear/underclothes only, so the skeleton, shoulders, elbows, hips, knees, hands and feet can be judged without an integrated costume hiding the anatomy.
+- A real dressing-room / paper-doll system is required: gender and body base plus separate hair, top, bottom, dress/formal set and accessory slots; initial daily outfits, formal outfits and accessories must be selectable and persist locally.
+- The current KayKit technical GLB has integrated clothing and therefore must not be presented as the underwear inspection mode or as the finished paper-doll implementation. A free modular base/outfit source or an original no-cost authored asset must be connected before that visual claim is made.
+- Animals are held to the same standard: replace primitive assembled livestock/pet geometry with connected, species-readable rigged or continuous-mesh bodies and correct joint-driven locomotion. Current animal models remain intermediate.
+
 ## NEXT
-1. Concentrated iPhone structural review of runtime51: confirm the connected GLB model loads without the oversized Mage hat, body/limbs/joints are visible, and Third Person / Farm View face the actual movement direction; do not call this Final Art.
-2. Concentrated iPhone camera review: in Farm View, test vertical one-finger angle adjustment and two-finger distance adjustment, then confirm the camera remains usable around the existing world.
-3. Replace the technical CC0 source with an original AG farm-life character asset when an approved no-cost authoring route is available.
-4. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
+1. Continue source selection/authoring for a genuine modular connected character: underwear inspection base, separate daily/formal outfit layers, accessories and dressing-room persistence.
+2. Replace primitive-assembled dog/cat/cow/sheep/chicken bodies with connected species-specific rigged/continuous meshes and preserve actual-distance gait.
+3. Concentrated iPhone review of runtime52 Farm View horizontal/vertical orbit and technical avatar visibility; do not re-test locked movement + Jump multi-touch.
+4. Replace the technical CC0 source with original AG farm-life art when an approved no-cost authoring route is available.
+5. After device evidence, continue incremental persistence and chunk migration without replacing existing saves.

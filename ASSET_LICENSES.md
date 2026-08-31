@@ -13,3 +13,8 @@ The KayKit assets are not the final AG Cute Blocks character art. They are retai
 
 
 Variant note: runtime51 uses Rogue for the girl technical variant and Barbarian for the boy technical variant; Mage is no longer selected because its oversized hat obstructed the body review.
+
+
+## Candidate modular source reviewed — not integrated
+
+Quaternius Universal Base Characters and Modular Character Outfits are documented by the author as CC0 and designed for separate base/outfit composition. They are a candidate zero-cost technical route only; no Quaternius binary is currently shipped in AG Cute Blocks, and the current KayKit source remains the deployed technical proof.
