@@ -13,6 +13,7 @@ import './heading-runtime.js';
 import './furniture-safety-runtime.js';
 import './procedural-material-runtime.js';
 import './building-extension-runtime.js';
+import './character-polish-runtime.js';
 
 // Mobile control presentation attaches after the HUD exists, before input handlers.
 import './mobile-controls-runtime.js';
