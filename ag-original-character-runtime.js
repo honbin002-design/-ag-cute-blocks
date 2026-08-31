@@ -127,9 +127,9 @@ function createOriginalCharacter(c){
   const thighR=bone('agcb-thigh-r',hips,.18,-.13,0),shinR=bone('agcb-shin-r',thighR,0,-.35,0),footR=bone('agcb-foot-r',shinR,0,-.25,-.08);
   const bones=[root,hips,spine,chest,neck,head,upperL,foreL,handL,upperR,foreR,handR,thighL,shinL,footL,thighR,shinR,footR];
   const pairs=[[[0,0,0],[0,.78,0]],[[0,.78,0],[0,1.20,0]],[[0,1.20,0],[0,1.48,0]],[[0,1.48,0],[0,1.68,0]],[[0,1.68,0],[0,1.84,0]],[[0,1.84,0],[0,2.08,0]],[[-.34,1.36,0],[-.46,1.08,0]],[[-.46,1.08,0],[-.46,.78,0]],[[-.46,.78,0],[-.46,.70,0]],[[.34,1.36,0],[.46,1.08,0]],[[.46,1.08,0],[.46,.78,0]],[[.46,.78,0],[.46,.70,0]],[[-.18,.78,0],[-.18,.64,0]],[[-.18,.64,0],[-.18,.29,0]],[[-.18,.29,0],[-.18,.07,-.08]],[[.18,.78,0],[.18,.64,0]],[[.18,.64,0],[.18,.29,0]],[[.18,.29,0],[.18,.07,-.08]]];
-  bindConnectedBody(mesh,bones,pairs);const extras=addFaceAndHair(visual,c,{head});const slots=addPaperDollMarkers(visual,c);
+  bindConnectedBody(mesh,bones,pairs);const extras=addFaceAndHair(visual,c,{head});const slots=addPaperDollMarkers(visual,c);applyPaperDoll(visual,c,{head,chest,hips,footL,footR},slots);slots.hair.visible=true;slots.hat.visible=c.hat!=='none';slots.glasses.userData.assetId=c.glasses||'none';slots.accessory.userData.assetId=c.accessory||'none';
   const parts={leftArm:upperL,rightArm:upperR,leftLeg:shinL,rightLeg:shinR,legs:[shinL,shinR],body:chest,bib:slots.top};
-  const g=new THREE.Group();g.name='agcb-original-character';g.add(visual);g.userData={agOriginal:true,assetStatus:'AG_ORIGINAL_CONNECTED_BODY',visual,animatedParts:parts,baseBodyY:chest.position.y,body:chest,legs:parts.legs,paperDollSlots:slots,face:extras.face,hair:extras.hair};
+  const g=new THREE.Group();g.name='agcb-original-character';g.add(visual);g.userData={agOriginal:true,assetStatus:'AG_ORIGINAL_CONNECTED_BODY',visual,animatedParts:parts,baseBodyY:chest.position.y,body:chest,legs:parts.legs,paperDollSlots:slots,paperDollApplied:true,face:extras.face,hair:extras.hair};
   const scale=c.body==='tall'?[.95,1.07,.97]:c.body==='petite'?[.94,.94,.95]:[1.05,1,1.02];g.scale.set(...scale);return g;
 }
 globalThis.__AGCB_CREATE_ORIGINAL_AVATAR=(c)=>createOriginalCharacter(c);
