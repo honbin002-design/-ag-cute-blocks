@@ -101,3 +101,23 @@ jobs:
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('Shop reward buildability checks passed.')
+      - name: Verify restored building catalog stays present
+        shell: python
+        run: |
+          import pathlib,sys
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          required_tokens=[
+            "if(s==='triangle')","if(s==='roof')","'建材':","'建築':","'家電':",
+            "t==='door'","t==='window'","t==='fence'","t==='fridge'","t==='stove'",
+            "t==='washer'","t==='tv'","t==='cabinet'","plotCenters=[[-58,-30]",
+            "selectedMat='wood'","category==='形狀'||category==='建材'"
+          ]
+          missing=[token for token in required_tokens if token not in app]
+          materials=['wood','darkwood','stone','marble','brick','concrete','glass','roof','pink']
+          for material in materials:
+            if f"['{material}'" not in app and f",['{material}'" not in app:
+              missing.append(f'material:{material}')
+          if missing:
+            print('Missing restored V0.4.2 invariants:')
+            print('\n'.join(missing));sys.exit(1)
+          print('Restored building catalog checks passed.')
