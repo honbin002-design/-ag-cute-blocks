@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime33`
+Active PWA cache: `ag-cute-blocks-v045-runtime34`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -14,7 +14,7 @@ Active PWA cache: `ag-cute-blocks-v045-runtime33`
 ## Real-device PASS already locked
 - iPhone simultaneous movement + Jump: PASS on 2026-08-31.
 - One finger may keep the movement joystick active while a second finger presses Jump.
-- `mobile-input-runtime.js` has not been changed during runtime31-33 performance work; do not re-test this specific PASS unless future input work can affect it.
+- `mobile-input-runtime.js` has not been changed during runtime31-34 performance/art work; do not re-test this specific PASS unless future input work can affect it.
 
 ## Runtime architecture
 - `bootstrap-v045.js` remains the single live module entrypoint.
@@ -52,12 +52,16 @@ Active PWA cache: `ag-cute-blocks-v045-runtime33`
 - Short-height landscape phones receive a compact fallback layout.
 - Controls are classified by role (`movement`, `primary-action`, `context-action`, `build-action`, `menu`) for future tool/run/fishing actions.
 
-## Character / animal visual pass
-- Farm-life chibi child model has additional face, hair, clothing, sock and shoe detail.
-- Clothing/shoe polish is attached to animated arm/leg joints so details move with the articulated body instead of floating independently.
-- Dog/cat have stronger species-specific muzzle/ear/body/paw/tail silhouettes.
-- Cow/sheep/chicken have additional anatomy and articulated-leg detail.
-- Art remains intermediate and requires concentrated iPhone visual validation before PASS.
+## Character / animal anatomy pass — runtime34
+- Farm-life chibi child retains articulated face/hair/clothing/sock/shoe polish and now adds restrained cheek/facial accents for better readability at Farm View distance.
+- Clothing/shoe polish remains attached to animated arm/leg joints instead of floating independently.
+- Dog silhouette now has stronger chest/muzzle definition, visible nose, paws/toes and collar bell.
+- Cat silhouette now has stronger muzzle, inner-ear detail, visible whiskers, paws/toes and collar bell.
+- Cow now has stronger fetlock/leg treatment, neck/muzzle definition, horns, nostrils, collar/bell and an udder silhouette so it reads more clearly as bovine from multiple angles.
+- Sheep now has denser wool/ear/muzzle/nose detail while keeping a lightweight procedural model.
+- Chicken now has clearer tail/wing feather shapes, wattle, sharper beak and visible feet/toes.
+- `character-polish-runtime.js` is schema 4 and remains a non-destructive visual layer over the existing animation/state owners.
+- This is a meaningful anatomy/readability improvement, not final art PASS; species proportions, locomotion quality and overall visual cohesion still require concentrated iPhone review later.
 
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits rather than scanning child geometry on every movement collision test.
@@ -74,10 +78,10 @@ Active PWA cache: `ag-cute-blocks-v045-runtime33`
 - Aim/build ray behavior remains separate and unchanged.
 
 ## Movement collision spatial broad phase — runtime33
-- Static solid blocks/furniture/buildings now register into a 4-unit XZ spatial hash (`solidGrid`) when created or loaded.
+- Static solid blocks/furniture/buildings register into a 4-unit XZ spatial hash (`solidGrid`) when created or loaded.
 - An object's expanded exact collision bounds determine every spatial cell it occupies, so larger furniture/building objects can span multiple buckets safely.
 - Removal unregisters the object from all buckets and deletes empty buckets.
-- `solidAt()` now queries only the candidate player's current spatial bucket instead of scanning every block and every solid object in the world.
+- `solidAt()` queries only the candidate player's current spatial bucket instead of scanning every block and every solid object in the world.
 - The bucket is only a broad phase: candidates still use the existing exact cached world-space `Box3` test and the same `.24` block / `.22` solid-object padding, preserving collision semantics.
 - The current furniture interaction anchor is still excluded from collision checks as before.
 - `reindexSolid()` is exposed for any future static object's geometry/transform change; stairs already use it after geometry replacement.
@@ -94,22 +98,25 @@ Active PWA cache: `ag-cute-blocks-v045-runtime33`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule smoke tests cover normal/watered/thunderstorm crop growth, season pause, winter orange/apple behavior, sheep readiness and shipping settlement.
 - Direct-core daily authority, shop buildability, restored building catalog and mobile thumb-zone HUD are locked by CI.
-- Building-extension workflow locks stairs/tile/ceramic, collision geometry invalidation, articulated polish, gentle thunderstorm, persistent camera targets, reusable collision/frame/raycast scratch paths and the runtime33 spatial collision grid.
-- Runtime33 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime33 push building/collision/camera/spatial-index checks: SUCCESS.
-- Runtime33 Pages deployment for head `51c93e52b3d3b1edd93e1909e75c6474d549833a`: SUCCESS.
+- Building-extension workflow locks stairs/tile/ceramic, collision geometry invalidation, spatial collision, persistent camera targets, reusable scratch paths, thunderstorm integration and runtime34 anatomy-polish markers.
+- Runtime34 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime34 push building/collision/camera/spatial/anatomy invariant checks: SUCCESS.
+- Runtime34 PR copies of both checks: SUCCESS.
+- Runtime34 Pages build, deploy and report-build-status for head `43b6c187dfb2030ebe419d612735ee9247f3618e`: SUCCESS.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
 - Subjective movement/render smoothness after runtime31-33 optimization needs device evidence.
+- New runtime34 anatomy proportions/readability need device evidence before visual PASS.
 - Furniture safe exit, heading boundary behavior and thunderstorm visual quality still need concentrated device validation.
 - Current persistence remains local-device; six-player shared persistent cloud world is not implemented.
 - Full world/chunk streaming is not implemented; the spatial hash/persistent camera registry are preparation for larger worlds, not a substitute for chunk streaming.
 
 ## NEXT
-1. Continue reducing non-frame-critical O(n) world queries, especially interaction-nearby lookup and build-aim target assembly, without touching the locked multitouch input path.
-2. Continue character/animal art and locomotion refinement.
-3. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
-4. Begin a chunk/world-index scaffold once local-world behavior is stable enough that the persistence model can be migrated without breaking existing saves.
-5. Group enough stable changes before requesting the next concentrated iPhone validation.
+1. Reduce non-frame-critical O(n) interaction-nearby lookup without touching the locked multitouch input path.
+2. Continue species-specific locomotion and character/animal art refinement.
+3. Reduce build-aim target assembly after interaction lookup is stabilized.
+4. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
+5. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
+6. Group enough stable changes before requesting the next concentrated iPhone validation.
