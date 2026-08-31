@@ -76,7 +76,7 @@ jobs:
           if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
           if "pet-grounding-runtime.js" not in sw: missing.append('service worker pet grounding cache entry')
           if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
-          if not re.search(r"const CACHE='ag-cute-blocks-v045-runtime\\d+';", sw): missing.append('runtime cache version')
+          if not re.search(r"const CACHE='ag-cute-blocks-v045-runtime\d+';", sw): missing.append('runtime cache version')
           if missing:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
