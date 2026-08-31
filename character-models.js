@@ -1,4 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createOriginalCharacter as createAGOriginalCharacter} from './ag-original-character-runtime.js';
 
 const LIVE_AVATARS=globalThis.__AGCB_LIVE_AVATARS||(globalThis.__AGCB_LIVE_AVATARS=new Set());
 const LIVE_PETS=globalThis.__AGCB_LIVE_PETS||(globalThis.__AGCB_LIVE_PETS=new Set());
@@ -11,7 +12,7 @@ function cone(parent,r,h,x,y,z,color,rot=[0,0,0]){const m=new THREE.Mesh(new THR
 export function createCuteChildAvatar(style='girl',options={}){
   const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};
   const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');
-  const original=globalThis.__AGCB_CREATE_ORIGINAL_AVATAR?.(c,options);
+  const original=createAGOriginalCharacter(c,options);
   if(original){original.userData={...original.userData,avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'ag-original-connected-v1',pose:'idle'};LIVE_AVATARS.add(original);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(original,pose);return original;}
   const g=new THREE.Group(),girl=c.gender==='girl';
   const skin=mat(options.skinColor??SKIN_PALETTE[c.skin],.9),hair=mat(options.hairColor??HAIR_PALETTE[c.hair],.93),shirt=mat(options.shirtColor??TOP_PALETTE[c.top],.88),denim=mat(options.bottomColor??BOTTOM_PALETTE[c.bottom],.9),cream=mat(0xfff3d8,.9),sock=mat(0xf8f4ec,.92),legMat=c.outfit==='dress'?skin:denim;
