@@ -1,10 +1,15 @@
-// AG Cute Blocks — activate the dedicated mobile-game control stylesheet.
+// AG Cute Blocks — activate and classify the dedicated mobile-game HUD.
 const href='./mobile-controls.css';
-if(!document.querySelector(`link[data-agcb-mobile-controls="1"]`)){
+if(!document.querySelector('link[data-agcb-mobile-controls="1"]')){
   const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href=href;
-  link.dataset.agcbMobileControls='1';
-  document.head.appendChild(link);
+  link.rel='stylesheet';link.href=href;link.dataset.agcbMobileControls='1';document.head.appendChild(link);
 }
-globalThis.__AGCB_MOBILE_CONTROLS={version:'1.0',layout:'staggered-gamepad',stylesheet:href};
+const roles={jump:'primary-action',lifeInteract:'context-action',add:'build-action',del:'build-action',rot:'build-action',joy:'movement',lifeBtn:'menu'};
+function annotate(){
+  for(const [id,role] of Object.entries(roles)){const el=document.getElementById(id);if(el)el.dataset.controlRole=role}
+  const interact=document.getElementById('lifeInteract');if(interact&&!interact.getAttribute('aria-label'))interact.setAttribute('aria-label','互動');
+  const water=document.querySelector('.waterCropBtn');if(water){water.dataset.controlRole='context-action';if(!water.getAttribute('aria-label'))water.setAttribute('aria-label','澆水')}
+}
+annotate();
+const observer=new MutationObserver(annotate);observer.observe(document.body,{childList:true,subtree:true});
+globalThis.__AGCB_MOBILE_CONTROLS={version:'2.0',layout:'thumb-zone-gamepad',stylesheet:href,roles,observer};
