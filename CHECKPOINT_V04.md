@@ -146,6 +146,8 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - Full world/chunk streaming is not implemented.
 
 ## Concentrated iPhone validation — initial evidence
+- 2026-08-31: in Farm View, the user moved forward briefly and reported that the character faced the actual movement direction rather than the camera/screen direction.
+- **REAL DEVICE PASS (Farm View heading for the tested movement).** Turn transition, stop/sliding feel and final locomotion remain unverified.
 - 2026-08-31: in Third Person, the user moved forward briefly and reported that the character faced the actual movement direction without walking backward.
 - **REAL DEVICE PASS (Third Person heading for the tested movement).** Farm View heading, turn/stop transitions, sliding feel and final locomotion remain unverified.
 - 2026-08-31: after fully closing the Home Screen app and reopening it, the user reported that the game appeared normally again.
@@ -154,5 +156,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
 
 ## NEXT
-1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is Farm View heading.
+1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is stop transition.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
