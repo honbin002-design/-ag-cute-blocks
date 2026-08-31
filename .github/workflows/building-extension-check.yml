@@ -19,6 +19,7 @@ jobs:
           node --input-type=module --check < building-extension-runtime.js
           node --input-type=module --check < procedural-material-runtime.js
           node --input-type=module --check < collision-cache-runtime.js
+          node --input-type=module --check < raycast-budget-runtime.js
           node --input-type=module --check < character-polish-runtime.js
           node --input-type=module --check < weather-visual-runtime.js
           node --input-type=module --check < daily-progression-system.js
@@ -27,9 +28,11 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
           collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8')
+          ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8')
           polish=pathlib.Path('character-polish-runtime.js').read_text(encoding='utf-8')
           weather=pathlib.Path('weather-visual-runtime.js').read_text(encoding='utf-8')
           daily=pathlib.Path('daily-progression-system.js').read_text(encoding='utf-8')
@@ -40,20 +43,26 @@ jobs:
           must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","invalidateGeometry","schema:3"]
           must_mat=["kind==='tile'","kind==='ceramic'","MeshStandardMaterial","MATERIAL_SCHEMA=2"]
           must_collision=['geometryToken','geometryInvalidations','explicitInvalidations','invalidateGeometry:invalidate','__agcbGeometryRevision']
+          must_ray=['const nearby=[]','nearby.length=0','bufferReuses','persistent camera target registry']
+          must_app=['cameraTargets=[]','cameraTargetSet=new Set()','registerCameraTarget','unregisterCameraTarget','collisionPoint=new THREE.Vector3()','collisionBox=new THREE.Box3()','camRay.intersectObjects(cameraTargets,false)','pets.forEach','__AGCB_WORLD_HOTPATH','moveForward.set','desiredCamera.set']
           must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','schema:3']
           must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
           must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
           must_care=["w==='rain'||w==='thunderstorm'"]
           must_index=['option value="thunderstorm"','雷雨只有柔和視覺效果']
-          missing=[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]+[x for x in must_collision if x not in collision]+[x for x in must_polish if x not in polish]+[x for x in must_weather if x not in weather]+[x for x in must_daily if x not in daily]+[x for x in must_care if x not in care]+[x for x in must_index if x not in index]
+          missing=[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]+[x for x in must_collision if x not in collision]+[x for x in must_ray if x not in ray]+[x for x in must_app if x not in app]+[x for x in must_polish if x not in polish]+[x for x in must_weather if x not in weather]+[x for x in must_daily if x not in daily]+[x for x in must_care if x not in care]+[x for x in must_index if x not in index]
+          if "const tar=[];blocks.forEach" in app: missing.append('legacy per-frame camera target rebuild still present')
+          if "objects.filter(o=>o.userData.pet).forEach" in app: missing.append('legacy per-frame pet filter still present')
+          if "const p=new THREE.Vector3(x,1,z)" in app: missing.append('legacy per-collision Vector3 allocation still present')
+          if "new THREE.Box3().setFromObject" in app: missing.append('legacy per-collision Box3 allocation still present')
           if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
           if "import './character-polish-runtime.js';" not in boot: missing.append('bootstrap character polish import')
           if "import './weather-visual-runtime.js';" not in boot: missing.append('bootstrap weather visual import')
           if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
           if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
           if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
-          if "runtime31" not in sw: missing.append('runtime31 cache version')
+          if "runtime32" not in sw: missing.append('runtime32 cache version')
           if missing:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
-          print('Building, O(1) collision cache, articulated polish and gentle thunderstorm invariants passed.')
+          print('Building, O(1) collision cache, persistent camera hot path, articulated polish and gentle thunderstorm invariants passed.')
