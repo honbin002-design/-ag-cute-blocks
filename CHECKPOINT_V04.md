@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime52`
+Active PWA cache: `ag-cute-blocks-v045-runtime53`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -233,9 +233,18 @@ Active PWA cache: `ag-cute-blocks-v045-runtime52`
 - The current KayKit technical GLB has integrated clothing and therefore must not be presented as the underwear inspection mode or as the finished paper-doll implementation. A free modular base/outfit source or an original no-cost authored asset must be connected before that visual claim is made.
 - Animals are held to the same standard: replace primitive assembled livestock/pet geometry with connected, species-readable rigged or continuous-mesh bodies and correct joint-driven locomotion. Current animal models remain intermediate.
 
-## NEXT
-1. Continue source selection/authoring for a genuine modular connected character: underwear inspection base, separate daily/formal outfit layers, accessories and dressing-room persistence.
-2. Replace primitive-assembled dog/cat/cow/sheep/chicken bodies with connected species-specific rigged/continuous meshes and preserve actual-distance gait.
-3. Concentrated iPhone review of runtime52 Farm View horizontal/vertical orbit and technical avatar visibility; do not re-test locked movement + Jump multi-touch.
-4. Replace the technical CC0 source with original AG farm-life art when an approved no-cost authoring route is available.
-5. After device evidence, continue incremental persistence and chunk migration without replacing existing saves.
+## Runtime53 — AG 原創連續人物基礎與內衣褲檢視
++- 新增 `ag-original-character-runtime.js`，由 AG 自製連續表面網格生成角色身體，不再將圓柱、球體、棒子當作身體主體拼接。
++- 新人物建立流程優先使用 AG 原創 SkinnedMesh，建立軀幹、頸部、頭部、肩膀、手臂、手掌、髖部、大腿、小腿與腳的骨架綁定。
++- 新預設外型為 `underwear` 內衣褲檢視，讓肩肘髖膝、手腳和關節連接可以被看見；既有保存的服裝欄位仍可讀取。
++- 建立紙娃娃 slot 與穩定 asset ID：bodyBase、underlayer、top、bottom、dress、shoes、hair、hat、glasses、accessory。
++- 目前仍是 AG 原創中間版本，不宣告 Final Character Art；五官、比例、衣服質感與 iPhone 視覺自然度仍需精修和實機驗收。
++- 動物連續身體與物種骨架尚未完成；既有動物模型仍是 intermediate art。
++
++## NEXT
++1. 精修 runtime53 原創人物的身體比例、肩肘髖膝連接、手腳接地、五官與髮型，維持內衣褲檢視作為美術基準。
++2. 把 daily outfit、formal outfit、shoes、hair、hat、glasses、accessory 做成真正可替換的紙娃娃層與更衣室入口，並保留 local save。
++3. 以同樣 AG 原創連續網格與骨架方法製作狗、貓、牛、羊、雞的物種身體與關節步態。
++4. 集中 iPhone 驗收人物視覺、Farm View 左右／上下／遠近操作，以及人物 turn／stop；不重測已通過的移動＋Jump 多點觸控。
++5. 動物與人物批次穩定後，再繼續 incremental persistence / chunk migration。
++
