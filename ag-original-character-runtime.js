@@ -93,7 +93,7 @@ function createOriginalCharacter(c){
   const thighL=bone('agcb-thigh-l',hips,-.18,-.13,0),shinL=bone('agcb-shin-l',thighL,0,-.35,0),footL=bone('agcb-foot-l',shinL,0,-.25,-.08);
   const thighR=bone('agcb-thigh-r',hips,.18,-.13,0),shinR=bone('agcb-shin-r',thighR,0,-.35,0),footR=bone('agcb-foot-r',shinR,0,-.25,-.08);
   const bones=[root,hips,spine,chest,neck,head,upperL,foreL,handL,upperR,foreR,handR,thighL,shinL,footL,thighR,shinR,footR];
-  const pairs=[[[0,.55,0],[0,1.84,0]],[[0,1.84,0],[0,2.08,0]],[[-.25,1.4,0],[-.46,.78,0]],[[.25,1.4,0],[.46,.78,0]],[[-.18,.75,0],[-.18,.28,0]],[ [.18,.75,0],[.18,.28,0]],[[-.18,.28,0],[-.18,.05,-.08]],[[.18,.28,0],[.18,.05,-.08]]];
+  const pairs=[[[0,0,0],[0,.78,0]],[[0,.78,0],[0,1.20,0]],[[0,1.20,0],[0,1.48,0]],[[0,1.48,0],[0,1.68,0]],[[0,1.68,0],[0,1.84,0]],[[0,1.84,0],[0,2.08,0]],[[-.34,1.36,0],[-.46,1.08,0]],[[-.46,1.08,0],[-.46,.78,0]],[[-.46,.78,0],[-.46,.70,0]],[[.34,1.36,0],[.46,1.08,0]],[[.46,1.08,0],[.46,.78,0]],[[.46,.78,0],[.46,.70,0]],[[-.18,.78,0],[-.18,.64,0]],[[-.18,.64,0],[-.18,.29,0]],[[-.18,.29,0],[-.18,.07,-.08]],[[.18,.78,0],[.18,.64,0]],[[.18,.64,0],[.18,.29,0]],[[.18,.29,0],[.18,.07,-.08]]];
   bindConnectedBody(mesh,bones,pairs);const extras=addFaceAndHair(visual,c,{head});const slots=addPaperDollMarkers(visual,c);
   const parts={leftArm:upperL,rightArm:upperR,leftLeg:shinL,rightLeg:shinR,legs:[shinL,shinR],body:chest,bib:slots.top};
   const g=new THREE.Group();g.name='agcb-original-character';g.add(visual);g.userData={agOriginal:true,assetStatus:'AG_ORIGINAL_CONNECTED_BODY',visual,animatedParts:parts,baseBodyY:chest.position.y,body:chest,legs:parts.legs,paperDollSlots:slots,face:extras.face,hair:extras.hair};
