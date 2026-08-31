@@ -14,13 +14,15 @@ function stairsGeometry(){
 function upgradeStairs(mesh){if(!mesh?.isMesh||mesh.userData?.kind!=='block')return false;if(mesh.userData.shape!=='stairs')return false;if(mesh.userData.stairsGeometry)return false;mesh.geometry?.dispose?.();mesh.geometry=stairsGeometry();mesh.userData.stairsGeometry=true;return true}
 function selectionButton(value,icon,label){const b=document.createElement('button');b.className='item agcbExtensionItem';b.dataset.agcbBuildValue=value;b.innerHTML=`${icon}<small>${label}</small>`;return b}
 function categoryName(){return document.querySelector('#cats .cat.on')?.textContent?.trim()||''}
-function syncSelectionStyles(){document.querySelectorAll('.agcbExtensionItem').forEach(b=>b.classList.toggle('on',b.dataset.agcbBuildValue===(STATE.shape||STATE.material)))}
+function activeExtension(){return STATE.shape||STATE.material}
+function syncSelectionStyles(){const active=activeExtension();if(active)document.querySelectorAll('#items .item:not(.agcbExtensionItem)').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.agcbExtensionItem').forEach(b=>b.classList.toggle('on',b.dataset.agcbBuildValue===active))}
+function choose(kind,value){if(kind==='shape'){STATE.shape=value;STATE.material=null}else{STATE.material=value;STATE.shape=null}syncSelectionStyles()}
 function inject(){
   const items=document.querySelector('#items');if(!items)return;const cat=categoryName();STATE.lastCategory=cat;
-  if(cat==='形狀'&&!items.querySelector('[data-agcb-build-value="stairs"]')){const b=selectionButton('stairs','🪜','樓梯');b.onclick=e=>{e.stopPropagation();STATE.shape='stairs';STATE.material=null;syncSelectionStyles()};items.appendChild(b)}
+  if(cat==='形狀'&&!items.querySelector('[data-agcb-build-value="stairs"]')){const b=selectionButton('stairs','🪜','樓梯');b.onclick=e=>{e.stopPropagation();choose('shape','stairs')};items.appendChild(b)}
   if(cat==='建材'){
-    if(!items.querySelector('[data-agcb-build-value="tile"]')){const b=selectionButton('tile','▦','磁磚');b.onclick=e=>{e.stopPropagation();STATE.material='tile';STATE.shape=null;syncSelectionStyles()};items.appendChild(b)}
-    if(!items.querySelector('[data-agcb-build-value="ceramic"]')){const b=selectionButton('ceramic','◫','陶瓷');b.onclick=e=>{e.stopPropagation();STATE.material='ceramic';STATE.shape=null;syncSelectionStyles()};items.appendChild(b)}
+    if(!items.querySelector('[data-agcb-build-value="tile"]')){const b=selectionButton('tile','▦','磁磚');b.onclick=e=>{e.stopPropagation();choose('material','tile')};items.appendChild(b)}
+    if(!items.querySelector('[data-agcb-build-value="ceramic"]')){const b=selectionButton('ceramic','◫','陶瓷');b.onclick=e=>{e.stopPropagation();choose('material','ceramic')};items.appendChild(b)}
   }
   syncSelectionStyles();
 }
@@ -42,4 +44,4 @@ if(add)add.addEventListener('click',()=>{
 function restore(){let n=0;for(const b of blocks())if(upgradeStairs(b))n++;return n}
 let scans=0;function loop(){requestAnimationFrame(loop);if(++scans%90===0)restore()}
 restore();requestAnimationFrame(loop);
-globalThis.__AGCB_BUILD_EXTENSIONS={schema:1,state:STATE,inject,restore,stairsGeometry,observer:mo};
+globalThis.__AGCB_BUILD_EXTENSIONS={schema:2,state:STATE,inject,restore,stairsGeometry,observer:mo};
