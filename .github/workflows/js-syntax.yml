@@ -80,3 +80,24 @@ jobs:
           ! grep -q "daily-progression-runtime" bootstrap-v045.js
           ! grep -q "daily-progression-runtime" sw.js
           echo "Direct core daily progression wiring passed."
+      - name: Verify shop rewards become buildable
+        shell: python
+        run: |
+          import pathlib,re,sys
+          economy=pathlib.Path('economy-system.js').read_text(encoding='utf-8')
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          ids=re.findall(r"\{id:'([^']+)',name:'[^']+',price:\d+,kind:'[^']+',icon:'[^']+'\}",economy)
+          expected={'sapling-peach':'peachTree','pet-bed-round':'petBedRound','lamp-cloud':'cloudLamp','arch-flower':'flowerArch','swing-garden':'swingGarden','bed-star':'starBed'}
+          failures=[]
+          for shop_id in ids:
+            build=expected.get(shop_id)
+            if not build: failures.append(f'unmapped shop item: {shop_id}'); continue
+            if f"'{shop_id}':['{build}'" not in app: failures.append(f'{shop_id} missing SHOP_BUILD_UNLOCKS mapping to {build}')
+            if build not in app: failures.append(f'{build} missing from app runtime')
+          for required in ('petBedRound','cloudLamp','flowerArch','swingGarden','starBed'):
+            if f"t==='{required}'" not in app and required!='starBed': failures.append(f'{required} missing geometry branch')
+          if "t==='bed'||t==='starBed'" not in app: failures.append('starBed geometry branch missing')
+          if "syncShopCatalog()" not in app or "category='收藏'" not in app: failures.append('shop catalog refresh path missing')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Shop reward buildability checks passed.')
