@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime48`
+Active PWA cache: `ag-cute-blocks-v045-runtime49`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -196,8 +196,16 @@ Active PWA cache: `ag-cute-blocks-v045-runtime48`
 - Runtime45-48 customization, proportion and facial-depth work are retained as intermediate experiments, but none of them is Final Character Art or a user visual PASS.
 - Do not continue making incremental cylinder/capsule edits to `createCuteChildAvatar()` as if they could reach the requested reference quality.
 - The next character milestone is a real rigged GLB/GLTF asset with continuous skinned anatomy, proper joint deformation and replaceable clothing/hair/accessory layers.
-- A free CC0 low-poly asset may be used only as a technical rig/loader proof; it must not be presented as the AG Cute Blocks final character style. The current repository has no suitable character asset or GLB/GLTF loader yet.
+- A free CC0 low-poly asset may be used only as a technical rig/loader proof; it must not be presented as the AG Cute Blocks final character style. Runtime49 now has the loader and fixed-source technical asset integrated; the source remains a temporary structural proof, not final AG art.
+
+## Rigged GLB technical replacement — runtime49
+- Added `character-asset-runtime.js` with GLTFLoader and SkeletonUtils.
+- The current player can receive a fixed-source CC0 GLB with continuous skinned meshes, a real skeleton and animation clips; the old primitive avatar remains only as a load-failure fallback.
+- Gender selects different technical source variants, while existing player root position, heading, settings and save path remain unchanged.
+- Asset source and license are recorded in `ASSET_LICENSES.md`; source commit is pinned for reproducibility.
+- This is **INTEGRATED / CI PASS / DEPLOYED**, not a REAL DEVICE PASS and not Final Character Art. The technical source is not the AG original style.
 
 ## NEXT
-1. Resolve the character asset migration gate: obtain a suitable original/clearly licensed rigged GLB/GLTF asset or an approved asset-authoring route; do not request another iPhone visual test of the current primitive avatar.
-2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
+1. Concentrated iPhone structural review of runtime49: confirm the connected GLB model loads, no primitive body is visible, and basic movement/heading remain usable; do not call this Final Art.
+2. Replace the technical CC0 source with an original AG farm-life character asset when an approved no-cost authoring route is available.
+3. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
