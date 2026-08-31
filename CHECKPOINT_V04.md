@@ -191,6 +191,13 @@ Active PWA cache: `ag-cute-blocks-v045-runtime48`
 - 2026-08-31: iPhone user added the GitHub Pages app to the Home Screen and opened it from the Home Screen successfully; the game screen was visible and displayed V0.4.5.
 - **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
 
+## User visual rejection / asset migration gate — 2026-08-31
+- The user reviewed the deployed avatar and rejected it because the underlying character is visibly assembled from separate primitive cylinders/capsules/spheres; the joints do not read as continuous anatomy.
+- Runtime45-48 customization, proportion and facial-depth work are retained as intermediate experiments, but none of them is Final Character Art or a user visual PASS.
+- Do not continue making incremental cylinder/capsule edits to `createCuteChildAvatar()` as if they could reach the requested reference quality.
+- The next character milestone is a real rigged GLB/GLTF asset with continuous skinned anatomy, proper joint deformation and replaceable clothing/hair/accessory layers.
+- A free CC0 low-poly asset may be used only as a technical rig/loader proof; it must not be presented as the AG Cute Blocks final character style. The current repository has no suitable character asset or GLB/GLTF loader yet.
+
 ## NEXT
-1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is runtime48 premium-chibi visual review and customization persistence.
+1. Resolve the character asset migration gate: obtain a suitable original/clearly licensed rigged GLB/GLTF asset or an approved asset-authoring route; do not request another iPhone visual test of the current primitive avatar.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
