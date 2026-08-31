@@ -11,7 +11,12 @@ function stairsGeometry(){
   s.moveTo(-.5,-.5);s.lineTo(.5,-.5);s.lineTo(.5,.5);s.lineTo(.25,.5);s.lineTo(.25,.25);s.lineTo(0,.25);s.lineTo(0,0);s.lineTo(-.25,0);s.lineTo(-.25,-.25);s.lineTo(-.5,-.25);s.closePath();
   const g=new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false});g.translate(0,0,-.5);g.computeVertexNormals();return g;
 }
-function upgradeStairs(mesh){if(!mesh?.isMesh||mesh.userData?.kind!=='block')return false;if(mesh.userData.shape!=='stairs')return false;if(mesh.userData.stairsGeometry)return false;mesh.geometry?.dispose?.();mesh.geometry=stairsGeometry();mesh.userData.stairsGeometry=true;return true}
+function upgradeStairs(mesh){
+  if(!mesh?.isMesh||mesh.userData?.kind!=='block'||mesh.userData.shape!=='stairs'||mesh.userData.stairsGeometry)return false;
+  mesh.geometry?.dispose?.();mesh.geometry=stairsGeometry();mesh.userData.stairsGeometry=true;
+  globalThis.__AGCB_COLLISION_CACHE?.invalidateGeometry?.(mesh);
+  return true;
+}
 function selectionButton(value,icon,label){const b=document.createElement('button');b.className='item agcbExtensionItem';b.dataset.agcbBuildValue=value;b.innerHTML=`${icon}<small>${label}</small>`;return b}
 function categoryName(){return document.querySelector('#cats .cat.on')?.textContent?.trim()||''}
 function activeExtension(){return STATE.shape||STATE.material}
@@ -44,4 +49,4 @@ if(add)add.addEventListener('click',()=>{
 function restore(){let n=0;for(const b of blocks())if(upgradeStairs(b))n++;return n}
 let scans=0;function loop(){requestAnimationFrame(loop);if(++scans%90===0)restore()}
 restore();requestAnimationFrame(loop);
-globalThis.__AGCB_BUILD_EXTENSIONS={schema:2,state:STATE,inject,restore,stairsGeometry,observer:mo};
+globalThis.__AGCB_BUILD_EXTENSIONS={schema:3,state:STATE,inject,restore,stairsGeometry,observer:mo};
