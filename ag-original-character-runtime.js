@@ -95,20 +95,20 @@ function applyPaperDoll(visual,c,bones,slots){
   roundGarment(slots.underlayer,'agcb-underlayer-bottom',UNDERWEAR,[0,-.04,0],[.30,.18,.24]);
   if(c.outfit==='underwear')return;
   slots.top.visible=true;
-  slots.top.add(bones.chest);
-  roundGarment(slots.top,'agcb-daily-top',TOP[c.top]||TOP.pink,[0,-.25,0],[.38,.42,.29]);
-  if(c.outfit==='hoodie')roundGarment(slots.top,'agcb-hoodie-pocket',0x6d9fca,[0,-.34,-.27],[.17,.10,.035]);
+  slots.top.userData.anchor='agcb-chest';
+  roundGarment(bones.chest,'agcb-daily-top',TOP[c.top]||TOP.pink,[0,-.25,0],[.38,.42,.29]);
+  if(c.outfit==='hoodie')roundGarment(bones.chest,'agcb-hoodie-pocket',0x6d9fca,[0,-.34,-.27],[.17,.10,.035]);
   if(c.outfit==='overall'){
     slots.bottom.visible=true;
-    slots.bottom.add(bones.hips);
-    roundGarment(slots.bottom,'agcb-overall-bottom',BOTTOM[c.bottom]||BOTTOM.denim,[0,-.02,0],[.36,.25,.27]);
-    roundGarment(slots.top,'agcb-overall-bib',BOTTOM[c.bottom]||BOTTOM.denim,[0,-.18,-.25],[.20,.25,.045]);
+    slots.bottom.userData.anchor='agcb-hips';
+    roundGarment(bones.hips,'agcb-overall-bottom',BOTTOM[c.bottom]||BOTTOM.denim,[0,-.02,0],[.36,.25,.27]);
+    roundGarment(bones.chest,'agcb-overall-bib',BOTTOM[c.bottom]||BOTTOM.denim,[0,-.18,-.25],[.20,.25,.045]);
   }else if(c.outfit==='dress'){
     slots.dress.visible=true;
-    slots.dress.add(bones.hips);
+    slots.dress.userData.anchor='agcb-hips';
     const dressMat=new THREE.MeshStandardMaterial({color:TOP[c.top]||TOP.pink,roughness:.84});
     const dress=new THREE.Mesh(new THREE.CylinderGeometry(.34,.46,.54,24),dressMat);
-    dress.name='agcb-formal-dress';dress.position.set(0,-.18,0);dress.castShadow=true;slots.dress.add(dress);
+    dress.name='agcb-formal-dress';dress.position.set(0,-.18,0);dress.castShadow=true;bones.hips.add(dress);
   }
   slots.shoes.visible=true;
   const leftShoe=roundGarment(slots.shoes,'agcb-shoe-l',0x665f5b,[0,-.04,-.08],[.20,.12,.30]);
