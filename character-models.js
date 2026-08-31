@@ -11,6 +11,8 @@ function cone(parent,r,h,x,y,z,color,rot=[0,0,0]){const m=new THREE.Mesh(new THR
 export function createCuteChildAvatar(style='girl',options={}){
   const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};
   const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');
+  const original=globalThis.__AGCB_CREATE_ORIGINAL_AVATAR?.(c,options);
+  if(original){original.userData={...original.userData,avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'ag-original-connected-v1',pose:'idle'};LIVE_AVATARS.add(original);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(original,pose);return original;}
   const g=new THREE.Group(),girl=c.gender==='girl';
   const skin=mat(options.skinColor??SKIN_PALETTE[c.skin],.9),hair=mat(options.hairColor??HAIR_PALETTE[c.hair],.93),shirt=mat(options.shirtColor??TOP_PALETTE[c.top],.88),denim=mat(options.bottomColor??BOTTOM_PALETTE[c.bottom],.9),cream=mat(0xfff3d8,.9),sock=mat(0xf8f4ec,.92),legMat=c.outfit==='dress'?skin:denim;
   // Head/ears/hair silhouette: rounded farm-life chibi proportions, front is local -Z.
@@ -81,7 +83,7 @@ export function animateCuteCharacter(group,time,moving=false,speed=1){
 }
 
 export const AVATAR_CUSTOMIZATION_SCHEMA=3;
-export const DEFAULT_AVATAR_CUSTOMIZATION={schema:3,gender:'girl',body:'round',skin:'light',hairStyle:'bob',hair:'chestnut',outfit:'overall',top:'pink',bottom:'denim',hat:'none',glasses:'none',accessory:'none'};
+export const DEFAULT_AVATAR_CUSTOMIZATION={schema:3,gender:'girl',body:'round',skin:'light',hairStyle:'bob',hair:'chestnut',outfit:'underwear',top:'pink',bottom:'denim',hat:'none',glasses:'none',accessory:'none'};
 const SKIN_PALETTE={light:0xf2c5a5,warm:0xc88963,deep:0x8c5a3c,rosy:0xf0b09e};
 const HAIR_PALETTE={chestnut:0x68483b,black:0x2c2528,honey:0xb87845,plum:0x543c67};
 const TOP_PALETTE={pink:0xf1a4b5,sky:0x74afd7,mint:0x8acbb9,lavender:0xbfa4e7};
@@ -90,7 +92,7 @@ export function normalizeAvatarCustomization(input={},legacyStyle='girl'){
   const src=input&&typeof input==='object'?input:{};
   const pick=(v,allowed,fallback)=>allowed.includes(v)?v:fallback;
   const gender=src.gender==='boy'||src.gender==='girl'?src.gender:legacyStyle==='boy'?'boy':'girl';
-  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:3,gender,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:pick(src.hairStyle,['bob','short','long','curly','ponytail'],gender==='girl'?'bob':'short'),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:pick(src.outfit,['overall','dress','hoodie'],'overall'),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
+  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:3,gender,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:pick(src.hairStyle,['bob','short','long','curly','ponytail'],gender==='girl'?'bob':'short'),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:pick(src.outfit,['underwear','overall','dress','hoodie'],Object.prototype.hasOwnProperty.call(src,'outfit')?'overall':'underwear'),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
 }
 function addAvatarAccessories(g,c,hair,shirt){
   const hatMat=mat(c.hat==='beanie'?0x8bb8d8:0xf0c86d,.88),frame=mat(0x4a3d4a,.72),accent=mat(c.accessory==='scarf'?0xe8898f:0xf3c95f,.82),vest=mat(c.outfit==='hoodie'?TOP_PALETTE[c.top]:0x9a6745,.86),trim=mat(0xffd978,.72);
