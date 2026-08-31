@@ -15,6 +15,7 @@ function upgradeStairs(mesh){
   if(!mesh?.isMesh||mesh.userData?.kind!=='block'||mesh.userData.shape!=='stairs'||mesh.userData.stairsGeometry)return false;
   mesh.geometry?.dispose?.();mesh.geometry=stairsGeometry();mesh.userData.stairsGeometry=true;
   globalThis.__AGCB_COLLISION_CACHE?.invalidateGeometry?.(mesh);
+  globalThis.__AGCB_WORLD_HOTPATH?.reindexSolid?.(mesh);
   return true;
 }
 function selectionButton(value,icon,label){const b=document.createElement('button');b.className='item agcbExtensionItem';b.dataset.agcbBuildValue=value;b.innerHTML=`${icon}<small>${label}</small>`;return b}
@@ -49,4 +50,4 @@ if(add)add.addEventListener('click',()=>{
 function restore(){let n=0;for(const b of blocks())if(upgradeStairs(b))n++;return n}
 let scans=0;function loop(){requestAnimationFrame(loop);if(++scans%90===0)restore()}
 restore();requestAnimationFrame(loop);
-globalThis.__AGCB_BUILD_EXTENSIONS={schema:3,state:STATE,inject,restore,stairsGeometry,observer:mo};
+globalThis.__AGCB_BUILD_EXTENSIONS={schema:4,state:STATE,inject,restore,stairsGeometry,observer:mo};
