@@ -3,6 +3,7 @@
 import './render-performance-runtime.js';
 import './collision-cache-runtime.js';
 import './raycast-budget-runtime.js';
+import './ag-original-character-runtime.js';
 
 // Main world establishes the live scene/player/object registries used by extension runtimes.
 // Midnight progression now calls daily-progression-system.js directly inside the core app.
