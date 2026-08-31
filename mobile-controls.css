@@ -1,57 +1,104 @@
-/* AG Cute Blocks — ergonomic mobile game controls */
+/* AG Cute Blocks — ergonomic mobile game HUD v2 */
+/* Thumb zones: movement left, primary/secondary actions right, quick-build bar centered. */
 .actions{
-  right:max(18px,calc(env(safe-area-inset-right) + 10px));
-  bottom:max(102px,calc(env(safe-area-inset-bottom) + 92px));
+  right:max(20px,calc(env(safe-area-inset-right) + 12px));
+  bottom:max(104px,calc(env(safe-area-inset-bottom) + 94px));
   display:grid;
-  grid-template-columns:repeat(2,64px);
-  grid-template-rows:repeat(2,64px);
-  column-gap:14px;
-  row-gap:12px;
+  grid-template-columns:repeat(2,66px);
+  grid-template-rows:repeat(2,66px);
+  column-gap:16px;
+  row-gap:14px;
   align-items:center;
   justify-items:center;
 }
 .btn{
-  width:64px;
-  height:64px;
+  width:66px;
+  height:66px;
   border-radius:50%;
   font-size:25px;
   font-weight:900;
-  background:#fffde8ee;
-  border:2px solid #ffffffcc;
-  box-shadow:0 4px 14px #0003, inset 0 1px 0 #fff;
+  background:#fffde8f2;
+  border:2px solid #ffffffde;
+  box-shadow:0 5px 16px #0003,inset 0 1px 0 #fff;
+  -webkit-tap-highlight-color:transparent;
+  transition:filter .08s ease,box-shadow .08s ease;
+}
+/* Staggered gamepad cluster. Jump is the dominant, easiest thumb target. */
+#add{transform:translate(-9px,7px)}
+#del{transform:translate(7px,-7px)}
+#jump{transform:translate(9px,2px);width:74px;height:74px;font-size:29px;background:#fff4baf5;box-shadow:0 6px 18px #0004,inset 0 1px 0 #fff}
+#rot{transform:translate(-7px,-4px)}
+.btn:active{filter:brightness(.94)}
+#add:active{transform:translate(-9px,7px) scale(.90)}
+#del:active{transform:translate(7px,-7px) scale(.90)}
+#jump:active{transform:translate(9px,2px) scale(.90)}
+#rot:active{transform:translate(-7px,-4px) scale(.90)}
+
+/* Context interaction is a first-class action beside the main cluster, not a tiny floating utility. */
+.lifeInteract{
+  right:max(176px,calc(env(safe-area-inset-right) + 168px))!important;
+  bottom:max(154px,calc(env(safe-area-inset-bottom) + 144px))!important;
+  width:72px!important;
+  height:72px!important;
+  border:2px solid #ffffffde!important;
+  background:#fff7ccf4!important;
+  box-shadow:0 5px 16px #0003,inset 0 1px 0 #fff!important;
+  font-size:27px!important;
   -webkit-tap-highlight-color:transparent;
 }
-/* Online-game style stagger: primary jump is easiest for the thumb, utility keys sit around it. */
-#add{transform:translate(-7px,5px)}
-#del{transform:translate(5px,-5px)}
-#jump{transform:translate(7px,1px);width:70px;height:70px;font-size:27px}
-#rot{transform:translate(-5px,-3px)}
-.btn:active{transform:scale(.91)}
-#add:active{transform:translate(-7px,5px) scale(.91)}
-#del:active{transform:translate(5px,-5px) scale(.91)}
-#jump:active{transform:translate(7px,1px) scale(.91)}
-#rot:active{transform:translate(-5px,-3px) scale(.91)}
+.lifeInteract small{font-size:10px!important;line-height:11px;font-weight:900}
+.lifeInteract:active{transform:scale(.90)}
 
-/* Give the movement thumb a slightly larger target without crowding the build catalog. */
-.joy{
-  left:max(20px,calc(env(safe-area-inset-left) + 10px));
-  bottom:max(96px,calc(env(safe-area-inset-bottom) + 86px));
-  width:118px;
-  height:118px;
+/* Watering is contextual: show it above the thumb cluster as a readable pill, away from movement. */
+.waterCropBtn{
+  left:auto!important;
+  right:max(172px,calc(env(safe-area-inset-right) + 164px))!important;
+  bottom:max(236px,calc(env(safe-area-inset-bottom) + 226px))!important;
+  min-height:48px!important;
+  min-width:104px!important;
+  padding:10px 14px!important;
+  border:2px solid #ffffffd8!important;
+  border-radius:24px!important;
+  font-size:12px!important;
+  box-shadow:0 4px 14px #0003!important;
 }
-.knob{left:34px;top:34px;width:46px;height:46px}
+
+/* Movement zone stays generous and visually separate from actions. */
+.joy{
+  left:max(22px,calc(env(safe-area-inset-left) + 12px));
+  bottom:max(98px,calc(env(safe-area-inset-bottom) + 88px));
+  width:122px;
+  height:122px;
+  border-width:3px;
+}
+.knob{left:35px;top:35px;width:48px;height:48px}
+
+/* The build hotbar owns the safe center lane and never extends under either thumb zone. */
+.catalog{
+  width:min(calc(100vw - 370px),680px)!important;
+  min-width:250px;
+  bottom:max(8px,env(safe-area-inset-bottom))!important;
+}
+.cats,.items{gap:7px!important}
+.item{min-width:58px!important;height:52px!important}
+.cat{padding:6px 10px!important}
 
 @media(max-height:430px){
   .actions{
-    right:max(14px,calc(env(safe-area-inset-right) + 8px));
+    right:max(15px,calc(env(safe-area-inset-right) + 8px));
     bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));
-    grid-template-columns:repeat(2,58px);
-    grid-template-rows:repeat(2,58px);
-    column-gap:12px;
-    row-gap:10px;
+    grid-template-columns:repeat(2,60px);
+    grid-template-rows:repeat(2,60px);
+    column-gap:13px;
+    row-gap:11px;
   }
-  .btn{width:58px;height:58px;font-size:23px}
-  #jump{width:64px;height:64px;font-size:25px}
-  .joy{width:104px;height:104px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px))}
-  .knob{left:29px;top:29px;width:42px;height:42px}
+  .btn{width:60px;height:60px;font-size:23px}
+  #jump{width:68px;height:68px;font-size:26px}
+  .lifeInteract{right:max(156px,calc(env(safe-area-inset-right) + 148px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:64px!important;height:64px!important;font-size:24px!important}
+  .waterCropBtn{right:max(151px,calc(env(safe-area-inset-right) + 143px))!important;bottom:max(202px,calc(env(safe-area-inset-bottom) + 192px))!important;min-height:42px!important;padding:8px 11px!important;font-size:10px!important}
+  .joy{width:108px;height:108px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px))}
+  .knob{left:30px;top:30px;width:44px;height:44px}
+  .catalog{width:min(calc(100vw - 330px),610px)!important;min-width:220px}
+  .item{min-width:50px!important;height:44px!important}
+  .cat{padding:5px 8px!important}
 }
