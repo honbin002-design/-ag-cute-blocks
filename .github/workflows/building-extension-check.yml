@@ -22,6 +22,7 @@ jobs:
           node --input-type=module --check < raycast-budget-runtime.js
           node --input-type=module --check < character-polish-runtime.js
           node --input-type=module --check < character-models.js
+          node --input-type=module --check < character-asset-runtime.js
           node --input-type=module --check < pet-grounding-runtime.js
           node --input-type=module --check < animal-models.js
           node --input-type=module --check < weather-visual-runtime.js
@@ -38,6 +39,7 @@ jobs:
           ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8')
           polish=pathlib.Path('character-polish-runtime.js').read_text(encoding='utf-8')
           character=pathlib.Path('character-models.js').read_text(encoding='utf-8')
+          asset=pathlib.Path('character-asset-runtime.js').read_text(encoding='utf-8')
           grounding=pathlib.Path('pet-grounding-runtime.js').read_text(encoding='utf-8')
           animal=pathlib.Path('animal-models.js').read_text(encoding='utf-8')
           weather=pathlib.Path('weather-visual-runtime.js').read_text(encoding='utf-8')
@@ -73,6 +75,9 @@ jobs:
           if 'blocks.values()' in solid_body: missing.append('solidAt still scans all blocks')
           if 'for(const g of objects)' in solid_body: missing.append('solidAt still scans all objects')
           if 'const bucket=solidGrid.get' not in solid_body: missing.append('solidAt does not query spatial bucket')
+          if 'GLTFLoader' not in asset or 'SkeletonUtils' not in asset or 'continuous-skinned-mesh' not in asset: missing.append('rigged avatar asset loader markers missing')
+          if "import './character-asset-runtime.js';" not in boot: missing.append('bootstrap rigged avatar asset import')
+          if "character-asset-runtime.js" not in sw: missing.append('service worker rigged avatar asset cache entry')
           if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
           if "import './character-polish-runtime.js';" not in boot: missing.append('bootstrap character polish import')
           if "import './pet-grounding-runtime.js';" not in boot: missing.append('bootstrap pet grounding import')

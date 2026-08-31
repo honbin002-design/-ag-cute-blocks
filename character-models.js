@@ -31,7 +31,7 @@ export function createCuteChildAvatar(style='girl',options={}){
   ellipsoid(g,.35,0,.78,0,denim,[1.05,.52,.78],20);if(girl){const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.38,.46,.24,20),denim);skirt.position.set(0,.72,0);skirt.castShadow=true;g.add(skirt)}
   const leftLeg=capsule(g,.135,.54,-.17,.43,0,legMat),rightLeg=capsule(g,.135,.54,.17,.43,0,legMat);ellipsoid(leftLeg,.115,0,-.245,-.01,sock,[1,.62,1],14);ellipsoid(rightLeg,.115,0,-.245,-.01,sock,[1,.62,1],14);ellipsoid(leftLeg,.175,0,-.31,-.055,shoe,[1.06,.64,1.48],18);ellipsoid(rightLeg,.175,0,-.31,-.055,shoe,[1.06,.64,1.48],18);ellipsoid(leftLeg,.158,0,-.375,-.070,sole,[1.06,.28,1.46],16);ellipsoid(rightLeg,.158,0,-.375,-.070,sole,[1.06,.28,1.46],16);
   addAvatarAccessories(g,c,hair,shirt);const visual=new THREE.Group();while(g.children.length)visual.add(g.children[0]);g.add(visual);const bodyScale={round:[1.05,1,1.02],tall:[.95,1.07,.97],petite:[.94,.94,.95]}[c.body]||[1,1,1];g.scale.set(...bodyScale);g.userData={avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'premium-chibi-v4',visual,pose:'idle',animatedParts:{leftArm,rightArm,leftLeg,rightLeg,bib}};
-  LIVE_AVATARS.add(g);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(g,pose);return g;
+  LIVE_AVATARS.add(g);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(g,pose);globalThis.__AGCB_UPGRADE_AVATAR?.(g,c);return g;
 }
 
 function paw(parent,x,z,color,front=false){const p=ellipsoid(parent,.085,x,.075,z,color,[1.05,.48,front?1.42:1.32],12);ellipsoid(parent,.026,x-.032,.086,z-.080,color,[.62,.40,.72],8);ellipsoid(parent,.026,x+.032,.086,z-.080,color,[.62,.40,.72],8);return p}
@@ -51,7 +51,7 @@ export function createCuteCat(variant='gray'){const p={gray:{body:0xaeb4bd,detai
 
 export function setCutePetState(group,state='idle',until=0){const u=group?.userData;if(!u?.petType)return;u.petState=state;u.stateUntil=until||0;if(state==='sleep'&&group.parent&&!u.holdPosition)u.holdPosition=group.parent.position.clone();if(state!=='sleep')u.holdPosition=null}
 export function setCuteCharacterPose(group,pose='idle'){
-  const u=group?.userData;if(!u?.animatedParts)return;const p=u.animatedParts,v=u.visual;u.pose=pose;group.onBeforeRender=null;
+  const u=group?.userData;if(!u?.animatedParts)return;const p=u.animatedParts,v=u.visual;u.pose=pose;globalThis.__AGCB_ASSET_SET_POSE?.(group,pose);group.onBeforeRender=null;
   if(v){v.position.set(0,0,0);v.rotation.set(0,0,0)}p.leftArm.rotation.set(0,0,-.11);p.rightArm.rotation.set(0,0,.11);p.leftLeg.rotation.set(0,0,0);p.rightLeg.rotation.set(0,0,0);
   if(pose==='sit'||pose==='swing'||pose==='dine'){p.leftLeg.rotation.x=-1.22;p.rightLeg.rotation.x=-1.22;p.leftArm.rotation.x=pose==='dine'?-1.02:-.18;p.rightArm.rotation.x=pose==='dine'?-1.02:-.18}
   else if(pose==='lie'||pose==='sleep'){if(v){v.rotation.z=Math.PI/2;v.position.set(.66,0,0)}p.leftArm.rotation.x=pose==='sleep'?.34:.08;p.rightArm.rotation.x=pose==='sleep'?.26:-.08;p.leftLeg.rotation.x=.05;p.rightLeg.rotation.x=-.05}
@@ -65,7 +65,7 @@ function petAnimationDue(u,time,moving){
   if(u._lastAnimAt&&time-u._lastAnimAt<gap)return false;u._lastAnimAt=time;return true;
 }
 export function animateCuteCharacter(group,time,moving=false,speed=1){
-  const u=group?.userData,p=u?.animatedParts;if(!p)return;if(['sit','lie','sleep','swing','dine'].includes(u.pose))return;
+  const u=group?.userData,p=u?.animatedParts;if(!p)return;if(u.assetMixer){const dt=u._assetLastTime?Math.min(.12,Math.max(0,(time-u._assetLastTime)/1000)):0;u._assetLastTime=time;if(dt)u.assetMixer.update(dt);if(!['sit','lie','sleep','swing','dine'].includes(u.pose))globalThis.__AGCB_ASSET_SET_MOTION?.(group,moving?'walk':'idle');return}if(['sit','lie','sleep','swing','dine'].includes(u.pose))return;
   if(!petAnimationDue(u,time,moving))return;
   if(u.petType){
     if(u.stateUntil&&time>u.stateUntil){u.petState='idle';u.stateUntil=0;u.holdPosition=null}
