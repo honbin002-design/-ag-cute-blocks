@@ -13,6 +13,9 @@ import './heading-runtime.js';
 import './furniture-safety-runtime.js';
 import './procedural-material-runtime.js';
 
+// Mobile control presentation attaches after the HUD exists, before input handlers.
+import './mobile-controls-runtime.js';
+
 // Input and life extensions attach after the main HUD/world handlers exist.
 import './mobile-input-runtime.js';
 import './animal-life-runtime.js';
