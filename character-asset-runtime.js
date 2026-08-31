@@ -6,8 +6,8 @@ import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examp
 const RIGGED_AVATAR_SCHEMA=1;
 const SOURCE_COMMIT='672074b73ba276876a19e8816ecdc5241817ab47';
 const SOURCES={
-  girl:'https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/'+SOURCE_COMMIT+'/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb',
-  boy:'https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/'+SOURCE_COMMIT+'/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb'
+  girl:'https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/'+SOURCE_COMMIT+'/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb',
+  boy:'https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/'+SOURCE_COMMIT+'/addons/kaykit_character_pack_adventures/Characters/gltf/Barbarian.glb'
 };
 const loader=new GLTFLoader(),loaded=new Map(),pending=new Map();
 function loadVariant(key){
@@ -21,7 +21,7 @@ function bodyScale(c){return c.body==='tall'?1.04:c.body==='petite'?.91:1}
 function applyAsset(group,c,gltf){
   if(!group?.parent)return;
   const u=group.userData;if(u.assetRoot)u.visual.remove(u.assetRoot);
-  const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-rigged-avatar';
+  const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   const rawBox=new THREE.Box3().setFromObject(root),rawSize=rawBox.getSize(new THREE.Vector3());
   const scale=2.18/Math.max(rawSize.y,.001)*bodyScale(c);root.scale.setScalar(scale);root.updateMatrixWorld(true);
