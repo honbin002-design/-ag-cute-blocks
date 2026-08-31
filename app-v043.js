@@ -6,7 +6,7 @@ import {createEconomyState,addInventory,shipAllSellable,settleShipping,buyShopIt
 import {getFurnitureInteraction,furnitureAnchorWorld,furnitureExitWorld,furnitureYaw,isFurnitureInteractable} from './furniture-interaction.js';
 import {advanceDailyRecord} from './daily-progression-system.js';
 
-const VERSION='V0.4.12',WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72;
+const VERSION='V0.4.13',WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72;
 const SAVE_KEY='ag_cute_blocks_world_v04',OLD_SAVE_KEY='ag_cute_blocks_world_v03',SETTINGS_KEY='ag_cute_blocks_settings_v03',CARE_KEY='ag_cute_blocks_crop_care_v1';
 const $=s=>document.querySelector(s);
 const ui={status:$('#status'),cats:$('#cats'),items:$('#items'),cam:$('#cam'),admin:$('#admin'),panel:$('#adminPanel'),season:$('#season'),weather:$('#weather'),timeSpeed:$('#timeSpeed'),avatar:$('#avatar'),avatarBody:$('#avatarBody'),avatarSkin:$('#avatarSkin'),avatarHairStyle:$('#avatarHairStyle'),avatarHair:$('#avatarHair'),avatarOutfit:$('#avatarOutfit'),avatarTop:$('#avatarTop'),avatarBottom:$('#avatarBottom'),avatarHat:$('#avatarHat'),avatarGlasses:$('#avatarGlasses'),avatarAccessory:$('#avatarAccessory'),save:$('#saveNow'),closeAdmin:$('#closeAdmin'),add:$('#add'),del:$('#del'),jump:$('#jump'),rot:$('#rot'),joy:$('#joy'),knob:$('#knob'),clock:$('#clock')};
