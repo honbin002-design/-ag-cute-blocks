@@ -18,6 +18,16 @@ Branch: `dev-v0.1`
 - Chair/sofa sitting, bed lying, dining-chair action, garden-swing action.
 - Bed can sleep to next morning; world saves first, advances to 06:00, settles shipping, advances gentle growth/readiness, then wakes beside the bed.
 
+## Central daily progression authority
+- `daily-progression-system.js` is now the single rule authority for crop daily growth, season eligibility, rain/thunderstorm watering bonus, fruit-tree daily growth, livestock product readiness and next-day shipping settlement for snapshot-based transitions.
+- Crop watering remains gentle: an in-season crop grows without watering, watering accelerates it, and rain/thunderstorm gives the natural-rain bonus. Out-of-season crops pause rather than die.
+- Winter tree behavior is explicit in one place: orange can keep gentle winter growth; apple/peach pause winter growth.
+- `sleep-routine.js` no longer owns a separate simplified growth table; sleep-to-morning calls the central daily snapshot progression directly.
+- `daily-progression-runtime.js` bridges the older base midnight loop: it captures the live pre-midnight state, then reconciles crop/tree/livestock results to the central rule authority after the legacy loop advances the day. This prevents the old hard-coded growth amounts from becoming the final saved result while the base app is being incrementally retired.
+- `orchard-runtime.js` is now visual/interaction-only for daily growth; its former winter-orange day-growth patch was removed so oranges cannot grow twice.
+- `farming-system.js` also recognizes thunderstorm as natural farm rain.
+- CI now executes deterministic daily-rule smoke checks in addition to syntax/import checks: normal/watered/thunderstorm crop growth, season pause, winter orange/apple behavior, sheep readiness and shipping settlement.
+
 ## V0.4.5 crop care
 - Live crop registry is active.
 - Near an immature crop, a dedicated watering action appears.
@@ -53,8 +63,8 @@ Branch: `dev-v0.1`
 - `orchard-runtime.js` is loaded by the active bootstrap.
 - Fruit harvesting is guarded by the same visible fruit readiness supplied by `crop-models.js`; a mature-looking but season-ineligible tree can no longer silently yield invisible fruit.
 - When the visual fruit-ready threshold is reached, the holder is aligned to the interaction threshold so visible ripe fruit is immediately pickable.
-- Orange keeps autumn/winter fruiting behavior and receives gentle winter daily growth even though the older generic tree loop pauses trees in winter.
-- Orchard growth corrections are persisted back to the local world snapshot.
+- Daily tree growth is no longer duplicated in orchard runtime; it comes from the central daily progression authority.
+- Orchard visual-readiness corrections are persisted back to the local world snapshot.
 
 ## V0.4.5 mobile controls + smoothness
 - Original iPhone blocker: while one finger held the movement joystick, other gameplay buttons such as Jump did not reliably fire.
@@ -79,36 +89,35 @@ Branch: `dev-v0.1`
 ## Weather visuals
 - `weather-visual-runtime.js` is active and follows the existing world weather selector without changing destructive gameplay rules.
 - Rain uses lightweight screen-space streaks; snow uses drifting flakes; fog/cloudy use a soft moving haze layer.
-- Thunderstorm is now exposed as `⛈️ 雷雨` directly by the weather runtime without requiring a base-page rewrite.
+- Thunderstorm is exposed as `⛈️ 雷雨` directly by the weather runtime without requiring a base-page rewrite.
 - Thunderstorm uses denser angled rain, darker haze and brief low-intensity lightning flashes; there is no destructive lightning strike, crop damage, building damage or punishment.
 - Saved thunderstorm selection is restored after bootstrap even though the base page originally had no thunderstorm option.
-- Crop-care and sleep/day-advance paths both treat thunderstorm as natural rain so manual watering is disabled and rainy growth bonuses remain consistent in those paths.
+- Crop-care, farming, sleep and central daily progression all treat thunderstorm as natural rain.
 - Particle counts follow the renderer's live quality tier, and low tier draws the overlay every second frame to protect mobile frame time.
 
 ## Runtime activation correction
-- A runtime audit found that the live `index.html` was still directly loading the base app plus only some life extensions, while mobile-input/performance/collision/wildlife modules were merely present in the PWA cache. Cache presence alone is not accepted as proof that a runtime is active.
-- `bootstrap-v045.js` is now the single live module entrypoint.
-- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> heading/furniture safety -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife/weather extensions.
-- This prevents later index edits from silently dropping a runtime while leaving its file cached.
+- `bootstrap-v045.js` is the single live module entrypoint.
+- Bootstrap order is deterministic: renderer/collision/raycast governance -> base world -> heading/furniture safety/daily reconciliation -> mobile input -> animal/crop/orchard/furniture/sleep/wildlife/weather extensions.
+- Cache presence alone is never accepted as proof that a runtime is active.
 
 ## PWA / validation
-- PWA cache is now `ag-cute-blocks-v045-runtime14` and includes deterministic bootstrap, mobile-input, adaptive render, collision cache, camera raycast budget, heading correction, furniture safety, crop care, animal life, wildlife, orchard, weather visuals and supporting modules.
-- GitHub Actions parses every root `.js` file as an ES module and validates relative named imports.
-- Earlier runtime/weather batches passed JavaScript syntax/import validation; runtime14 still requires its own latest workflow/deployment observation before integration-complete status.
+- PWA cache is `ag-cute-blocks-v045-runtime15` at this checkpoint and explicitly includes the central daily system/runtime plus all active V0.4.5 modules.
+- GitHub Actions parses every root `.js` file as an ES module, validates relative named imports, and now executes pure daily-progression assertions.
+- Thunderstorm integration batch completed syntax/import validation successfully before this centralization batch.
 - Walk + Jump simultaneous control has real iPhone PASS evidence.
-- Other simultaneous action combinations, heading boundary behavior, furniture safe exit, thunderstorm visual quality and adaptive shadow cadence still need concentrated real-device validation later; do not re-test the already-PASS walk + jump unless a future input change could affect it.
+- The new central daily bridge/sleep path still requires CI completion and later concentrated device validation before it is called PASS.
 
 ## Explicitly not PASS yet
 - V0.4.5 as a whole still needs concentrated iPhone real-device validation before milestone PASS.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
 - Adaptive pixel ratio + shadow cadence are integrated, but subjective smoothness and visual shadow quality still need later device validation.
 - Thunderstorm is non-destructive by design; deeper environmental responses such as puddles/wet materials are not yet implemented.
-- The older base app still owns one midnight growth path, so all daily progression logic is not yet fully centralized; avoid assuming every thunderstorm growth rule is unified until that cleanup is done.
+- The old base app still physically executes its legacy midnight loop before `daily-progression-runtime.js` reconciles the result. The central rules are authoritative now, but the final cleanup is to replace that legacy function directly inside the core and then remove the bridge.
 - Current world persistence is local-device; six-player shared cloud persistence is not implemented.
 
 ## NEXT
-1. Observe syntax/import checks and Pages deployment for runtime14; fix failures before asking for device validation.
-2. Centralize remaining duplicated daily progression/sleep logic, including the base midnight growth path.
+1. Observe the new daily-rule CI assertions and latest Pages deployment; fix any mismatch before device validation.
+2. Replace the base app's legacy `growDay()` body with the central progression call and retire the temporary reconciliation bridge once direct core migration is safe.
 3. Continue reducing camera/world collision per-frame work while preserving the already-PASS multitouch path.
 4. Continue character hair/clothing/shoe/face refinement and pet/livestock/wildlife anatomy refinement.
 5. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
