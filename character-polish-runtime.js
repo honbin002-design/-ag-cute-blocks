@@ -11,12 +11,12 @@ function torus(parent,major,tube,x,y,z,material,rot=[0,0,0],arc=Math.PI*2){const
 function cone(parent,r,h,x,y,z,material,rot=[0,0,0],scale=[1,1,1]){const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,9),material);m.position.set(x,y,z);m.rotation.set(...rot);m.scale.set(...scale);m.castShadow=true;parent.add(m);return m}
 
 function polishAvatar(g){
-  const u=g?.userData;if(!u?.avatarStyle||polished.has(g))return false;const v=u.visual||g;
+  const u=g?.userData;if(!u?.avatarStyle||polished.has(g))return false;const v=u.visual||g,p=u.animatedParts||{};
   const girl=u.avatarStyle==='girl';
   const collar=torus(v,.205,.018,0,1.365,-.205,cream,[Math.PI/2,0,0],Math.PI*1.42);collar.rotation.z=.64;
-  for(const x of[-.40,.40])torus(v,.087,.014,x,.90,-.005,cream,[Math.PI/2,0,0]);
-  for(const x of[-.16,.16])torus(v,.112,.014,x,.17,-.035,cream,[Math.PI/2,0,0]);
-  for(const x of[-.16,.16]){for(const dz of[-.15,-.10])capsule(v,.009,.12,x,.105,dz,dark,[0,0,Math.PI/2]);ellipsoid(v,.055,x,.075,-.205,cream,[1.45,.40,.62],10)}
+  // Limb-bound details must follow the existing animated pivots instead of floating in world-relative visual space.
+  for(const arm of[p.leftArm,p.rightArm])if(arm)torus(arm,.087,.014,0,-.20,-.005,cream,[Math.PI/2,0,0]);
+  for(const leg of[p.leftLeg,p.rightLeg])if(leg){torus(leg,.112,.014,0,-.26,-.035,cream,[Math.PI/2,0,0]);for(const z of[-.15,-.10])capsule(leg,.009,.12,0,-.31,z,dark,[0,0,Math.PI/2]);ellipsoid(leg,.055,0,-.325,-.205,cream,[1.45,.40,.62],10)}
   const hairColor=girl?0x68483b:0x4f3c34,hair=mat(hairColor,.93);
   ellipsoid(v,.075,-.31,1.79,-.16,hair,[.68,1.28,.50],12);ellipsoid(v,.075,.31,1.79,-.16,hair,[.68,1.28,.50],12);
   if(girl){ellipsoid(v,.07,-.33,1.53,-.02,pink,[1.35,.56,.52],10);ellipsoid(v,.07,.33,1.53,-.02,pink,[1.35,.56,.52],10)}else{ellipsoid(v,.085,-.24,1.97,-.12,hair,[.70,.90,.62],10);ellipsoid(v,.085,.24,1.97,-.12,hair,[.70,.90,.62],10)}
@@ -44,19 +44,18 @@ function polishLivestock(g){
   const u=g?.userData,type=u?.animalType;if(!type||polished.has(g))return false;
   if(type==='cow'){
     const hide=mat(0xf1eee7,.92),pinkSoft=mat(0xe7aaa9,.90),brown=mat(0x5a4a43,.88),collar=mat(0x8c5d43,.82);
-    // Shoulder/hip caps and fetlocks make the stance read heavier and less toy-box-like.
-    for(const x of[-.31,.31]){ellipsoid(g,.135,x,.53,-.14,hide,[1.05,.78,.88],12);ellipsoid(g,.14,x,.51,.34,hide,[1.06,.76,.90],12);ellipsoid(g,.075,x,.15,-.17,brown,[1.05,.70,1.18],10);ellipsoid(g,.075,x,.15,.34,brown,[1.05,.70,1.18],10)}
+    for(const x of[-.31,.31]){ellipsoid(g,.135,x,.53,-.14,hide,[1.05,.78,.88],12);ellipsoid(g,.14,x,.51,.34,hide,[1.06,.76,.90],12)}
+    // Fetlock details are attached to the four gait pivots so they track each leg swing.
+    for(const leg of u.legs||[])if(leg)ellipsoid(leg,.075,0,-.14,-.025,brown,[1.05,.70,1.18],10);
     torus(g,.305,.025,0,.77,-.43,collar,[Math.PI/2,0,0]);ellipsoid(g,.047,0,.52,-.68,gold,[.90,1.05,.58],10);
     ellipsoid(g,.115,0,.69,-.50,hide,[1.08,1.28,.66],12);ellipsoid(g,.075,0,.64,-.61,pinkSoft,[1.24,.62,.72],10);
   }else if(type==='sheep'){
     const wool=mat(0xf0eee7,.95),face=mat(0x625b56,.92);
-    // Layered neck wool and knee tufts give the fleece a more believable break around the limbs.
-    for(const [x,z] of[[-.24,-.10],[.24,-.10],[-.25,.29],[.25,.29]]){ellipsoid(g,.095,x,.22,z,wool,[1.12,.78,.92],10)}
+    for(const leg of u.legs||[])if(leg)ellipsoid(leg,.095,0,-.12,0,wool,[1.12,.78,.92],10);
     ellipsoid(g,.18,0,.69,-.39,wool,[1.12,1.15,.78],14);ellipsoid(g,.085,-.15,.76,-.50,wool,[1.18,.70,.65],10);ellipsoid(g,.085,.15,.76,-.50,wool,[1.18,.70,.65],10);
     ellipsoid(g,.060,0,.58,-.72,face,[1.12,.62,.62],10);
   }else if(type==='chicken'){
     const feather=mat(0xe8d2ad,.93),wing=mat(0xd2b588,.92),red=mat(0xc84f49,.88);
-    // Tail fan plus layered shoulder coverts create a bird silhouette instead of a rounded body with legs.
     for(const [x,a,s] of[[-.13,-.32,.92],[0,0,1.05],[.13,.32,.92]])cone(g,.085,.34,x,.52,.38,wing,[-.82,0,a],[.78,1,s]);
     for(const x of[-.19,.19]){ellipsoid(g,.105,x,.49,-.02,feather,[.55,1.10,1.20],12);ellipsoid(g,.075,x,.43,.14,wing,[.60,.92,1.14],10)}
     ellipsoid(g,.045,0,.58,-.36,red,[.75,1.08,.72],9);
@@ -67,4 +66,4 @@ function polishLivestock(g){
 function scan(){let avatars=0,pets=0,livestock=0;for(const a of globalThis.__AGCB_LIVE_AVATARS||[])if(polishAvatar(a))avatars++;for(const p of globalThis.__AGCB_LIVE_PETS||[])if(polishPet(p))pets++;for(const a of globalThis.__AGCB_LIVE_LIVESTOCK||[])if(polishLivestock(a))livestock++;return{avatars,pets,livestock}}
 let ticks=0;function loop(){requestAnimationFrame(loop);if(++ticks%120===0)scan()}
 const first=scan();requestAnimationFrame(loop);
-globalThis.__AGCB_CHARACTER_POLISH={schema:2,scan,polished,first};
+globalThis.__AGCB_CHARACTER_POLISH={schema:3,scan,polished,first};
