@@ -26,12 +26,12 @@ jobs:
           mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","upgradeStairs"]
+          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","upgradeStairs","schema:2"]
           must_mat=["kind==='tile'","kind==='ceramic'","MeshStandardMaterial","MATERIAL_SCHEMA=2"]
           missing=[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]
           if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
           if "building-extension-runtime.js" not in sw: missing.append('service worker cache entry')
-          if "runtime24" not in sw: missing.append('runtime24 cache version')
+          if "runtime25" not in sw: missing.append('runtime25 cache version')
           if missing:
             print('Missing building extension invariants:')
             print('\n'.join(missing));sys.exit(1)
