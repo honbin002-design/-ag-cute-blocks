@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime53`
+Active PWA cache: `ag-cute-blocks-v045-runtime54`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -240,6 +240,13 @@ Active PWA cache: `ag-cute-blocks-v045-runtime53`
 +- 建立紙娃娃 slot 與穩定 asset ID：bodyBase、underlayer、top、bottom、dress、shoes、hair、hat、glasses、accessory。
 +- 目前仍是 AG 原創中間版本，不宣告 Final Character Art；五官、比例、衣服質感與 iPhone 視覺自然度仍需精修和實機驗收。
 +- 動物連續身體與物種骨架尚未完成；既有動物模型仍是 intermediate art。
++
++## Runtime54 — 原創紙娃娃骨骼掛載
++- daily top、overall bottom、formal dress、shoes、hoodie pocket 已開始成為獨立 layer，並使用 AG asset ID。
++- layer 以胸椎、髖部、腳部骨骼為掛載點；不重新掛走骨架父子關係，避免服裝破壞走路與姿勢動畫。
++- 設定面板仍可選擇內衣褲、吊帶褲、洋裝與連帽上衣；新預設內衣褲檢視不變。
++- 這是 AG 原創中間美術與紙娃娃基礎，不是 Final Character Art；帽子、眼鏡、配件、服裝質感與 iPhone 視覺仍需精修。
++- 動物連續身體與物種骨架仍尚未完成，既有動物模型仍是 intermediate art。
 +
 +## NEXT
 +1. 精修 runtime53 原創人物的身體比例、肩肘髖膝連接、手腳接地、五官與髮型，維持內衣褲檢視作為美術基準。
