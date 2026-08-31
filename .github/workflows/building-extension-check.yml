@@ -19,23 +19,28 @@ jobs:
           node --input-type=module --check < building-extension-runtime.js
           node --input-type=module --check < procedural-material-runtime.js
           node --input-type=module --check < collision-cache-runtime.js
-      - name: Verify stairs and ceramic persistence hooks
+          node --input-type=module --check < character-polish-runtime.js
+      - name: Verify stairs, ceramic, collision and polish hooks
         shell: python
         run: |
           import pathlib,sys
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
           collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8')
+          polish=pathlib.Path('character-polish-runtime.js').read_text(encoding='utf-8')
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
           must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","upgradeStairs","schema:2"]
           must_mat=["kind==='tile'","kind==='ceramic'","MeshStandardMaterial","MATERIAL_SCHEMA=2"]
           must_collision=['geometryStamp','geometryInvalidations','cache.delete(object)']
-          missing=[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]+[x for x in must_collision if x not in collision]
+          must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','schema:3']
+          missing=[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]+[x for x in must_collision if x not in collision]+[x for x in must_polish if x not in polish]
           if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
-          if "building-extension-runtime.js" not in sw: missing.append('service worker cache entry')
-          if "runtime26" not in sw: missing.append('runtime26 cache version')
+          if "import './character-polish-runtime.js';" not in boot: missing.append('bootstrap character polish import')
+          if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
+          if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
+          if "runtime29" not in sw: missing.append('runtime29 cache version')
           if missing:
-            print('Missing building extension invariants:')
+            print('Missing V0.4.5 extension invariants:')
             print('\n'.join(missing));sys.exit(1)
-          print('Stairs/tile/ceramic + collision invalidation invariants passed.')
+          print('Building, collision invalidation and articulated polish invariants passed.')
