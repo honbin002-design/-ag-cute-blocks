@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime50`
+Active PWA cache: `ag-cute-blocks-v045-runtime51`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -133,6 +133,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime50`
 - The base body/limb changes from runtime47 remain intact; this is a depth/visibility correction, not a return to the old model.
 - The model is tagged `premium-chibi-v4`; it remains original **INTERMEDIATE ART**, not Final Character Art.
 
+## Farm camera orbit controls and GLB heading correction — runtime51
+- Farm View now keeps its fixed follow direction but exposes a saved camera distance and pitch instead of a hard-coded camera position.
+- On the game canvas in Farm View, one-finger vertical dragging adjusts the view angle up/down; two-finger pinching adjusts camera distance; desktop wheel input is also supported. The movement joystick and the locked movement + Jump multi-touch path are untouched.
+- The rigged technical avatar variants no longer use the obstructive Mage hat: the girl technical source uses KayKit Rogue and the boy technical source uses KayKit Barbarian. These are still temporary CC0 technical models, not final AG art.
+- KayKit's character forward axis is corrected by a local half-turn so the existing AG rule `rotation.y = Math.atan2(-dx,-dz)` remains the single movement-heading rule. This is integrated, but actual iPhone direction and camera-feel evidence is still required.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -169,6 +175,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime50`
 - Runtime48 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33385045888`).
 - Runtime49 JavaScript syntax/import/rule/HUD, building-extension and Pages Build / Deploy checks: SUCCESS (source workflow runs `33389741326`, `33389741514`, `33389736165`).
 - Runtime50 JavaScript syntax/import/rule/HUD, building-extension and Pages Build / Deploy checks: SUCCESS (source workflow runs `33389741326`, `33389741514`, `33389736165`; runtime50 source commit `ea3341a4…`).
+- Runtime51 JavaScript syntax/import/rule/HUD: SUCCESS (workflow run `33391155733`).
+- Runtime51 building-extension invariant check: SUCCESS (workflow run `33391155741`).
+- Runtime51 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33391148572`).
 - Runtime47 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33384436505`).
 - Runtime44 Pages build/deployment/report steps: SUCCESS.
 
@@ -214,6 +223,7 @@ Active PWA cache: `ag-cute-blocks-v045-runtime50`
 - Runtime50 still needs concentrated iPhone evidence: confirm the new body/limbs/joints are visibly different, then separately review animation, heading, stop/turn feel and loading fallback behavior.
 
 ## NEXT
-1. Concentrated iPhone structural review of runtime50: confirm the connected GLB model loads, no primitive body is visible, and basic movement/heading remain usable; do not call this Final Art.
-2. Replace the technical CC0 source with an original AG farm-life character asset when an approved no-cost authoring route is available.
-3. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
+1. Concentrated iPhone structural review of runtime51: confirm the connected GLB model loads without the oversized Mage hat, body/limbs/joints are visible, and Third Person / Farm View face the actual movement direction; do not call this Final Art.
+2. Concentrated iPhone camera review: in Farm View, test vertical one-finger angle adjustment and two-finger distance adjustment, then confirm the camera remains usable around the existing world.
+3. Replace the technical CC0 source with an original AG farm-life character asset when an approved no-cost authoring route is available.
+4. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.

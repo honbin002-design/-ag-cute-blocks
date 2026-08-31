@@ -11,3 +11,5 @@ Use in AG Cute Blocks: technical continuous-mesh / skeleton / animation proof on
 
 The KayKit assets are not the final AG Cute Blocks character art. They are retained only until an original AG farm-life character asset is authored or an approved original asset route is available. Do not present the source characters as AG-owned original art.
 
+
+Variant note: runtime51 uses Rogue for the girl technical variant and Barbarian for the boy technical variant; Mage is no longer selected because its oversized hat obstructed the body review.
