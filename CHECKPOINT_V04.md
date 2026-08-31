@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime45`
+Active PWA cache: `ag-cute-blocks-v045-runtime46`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -114,6 +114,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime45`
 - This is an original **INTERMEDIATE ART** and customization foundation, not Final Character Art or Final Animal Art.
 - Shared multiplayer identity/synchronization is not implemented; each connected player's eventual profile will require the future backend/entity layer.
 
+## Premium chibi visual refinement — runtime46
+- The avatar model now follows the requested complete chibi-character direction: larger readable eyes, layered facial depth, swept hair locks, clearer outerwear panels, buttons and stronger outfit silhouette.
+- Hats, round glasses and accessories remain inside the animated visual container, so they follow sit/lie/sleep poses with the character.
+- The model is tagged `premium-chibi-v2`; the original reference is used for quality direction only, not copied as a protected character or pirate design.
+- This remains **INTERMEDIATE ART** pending iPhone visual review and later final art refinement.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -141,8 +147,8 @@ Active PWA cache: `ag-cute-blocks-v045-runtime45`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
-- Runtime45 JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime45 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization invariant checks: SUCCESS.
+- Runtime46 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime46 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi invariant checks: SUCCESS.
 - Runtime44 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
@@ -167,5 +173,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime45`
 - **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
 
 ## NEXT
-1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is avatar customization and per-device persistence.
+1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is premium-chibi avatar visual review and customization persistence.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
