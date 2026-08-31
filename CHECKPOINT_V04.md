@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime47`
+Active PWA cache: `ag-cute-blocks-v045-runtime48`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -127,6 +127,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime47`
 - The model is tagged `premium-chibi-v3`; this is an original quality direction inspired by the supplied reference, not a copy of its pirate character.
 - This remains **INTERMEDIATE ART** pending the next iPhone visual review and later final art refinement.
 
+## Facial depth and silhouette correction — runtime48
+- The iPhone screenshot showed that the enlarged head still occluded the eyes, nose, mouth and front hair because those meshes were positioned inside the head volume.
+- Runtime48 moves the facial features, glasses and front hair layers outside the head surface so the eyes, catchlights, cheeks and hairstyle are actually visible at gameplay distance.
+- The base body/limb changes from runtime47 remain intact; this is a depth/visibility correction, not a return to the old model.
+- The model is tagged `premium-chibi-v4`; it remains original **INTERMEDIATE ART**, not Final Character Art.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -158,6 +164,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime47`
 - Runtime46 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi invariant checks: SUCCESS.
 - Runtime47 JavaScript syntax/import/rule/HUD checks: SUCCESS.
 - Runtime47 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi-v3 invariant checks: SUCCESS.
+- Runtime48 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime48 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi-v4 invariant checks: SUCCESS.
+- Runtime48 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33385045888`).
 - Runtime47 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33384436505`).
 - Runtime44 Pages build/deployment/report steps: SUCCESS.
 
@@ -183,5 +192,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime47`
 - **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
 
 ## NEXT
-1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is runtime47 premium-chibi base-model visual review and customization persistence.
+1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is runtime48 premium-chibi visual review and customization persistence.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.

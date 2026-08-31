@@ -1,10 +1,10 @@
 # AG Cute Blocks V0.4.5 — 集中 iPhone 驗收批次
 
-這份清單針對 `dev-v0.1` runtime47 的整合版本。它是驗收順序與證據界線，不代表任何項目已經 PASS。
+這份清單針對 `dev-v0.1` runtime48 的整合版本。它是驗收順序與證據界線，不代表任何項目已經 PASS。
 
 ## 驗收前提
 
-- 使用最新 GitHub Pages deployment，確認載入的是 `ag-cute-blocks-v045-runtime47`。
+- 使用最新 GitHub Pages deployment，確認載入的是 `ag-cute-blocks-v045-runtime48`。
 - 先保留目前裝置上的既有 local save；不要清除資料或重置世界。
 - 每個項目完成後記錄：裝置／瀏覽器、操作結果、是否重現、必要時附截圖或短片。
 - 已鎖定的「一手指持續推移動搖桿、另一手按 Jump」PASS 不重測；只有未來修改輸入路徑才重新開啟。
@@ -61,10 +61,10 @@
 - 不把 procedural intermediate art、CI 或 Pages deployment 誤報為 final art／real-device PASS。
 
 
-## 8. 人物個人化（runtime45-47）
+## 8. 人物個人化（runtime45-48）
 - 開啟「⚙️ 管理者」設定，確認性別、身形版型、膚色、髮型、髮色、服裝樣式、上衣、下身、帽子、眼鏡與配件選項都能看到。
 - 逐一更換至少兩組差異明顯的組合，確認人物外觀立即更新，且位置與朝向不被重置。
 - 關閉設定後再次開啟，確認選項保留；完全關閉主畫面 App 後重新開啟，確認個人化外型仍保留。
 - 這項只驗證本機玩家個人化；多人連線與跨裝置同步尚未實作。
 
-- runtime46 另加入 premium-chibi-v2 的眼睛、髮束、分層服裝與配件細節；此部分仍須以 iPhone 實際視覺判定，不能以 CI 取代美術驗收。
+- runtime46 先加入 premium-chibi-v2 的眼睛、髮束、分層服裝與配件細節；runtime47 再同步放大頭身比例、軀幹、肩臂、手掌、腿部與鞋底；runtime48 修正五官與髮束被頭部幾何遮住的深度問題。此部分仍須以 iPhone 實際視覺判定，不能以 CI 取代美術驗收。
