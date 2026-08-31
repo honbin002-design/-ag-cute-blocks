@@ -69,3 +69,14 @@ jobs:
           const result=advanceDailySnapshot(world,settings,{},{});assert.equal(result.toDay,6);assert.equal(result.earned,36);assert.equal(settings.economy.coins,39);assert.equal(settings.economy.shipping.length,0);assert.ok(world.objects[0].growth>.2);
           console.log('Central daily progression checks passed.');
           NODE
+      - name: Verify direct core daily authority wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "advanceDailyRecord" app-v043.js
+          grep -q "CARE_KEY='ag_cute_blocks_crop_care_v1'" app-v043.js
+          grep -q "lastProductDay=worldDay" app-v043.js
+          ! test -e daily-progression-runtime.js
+          ! grep -q "daily-progression-runtime" bootstrap-v045.js
+          ! grep -q "daily-progression-runtime" sw.js
+          echo "Direct core daily progression wiring passed."
