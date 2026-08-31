@@ -8,6 +8,7 @@ const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let careStore=read(CARE_KEY,{}),target=null,lastScan=0;
 const crops=()=>[...(globalThis.__AGCB_LIVE_CROPS||[])].filter(m=>m?.parent?.parent&&m.parent.userData?.crop);
 const avatars=()=>[...(globalThis.__AGCB_LIVE_AVATARS||[])].filter(m=>m?.parent?.isGroup);
+const naturalRain=w=>w==='rain'||w==='thunderstorm';
 function player(){const a=avatars();return a.length?a[a.length-1]:null}
 function worldDay(){return Number(read(SETTINGS_KEY,{}).worldDay||1)}
 function weather(){return document.querySelector('#weather')?.value||read(SETTINGS_KEY,{}).weather||'sunny'}
@@ -35,12 +36,12 @@ function rebuild(t,newGrowth){
 }
 function scan(){
   const day=worldDay(),w=weather(),p=player(),pp=p?.getWorldPosition(new THREE.Vector3());target=nearestCrop();
-  for(const model of crops()){const group=model.parent,care=careFor(group),near=pp&&Math.hypot(group.position.x-pp.x,group.position.z-pp.z)<18;wetDisc(group,near&&(w==='rain'||care.wateredDay===day))}
+  for(const model of crops()){const group=model.parent,care=careFor(group),near=pp&&Math.hypot(group.position.x-pp.x,group.position.z-pp.z)<18;wetDisc(group,near&&(naturalRain(w)||care.wateredDay===day))}
   if(!target||Number(target.group.userData.growth||0)>=.95){btn.classList.remove('show');return}
-  const care=careFor(target.group),label=cropCareLabel(care,day,w);btn.textContent=label;btn.disabled=w==='rain'||care.wateredDay===day;btn.classList.add('show');
+  const care=careFor(target.group),label=cropCareLabel(care,day,w);btn.textContent=label;btn.disabled=naturalRain(w)||care.wateredDay===day;btn.classList.add('show');
 }
 btn.onclick=()=>{
-  if(!target)return;const day=worldDay(),w=weather(),group=target.group,care=careFor(group);if(w==='rain')return;
+  if(!target)return;const day=worldDay(),w=weather(),group=target.group,care=careFor(group);if(naturalRain(w))return;
   const r=waterCrop(care,day,Date.now());if(!r.ok)return;const kind=group.userData.crop,rules=CROP_CARE_RULES[kind]||{waterBonus:.07},old=Number(group.userData.growth||0),next=Math.min(.94,old+rules.waterBonus*.48);rebuild(target,next);wetDisc(group,true);splash(group);write(CARE_KEY,careStore);document.querySelector('#saveNow')?.click();document.querySelector('#status').textContent=`💧 ${kind} 澆好水了・成長稍微加快`;scan();
 };
 function loop(t){requestAnimationFrame(loop);if(t-lastScan>520){lastScan=t;scan()}}
