@@ -8,10 +8,11 @@ import './raycast-budget-runtime.js';
 // Midnight progression now calls daily-progression-system.js directly inside the core app.
 import './app-v043.js';
 
-// Core corrections and visual surface upgrades attach after base initialization.
+// Core corrections and visual/building surface upgrades attach after base initialization.
 import './heading-runtime.js';
 import './furniture-safety-runtime.js';
 import './procedural-material-runtime.js';
+import './building-extension-runtime.js';
 
 // Mobile control presentation attaches after the HUD exists, before input handlers.
 import './mobile-controls-runtime.js';
