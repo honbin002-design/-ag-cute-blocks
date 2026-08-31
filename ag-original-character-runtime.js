@@ -83,6 +83,35 @@ function addPaperDollMarkers(visual,c){
   const slots={};for(const slot of PAPER_DOLL_SLOTS){const marker=new THREE.Group();marker.name='agcb-paper-doll-'+slot;marker.userData={slot,assetId:slot==='bodyBase'?'ag-character-base-underwear-v1':slot==='underlayer'?'ag-underlayer-basic-v1':c[slot]||'none',visible:slot==='bodyBase'||slot==='underlayer'};marker.visible=false;visual.add(marker);slots[slot]=marker}
   visual.userData.paperDollSlots=slots;visual.userData.paperDollSchema=1;return slots;
 }
+function roundGarment(parent,name,color,position,scale){
+  const material=new THREE.MeshStandardMaterial({color,roughness:.82,metalness:.01}),mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),material);
+  mesh.name=name;mesh.position.set(...position);mesh.scale.set(...scale);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function applyPaperDoll(visual,c,bones,slots){
+  const clear=slot=>{while(slots[slot].children.length)slots[slot].remove(slots[slot].children[0]);slots[slot].visible=false};
+  for(const slot of PAPER_DOLL_SLOTS)clear(slot);
+  slots.underlayer.visible=true;
+  roundGarment(slots.underlayer,'agcb-underlayer-top',UNDERWEAR,[0,.02,0],[.32,.28,.245]);
+  roundGarment(slots.underlayer,'agcb-underlayer-bottom',UNDERWEAR,[0,-.04,0],[.30,.18,.24]);
+  if(c.outfit==='underwear')return;
+  slots.top.visible=true;
+  slots.top.add(bones.chest);
+  roundGarment(slots.top,'agcb-daily-top',TOP[c.top]||TOP.pink,[0,-.25,0],[.38,.42,.29]);
+  if(c.outfit==='hoodie')roundGarment(slots.top,'agcb-hoodie-pocket',0x6d9fca,[0,-.34,-.27],[.17,.10,.035]);
+  if(c.outfit==='overall'){
+    slots.bottom.visible=true;
+    slots.bottom.add(bones.hips);
+    roundGarment(slots.bottom,'agcb-overall-bottom',BOTTOM[c.bottom]||BOTTOM.denim,[0,-.02,0],[.36,.25,.27]);
+    roundGarment(slots.top,'agcb-overall-bib',BOTTOM[c.bottom]||BOTTOM.denim,[0,-.18,-.25],[.20,.25,.045]);
+  }else if(c.outfit==='dress'){
+    slots.dress.visible=true;
+    slots.dress.add(bones.hips);
+    const dressMat=new THREE.MeshStandardMaterial({color:TOP[c.top]||TOP.pink,roughness:.84});
+    const dress=new THREE.Mesh(new THREE.CylinderGeometry(.34,.46,.54,24),dressMat);
+    dress.name='agcb-formal-dress';dress.position.set(0,-.18,0);dress.castShadow=true;slots.dress.add(dress);
+  }
+  slots.shoes.visible=true;
+}
 function createOriginalCharacter(c){
   const visual=new THREE.Group();visual.name='agcb-original-connected-avatar';visual.userData.assetStatus='AG_ORIGINAL_CONNECTED_BODY';
   const geom=makeConnectedBodyGeometry(c),material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.86,metalness:.01});
