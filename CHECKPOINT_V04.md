@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime49`
+Active PWA cache: `ag-cute-blocks-v045-runtime50`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -167,6 +167,8 @@ Active PWA cache: `ag-cute-blocks-v045-runtime49`
 - Runtime48 JavaScript syntax/import/rule/HUD checks: SUCCESS.
 - Runtime48 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization/premium-chibi-v4 invariant checks: SUCCESS.
 - Runtime48 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33385045888`).
+- Runtime49 JavaScript syntax/import/rule/HUD, building-extension and Pages Build / Deploy checks: SUCCESS (source workflow runs `33389741326`, `33389741514`, `33389736165`).
+- Runtime50 JavaScript syntax/import/rule/HUD, building-extension and Pages Build / Deploy checks: SUCCESS (source workflow runs `33389741326`, `33389741514`, `33389736165`; runtime50 source commit `ea3341a4…`).
 - Runtime47 Pages Build / Deploy / report-build-status: SUCCESS (workflow run `33384436505`).
 - Runtime44 Pages build/deployment/report steps: SUCCESS.
 
@@ -196,7 +198,7 @@ Active PWA cache: `ag-cute-blocks-v045-runtime49`
 - Runtime45-48 customization, proportion and facial-depth work are retained as intermediate experiments, but none of them is Final Character Art or a user visual PASS.
 - Do not continue making incremental cylinder/capsule edits to `createCuteChildAvatar()` as if they could reach the requested reference quality.
 - The next character milestone is a real rigged GLB/GLTF asset with continuous skinned anatomy, proper joint deformation and replaceable clothing/hair/accessory layers.
-- A free CC0 low-poly asset may be used only as a technical rig/loader proof; it must not be presented as the AG Cute Blocks final character style. Runtime49 now has the loader and fixed-source technical asset integrated; the source remains a temporary structural proof, not final AG art.
+- A free CC0 low-poly asset may be used only as a technical rig/loader proof; it must not be presented as the AG Cute Blocks final character style. Runtime49-50 now have the loader and fixed-source technical asset integrated; the source remains a temporary structural proof, not final AG art.
 
 ## Rigged GLB technical replacement — runtime49
 - Added `character-asset-runtime.js` with GLTFLoader and SkeletonUtils.
@@ -205,7 +207,13 @@ Active PWA cache: `ag-cute-blocks-v045-runtime49`
 - Asset source and license are recorded in `ASSET_LICENSES.md`; source commit is pinned for reproducibility.
 - This is **INTEGRATED / CI PASS / DEPLOYED**, not a REAL DEVICE PASS and not Final Character Art. The technical source is not the AG original style.
 
+## Rigged GLB visibility correction — runtime50
+- The runtime49 iPhone comparison exposed a concrete integration bug: the newly loaded GLB was added inside the same `visual` group that runtime49 then hid as if it contained only the primitive fallback.
+- Runtime50 hides only the previous primitive children, keeps the loaded rigged root visible, and marks `assetLoaded=true` for diagnostics. The intended visible result is therefore a connected skinned body rather than the old separate cylinder/capsule assembly.
+- This is a structural visibility bug fix, not a new final-art claim. The CC0 KayKit model remains a temporary zero-cost technical replacement and is not the final original AG character style.
+- Runtime50 still needs concentrated iPhone evidence: confirm the new body/limbs/joints are visibly different, then separately review animation, heading, stop/turn feel and loading fallback behavior.
+
 ## NEXT
-1. Concentrated iPhone structural review of runtime49: confirm the connected GLB model loads, no primitive body is visible, and basic movement/heading remain usable; do not call this Final Art.
+1. Concentrated iPhone structural review of runtime50: confirm the connected GLB model loads, no primitive body is visible, and basic movement/heading remain usable; do not call this Final Art.
 2. Replace the technical CC0 source with an original AG farm-life character asset when an approved no-cost authoring route is available.
 3. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
