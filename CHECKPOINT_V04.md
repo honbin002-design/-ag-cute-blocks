@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime44`
+Active PWA cache: `ag-cute-blocks-v045-runtime45`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -105,6 +105,15 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - The index keeps a compatibility conversion path for older in-memory array-shaped chunk records while retaining the existing world snapshot format.
 - This is still a local indexing scaffold; cloud persistence, realtime multiplayer and full chunk streaming remain unimplemented.
 
+## Character customization / visual refinement — runtime45
+- Added an original avatar customization schema with backward compatibility for the existing `girl` / `boy` setting.
+- The player can now choose gender presentation, body shape, skin tone, hairstyle, hair color, outfit style, top/bottom colors, hat, glasses and accessory.
+- Changes rebuild the player at the current position and heading, save to the existing settings storage, and restore on relaunch.
+- Character accessories are placed inside the same animated visual container so sit/lie/sleep poses do not leave hats, glasses or outfit details behind.
+- Dog/cat intermediate models now have additional collar and tag/bow species details; livestock and all animal final art remain future refinement work.
+- This is an original **INTERMEDIATE ART** and customization foundation, not Final Character Art or Final Animal Art.
+- Shared multiplayer identity/synchronization is not implemented; each connected player's eventual profile will require the future backend/entity layer.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -132,8 +141,8 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
-- Runtime44 JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime44 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition invariant checks: SUCCESS.
+- Runtime45 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime45 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition/avatar-customization invariant checks: SUCCESS.
 - Runtime44 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
@@ -146,6 +155,8 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - Full world/chunk streaming is not implemented.
 
 ## Concentrated iPhone validation — initial evidence
+- 2026-08-31: in Farm View, the user released the movement joystick after moving and reported that the character stopped without sliding; foot movement also stopped with the release.
+- **REAL DEVICE PASS (tested stop transition / no-slide behavior).** Turn transitions, broader locomotion feel and final motion quality remain unverified.
 - 2026-08-31: in Farm View, the user moved forward briefly and reported that the character faced the actual movement direction rather than the camera/screen direction.
 - **REAL DEVICE PASS (Farm View heading for the tested movement).** Turn transition, stop/sliding feel and final locomotion remain unverified.
 - 2026-08-31: in Third Person, the user moved forward briefly and reported that the character faced the actual movement direction without walking backward.
@@ -156,5 +167,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
 
 ## NEXT
-1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is stop transition.
+1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is avatar customization and per-device persistence.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.

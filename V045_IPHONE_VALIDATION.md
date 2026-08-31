@@ -59,3 +59,10 @@
 - 不把 local World/Chunk Index 當成 shared multiplayer。
 - 不重新測已鎖定的 movement + Jump multi-touch。
 - 不把 procedural intermediate art、CI 或 Pages deployment 誤報為 final art／real-device PASS。
+
+
+## 8. 人物個人化（runtime45）
+- 開啟「⚙️ 管理者」設定，確認性別、身形版型、膚色、髮型、髮色、服裝樣式、上衣、下身、帽子、眼鏡與配件選項都能看到。
+- 逐一更換至少兩組差異明顯的組合，確認人物外觀立即更新，且位置與朝向不被重置。
+- 關閉設定後再次開啟，確認選項保留；完全關閉主畫面 App 後重新開啟，確認個人化外型仍保留。
+- 這項只驗證本機玩家個人化；多人連線與跨裝置同步尚未實作。
