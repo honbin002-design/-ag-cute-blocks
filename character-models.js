@@ -77,7 +77,7 @@ export function normalizeAvatarCustomization(input={},legacyStyle='girl'){
 }
 function addAvatarAccessories(g,c,hair,shirt){
   const hatMat=mat(c.hat==='beanie'?0x8bb8d8:0xf0c86d,.88),frame=mat(0x4a3d4a,.72),accent=mat(c.accessory==='scarf'?0xe8898f:0xf3c95f,.82),vest=mat(c.outfit==='hoodie'?TOP_PALETTE[c.top]:0x9a6745,.86),trim=mat(0xffd978,.72);
-  // premium-chibi-v4: facial meshes sit outside the enlarged head, with a readable hair silhouette.
+  // AG original accessory layer: facial meshes remain readable at gameplay distance.
   for(const x of[-.14,.14])ellipsoid(g,.13,x,1.77,-.435,white,[1,.94,.40],20);
   for(const x of[-.14,.14]){ellipsoid(g,.068,x,1.77,-.492,eye,[1,.98,.52],16);ellipsoid(g,.025,x-.020,1.798,-.528,white,[1,1,.45],10)}
   for(const x of[-.37,.37])ellipsoid(g,.17,x,1.78,-.285,hair,[.78,1.38,.60],18);
