@@ -1,0 +1,57 @@
+/* AG Cute Blocks — ergonomic mobile game controls */
+.actions{
+  right:max(18px,calc(env(safe-area-inset-right) + 10px));
+  bottom:max(102px,calc(env(safe-area-inset-bottom) + 92px));
+  display:grid;
+  grid-template-columns:repeat(2,64px);
+  grid-template-rows:repeat(2,64px);
+  column-gap:14px;
+  row-gap:12px;
+  align-items:center;
+  justify-items:center;
+}
+.btn{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  font-size:25px;
+  font-weight:900;
+  background:#fffde8ee;
+  border:2px solid #ffffffcc;
+  box-shadow:0 4px 14px #0003, inset 0 1px 0 #fff;
+  -webkit-tap-highlight-color:transparent;
+}
+/* Online-game style stagger: primary jump is easiest for the thumb, utility keys sit around it. */
+#add{transform:translate(-7px,5px)}
+#del{transform:translate(5px,-5px)}
+#jump{transform:translate(7px,1px);width:70px;height:70px;font-size:27px}
+#rot{transform:translate(-5px,-3px)}
+.btn:active{transform:scale(.91)}
+#add:active{transform:translate(-7px,5px) scale(.91)}
+#del:active{transform:translate(5px,-5px) scale(.91)}
+#jump:active{transform:translate(7px,1px) scale(.91)}
+#rot:active{transform:translate(-5px,-3px) scale(.91)}
+
+/* Give the movement thumb a slightly larger target without crowding the build catalog. */
+.joy{
+  left:max(20px,calc(env(safe-area-inset-left) + 10px));
+  bottom:max(96px,calc(env(safe-area-inset-bottom) + 86px));
+  width:118px;
+  height:118px;
+}
+.knob{left:34px;top:34px;width:46px;height:46px}
+
+@media(max-height:430px){
+  .actions{
+    right:max(14px,calc(env(safe-area-inset-right) + 8px));
+    bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));
+    grid-template-columns:repeat(2,58px);
+    grid-template-rows:repeat(2,58px);
+    column-gap:12px;
+    row-gap:10px;
+  }
+  .btn{width:58px;height:58px;font-size:23px}
+  #jump{width:64px;height:64px;font-size:25px}
+  .joy{width:104px;height:104px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px))}
+  .knob{left:29px;top:29px;width:42px;height:42px}
+}
