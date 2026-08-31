@@ -1,0 +1,61 @@
+# AG Cute Blocks V0.4.5 — 集中 iPhone 驗收批次
+
+這份清單針對 `dev-v0.1` runtime44 的整合版本。它是驗收順序與證據界線，不代表任何項目已經 PASS。
+
+## 驗收前提
+
+- 使用最新 GitHub Pages deployment，確認載入的是 `ag-cute-blocks-v045-runtime44`。
+- 先保留目前裝置上的既有 local save；不要清除資料或重置世界。
+- 每個項目完成後記錄：裝置／瀏覽器、操作結果、是否重現、必要時附截圖或短片。
+- 已鎖定的「一手指持續推移動搖桿、另一手按 Jump」PASS 不重測；只有未來修改輸入路徑才重新開啟。
+
+## 集中驗收順序
+
+1. **既有世界與重新載入**
+   - 開啟既有世界，確認玩家位置、已放置方塊、家具、作物、果樹與動物仍在。
+   - 放置或移除一個物件後重新載入，確認正常保存；不可把 runtime index 當成取代 full snapshot。
+
+2. **三種視角與方向**
+   - First Person、Third Person、Farm View 各走直線、斜線、急停與連續轉向。
+   - Third Person / Farm View 中，確認人物臉與身體朝實際移動方向，不因鏡頭方向倒退走。
+   - 這一項仍只收集 heading／turn／stop 證據，不宣告最終 locomotion 或 final art。
+
+3. **附近互動與建造瞄準**
+   - 靠近／離開椅子、床、沙發、作物、果樹、寵物與家畜，確認互動提示只在合理距離出現。
+   - 建造時測試地面、水面、方塊、家具的瞄準，以及新增、旋轉、刪除後再次瞄準。
+   - 確認新增或移除物件後，提示與瞄準沒有殘留舊目標。
+
+4. **建築與材質**
+   - 測試 cube、rectangular prism、sphere、cylinder、triangular prism、slope、roof、stairs。
+   - 測試木材、深木、石材、磚、混凝土、大理石、金屬、玻璃、磁磚、陶瓷。
+   - stairs 放置後確認碰撞、移動與重新載入仍合理；此項仍是 integrated building，不是 final material/art PASS。
+
+5. **雨水、雷雨與性能**
+   - Sunny、Rain、Thunderstorm 各切換一次，確認雨／雷雨視覺與柔和 puddle 層出現，沒有破壞性災害。
+   - 觀察低階或短高度手機版面是否仍可操作；若有掉幀、過度閃爍或遮擋，記錄 weather／performance tier。
+
+6. **人物、寵物與家畜動作**
+   - 玩家 walk、run、急停、轉向；狗／貓 walk、run、急停、轉向、sit／sleep。
+   - 特別觀察狗／貓 paw 是否跟著腿 pivot、是否貼地、是否滑步或急停後殘留動作。
+   - 牛／羊／雞分別觀察步態節奏與物種差異。
+   - 結果只能標記 `device evidence collected`；未通過全部觀察前，不標記 visual／locomotion PASS。
+
+7. **家具生活與安全起身**
+   - 椅子、沙發、床、長椅、鞦韆、用餐、睡覺各測一次。
+   - 互動後確認自動對準、不穿模、可安全起身；睡醒與重新載入後不可卡在家具內。
+   - 若任何出口位置不安全，記錄家具類型、相機模式與位置。
+
+## 證據標記
+
+- **INTEGRATED**：程式已接入 bootstrap／core pipeline。
+- **CI PASS**：GitHub Actions invariant／syntax 通過。
+- **DEPLOYED**：Pages Build/Deploy 通過。
+- **REAL DEVICE PASS**：iPhone 上該項目實際通過，且有本批次證據。
+- **FINAL PASS**：只有完成正式美術、操作與長期遊玩標準後才可使用；runtime44 不預先宣告。
+
+## 本批次明確不做
+
+- 不清除或覆蓋既有 saves。
+- 不把 local World/Chunk Index 當成 shared multiplayer。
+- 不重新測已鎖定的 movement + Jump multi-touch。
+- 不把 procedural intermediate art、CI 或 Pages deployment 誤報為 final art／real-device PASS。

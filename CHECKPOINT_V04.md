@@ -146,5 +146,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - Full world/chunk streaming is not implemented.
 
 ## NEXT
-1. Consolidate the current stable runtime changes and prepare the concentrated iPhone validation batch.
+1. Use `V045_IPHONE_VALIDATION.md` for one concentrated iPhone validation batch covering runtime44 integrated paths.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
