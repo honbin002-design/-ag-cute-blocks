@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime38`
+Active PWA cache: `ag-cute-blocks-v045-runtime39`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -71,6 +71,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime38`
 - The runtime is additive and does not touch player input or animal life-state ownership.
 - This materially fixes the known detached-paw architecture issue, but visual ground contact and stop/turn feel still require device evidence before locomotion PASS.
 
+## Interaction-nearby spatial lookup — runtime39
+- `nearestTarget()` now queries a dedicated 4-unit XZ interaction index instead of scanning the full `objects` array.
+- Interactable furniture, crops, mature trees, shipping box, livestock and pets are registered when created and unregistered when removed.
+- Moving pets and livestock reindex only when crossing an interaction cell boundary.
+- The lookup remains independent from `mobile-input-runtime.js`; the locked movement + Jump multitouch path is unchanged.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -98,9 +104,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime38`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
-- Runtime38 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime38 push building/collision/camera/spatial/anatomy/locomotion/paw-grounding invariant checks: SUCCESS.
-- Runtime38 Pages build/report steps passed; deployment was still finishing at the last status read before this checkpoint update.
+- Runtime39 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime39 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index invariant checks: SUCCESS.
+- Runtime39 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
@@ -112,9 +118,8 @@ Active PWA cache: `ag-cute-blocks-v045-runtime38`
 - Full world/chunk streaming is not implemented.
 
 ## NEXT
-1. Reduce non-frame-critical O(n) interaction-nearby lookup without touching the locked multitouch input path.
-2. Refine pet/player turn and stop transitions after the paw-grounding architecture is stable.
-3. Reduce build-aim target assembly after interaction lookup is stabilized.
-4. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
-5. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
-6. Group enough stable changes before requesting the next concentrated iPhone validation.
+1. Refine pet/player turn and stop transitions after the paw-grounding architecture is stable.
+2. Reduce build-aim target assembly after interaction lookup is stabilized.
+3. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
+4. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
+5. Group enough stable changes before requesting the next concentrated iPhone validation.
