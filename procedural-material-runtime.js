@@ -1,0 +1,27 @@
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+// Original, generated-at-runtime building surfaces. No downloaded texture assets are used.
+// One tiny canvas texture is shared per material, keeping the mobile memory cost bounded.
+const MATERIAL_SCHEMA=1;
+const textureCache=new Map(),materialCache=new Map();
+const liveAvatars=()=>[...(globalThis.__AGCB_LIVE_AVATARS||[])].filter(a=>a?.parent);
+function world(){const a=liveAvatars();return a.length?a[a.length-1].parent:null}
+function canvas(size=96){const c=document.createElement('canvas');c.width=c.height=size;return[c,c.getContext('2d')]}
+function textureFrom(draw,repeat=[2,2]){const [c,x]=canvas();draw(x,c.width,c.height);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(...repeat);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=2;t.needsUpdate=true;return t}
+function seeded(i){const v=Math.sin(i*91.713+17.31)*43758.5453;return v-Math.floor(v)}
+function makeTexture(kind){if(textureCache.has(kind))return textureCache.get(kind);let t=null;
+  if(kind==='wood'||kind==='darkwood')t=textureFrom((x,w,h)=>{const dark=kind==='darkwood';x.fillStyle=dark?'#76533e':'#c99563';x.fillRect(0,0,w,h);for(let y=7;y<h;y+=12){x.strokeStyle=dark?'rgba(255,225,185,.13)':'rgba(94,54,27,.18)';x.lineWidth=1.3;x.beginPath();for(let px=0;px<=w;px+=4){const py=y+Math.sin(px*.13+y)*1.4+(seeded(px+y)-.5)*1.2;px?x.lineTo(px,py):x.moveTo(px,py)}x.stroke()}for(let i=0;i<5;i++){const cx=10+seeded(i)*76,cy=8+seeded(i+9)*80;x.strokeStyle=dark?'rgba(30,18,12,.18)':'rgba(95,53,26,.20)';x.beginPath();x.ellipse(cx,cy,4+seeded(i+3)*5,1.5+seeded(i+5)*2,seeded(i+8)*.8,0,Math.PI*2);x.stroke()}},[1.5,1.5]);
+  else if(kind==='brick')t=textureFrom((x,w,h)=>{x.fillStyle='#b96f60';x.fillRect(0,0,w,h);x.strokeStyle='rgba(245,220,200,.55)';x.lineWidth=2;const bh=18,bw=30;for(let y=0,row=0;y<h;y+=bh,row++){x.beginPath();x.moveTo(0,y);x.lineTo(w,y);x.stroke();const off=row%2?bw/2:0;for(let xx=-off;xx<w;xx+=bw){x.beginPath();x.moveTo(xx,y);x.lineTo(xx,y+bh);x.stroke()}}for(let i=0;i<35;i++){x.fillStyle=`rgba(75,35,28,${.03+seeded(i)*.06})`;x.fillRect(seeded(i+50)*w,seeded(i+80)*h,2,1)}} ,[1.2,1.2]);
+  else if(kind==='concrete')t=textureFrom((x,w,h)=>{x.fillStyle='#c5c8ca';x.fillRect(0,0,w,h);for(let i=0;i<170;i++){const a=.025+seeded(i)*.055;x.fillStyle=`rgba(${seeded(i+4)>.5?'40,45,48':'255,255,255'},${a})`;const r=seeded(i+20)*1.4+.35;x.fillRect(seeded(i+30)*w,seeded(i+40)*h,r,r)}} ,[1.4,1.4]);
+  else if(kind==='stone')t=textureFrom((x,w,h)=>{x.fillStyle='#9fa7ad';x.fillRect(0,0,w,h);for(let i=0;i<34;i++){const cx=seeded(i)*w,cy=seeded(i+30)*h,rx=5+seeded(i+60)*11,ry=3+seeded(i+90)*8;x.fillStyle=`rgba(${seeded(i+4)>.5?'70,80,88':'220,224,225'},${.07+seeded(i+2)*.11})`;x.beginPath();x.ellipse(cx,cy,rx,ry,seeded(i+8)*Math.PI,0,Math.PI*2);x.fill()}},[1.3,1.3]);
+  else if(kind==='marble')t=textureFrom((x,w,h)=>{x.fillStyle='#ebe9e4';x.fillRect(0,0,w,h);for(let i=0;i<7;i++){x.strokeStyle=`rgba(125,135,140,${.08+seeded(i)*.09})`;x.lineWidth=.8+seeded(i+12)*1.3;x.beginPath();for(let px=-10;px<=w+10;px+=5){const py=(i*17+px*.37+Math.sin(px*.09+i)*8)%h;px>-10?x.lineTo(px,py):x.moveTo(px,py)}x.stroke()}},[1,1]);
+  else if(kind==='roof')t=textureFrom((x,w,h)=>{x.fillStyle='#aa6653';x.fillRect(0,0,w,h);x.strokeStyle='rgba(90,43,34,.24)';x.lineWidth=1.5;for(let y=0;y<h;y+=16){x.beginPath();x.moveTo(0,y);x.lineTo(w,y);x.stroke();for(let xx=(y/16)%2?12:0;xx<w;xx+=24){x.beginPath();x.moveTo(xx,y);x.lineTo(xx,y+16);x.stroke()}}},[1.4,1.4]);
+  else if(kind==='pink')t=textureFrom((x,w,h)=>{x.fillStyle='#efa3b5';x.fillRect(0,0,w,h);for(let i=0;i<45;i++){x.fillStyle=`rgba(255,255,255,${.025+seeded(i)*.055})`;x.beginPath();x.arc(seeded(i+3)*w,seeded(i+40)*h,.5+seeded(i+80)*1.5,0,Math.PI*2);x.fill()}},[1.2,1.2]);
+  textureCache.set(kind,t);return t}
+function materialFor(kind,source){if(kind==='glass'||kind==='metal'||!['wood','darkwood','stone','marble','brick','concrete','roof','pink'].includes(kind))return source;if(materialCache.has(kind))return materialCache.get(kind);const m=source?.clone?.()||new THREE.MeshLambertMaterial();m.map=makeTexture(kind);m.needsUpdate=true;materialCache.set(kind,m);return m}
+function applyBlock(mesh){if(!mesh?.isMesh||mesh.userData?.kind!=='block')return false;const kind=mesh.userData.mat||'wood';if(mesh.userData.proceduralMaterialKind===kind)return false;mesh.material=materialFor(kind,mesh.material);mesh.userData.proceduralMaterialKind=kind;return true}
+let lastScan=0,applied=0;
+function scan(){const w=world();if(!w)return 0;let n=0;for(const child of w.children)if(applyBlock(child))n++;applied+=n;return n}
+function loop(t){requestAnimationFrame(loop);if(t-lastScan<900)return;lastScan=t;scan()}
+scan();requestAnimationFrame(loop);
+globalThis.__AGCB_PROCEDURAL_MATERIALS={schema:MATERIAL_SCHEMA,scan,get applied(){return applied},textureKinds:textureCache,materialKinds:materialCache};
