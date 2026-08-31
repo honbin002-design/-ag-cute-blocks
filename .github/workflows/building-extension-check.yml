@@ -47,7 +47,7 @@ jobs:
           must_collision=['geometryToken','geometryInvalidations','explicitInvalidations','invalidateGeometry:invalidate','__agcbGeometryRevision']
           must_ray=['const nearby=[]','nearby.length=0','bufferReuses','persistent camera target registry']
           must_app=['cameraTargets=[]','cameraTargetSet=new Set()','registerCameraTarget','unregisterCameraTarget','collisionPoint=new THREE.Vector3()','collisionBox=new THREE.Box3()','camRay.intersectObjects(cameraTargets,false)','pets.forEach','moveForward.set','desiredCamera.set','SOLID_CELL=4','solidGrid=new Map()','solidCells=new WeakMap()','registerSolid','unregisterSolid','reindexSolid','solidGrid.get(solidCellKey','__AGCB_WORLD_HOTPATH={schema:2']
-          must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','function whisker','dog-muzzle-paws','cat-whiskers-paws','cow-horns-udder','chicken-beak-feet','function installPetLocomotion','petLocomotionSchema=2','travel*18','pet-distance-gait','schema:5']
+          must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','function whisker','dog-muzzle-paws','cat-whiskers-paws','cow-horns-udder','chicken-beak-feet','function updateAvatarTravel','function updatePetTravel','function applyTravelLocomotion','travelState=new WeakMap','petLocomotionSchema=3','travel*20','travel*18','player-distance-gait','pet-distance-gait-raf','schema:6']
           must_animal=['locomotionSchema:2','function advanceGait','p.userData.baseY','travel*stride','Math.max(0,step)*lift']
           must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
           must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
@@ -70,8 +70,8 @@ jobs:
           if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
           if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
           if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
-          if "runtime36" not in sw: missing.append('runtime36 cache version')
+          if "runtime37" not in sw: missing.append('runtime37 cache version')
           if missing:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
-          print('Building, O(1) cache, spatial collision, persistent camera path, anatomy polish, pet/livestock distance gait and gentle thunderstorm invariants passed.')
+          print('Building, O(1) cache, spatial collision, persistent camera path, anatomy polish, player/pet/livestock travel gait and gentle thunderstorm invariants passed.')
