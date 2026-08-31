@@ -145,6 +145,10 @@ Active PWA cache: `ag-cute-blocks-v045-runtime44`
 - Current persistence remains local-device; six-player shared persistent cloud world is not implemented.
 - Full world/chunk streaming is not implemented.
 
+## Concentrated iPhone validation — initial evidence
+- 2026-08-31: iPhone user added the GitHub Pages app to the Home Screen and opened it from the Home Screen successfully; the game screen was visible and displayed V0.4.5.
+- **REAL DEVICE PASS (launch and version visibility only).** This does not establish gameplay, locomotion, interaction, furniture safety, weather visuals, final art or overall V0.4.5 PASS.
+
 ## NEXT
-1. Use `V045_IPHONE_VALIDATION.md` for one concentrated iPhone validation batch covering runtime44 integrated paths.
+1. Continue the concentrated iPhone validation from `V045_IPHONE_VALIDATION.md`; the next single item is existing-world persistence and reload.
 2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
