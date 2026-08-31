@@ -13,6 +13,7 @@ export function createFarmTile({id,x,z,crop=null,stage=0,watered=false,plantedAt
 }
 
 export function canPlant(crop,season){const d=CROP_DEFS[crop];return !!d&&d.seasons.includes(season)}
+export function naturalFarmRain(weather){return weather==='rain'||weather==='thunderstorm'}
 
 export function plant(tile,crop,season,worldDay){
   if(!canPlant(crop,season))return {ok:false,reason:'season'};
@@ -23,7 +24,7 @@ export function plant(tile,crop,season,worldDay){
 export function water(tile){if(!tile.crop)return false;tile.watered=true;return true}
 
 export function advanceFarmDay(tiles,{season,weather,worldDay}){
-  const raining=weather==='rain';
+  const raining=naturalFarmRain(weather);
   for(const tile of tiles){
     if(!tile.crop)continue;
     const def=CROP_DEFS[tile.crop];
