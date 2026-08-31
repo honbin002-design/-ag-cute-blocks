@@ -37,9 +37,9 @@ jobs:
           index=pathlib.Path('index.html').read_text(encoding='utf-8')
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","upgradeStairs","schema:2"]
+          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","invalidateGeometry","schema:3"]
           must_mat=["kind==='tile'","kind==='ceramic'","MeshStandardMaterial","MATERIAL_SCHEMA=2"]
-          must_collision=['geometryStamp','geometryInvalidations','cache.delete(object)']
+          must_collision=['geometryToken','geometryInvalidations','explicitInvalidations','invalidateGeometry:invalidate','__agcbGeometryRevision']
           must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','schema:3']
           must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
           must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
@@ -52,8 +52,8 @@ jobs:
           if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
           if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
           if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
-          if "runtime30" not in sw: missing.append('runtime30 cache version')
+          if "runtime31" not in sw: missing.append('runtime31 cache version')
           if missing:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
-          print('Building, collision, articulated polish and gentle thunderstorm invariants passed.')
+          print('Building, O(1) collision cache, articulated polish and gentle thunderstorm invariants passed.')
