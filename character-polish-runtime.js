@@ -15,7 +15,6 @@ function polishAvatar(g){
   const u=g?.userData;if(!u?.avatarStyle||polished.has(g))return false;const v=u.visual||g,p=u.animatedParts||{};
   const girl=u.avatarStyle==='girl';
   const collar=torus(v,.205,.018,0,1.365,-.205,cream,[Math.PI/2,0,0],Math.PI*1.42);collar.rotation.z=.64;
-  // Limb-bound details must follow the existing animated pivots instead of floating in world-relative visual space.
   for(const arm of[p.leftArm,p.rightArm])if(arm)torus(arm,.087,.014,0,-.20,-.005,cream,[Math.PI/2,0,0]);
   for(const leg of[p.leftLeg,p.rightLeg])if(leg){torus(leg,.112,.014,0,-.26,-.035,cream,[Math.PI/2,0,0]);for(const z of[-.15,-.10])capsule(leg,.009,.12,0,-.31,z,dark,[0,0,Math.PI/2]);ellipsoid(leg,.055,0,-.325,-.205,cream,[1.45,.40,.62],10)}
   const hairColor=girl?0x68483b:0x4f3c34,hair=mat(hairColor,.93);
@@ -23,10 +22,11 @@ function polishAvatar(g){
   if(girl){ellipsoid(v,.07,-.33,1.53,-.02,pink,[1.35,.56,.52],10);ellipsoid(v,.07,.33,1.53,-.02,pink,[1.35,.56,.52],10)}else{ellipsoid(v,.085,-.24,1.97,-.12,hair,[.70,.90,.62],10);ellipsoid(v,.085,.24,1.97,-.12,hair,[.70,.90,.62],10)}
   const pocket=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,.025),girl?pink:blue);pocket.position.set(0,1.07,-.302);pocket.rotation.x=-.04;pocket.castShadow=true;v.add(pocket);
   for(const x of[-.115,.115])capsule(v,.006,.043,x,1.72,-.341,dark,[0,0,x<0?-.28:.28]);
-  // Small facial accents keep the child readable at Farm View distance without turning the model into a doll face.
   const cheek=mat(0xf3a8a5,.92);ellipsoid(v,.026,-.165,1.69,-.354,cheek,[1.5,.55,.35],9);ellipsoid(v,.026,.165,1.69,-.354,cheek,[1.5,.55,.35],9);
   polished.add(g);return true;
 }
+
+function installPetLocomotion(g){const u=g?.userData,p=u?.animatedParts;if(!u?.petType||!Array.isArray(p?.legs)||u.petLocomotionSchema===2)return;const host=g.parent||g,state={x:host.position.x,z:host.position.z,phase:Math.random()*Math.PI*2},previous=g.onBeforeRender;u.petLocomotionSchema=2;g.onBeforeRender=function(...args){if(previous)previous.apply(this,args);if(['sleep','petResponse'].includes(u.petState||'idle')){state.x=host.position.x;state.z=host.position.z;return}const dx=host.position.x-state.x,dz=host.position.z-state.z,travel=Math.hypot(dx,dz);state.x=host.position.x;state.z=host.position.z;const moving=travel>.00045;if(moving)state.phase+=Math.min(.42,travel*18);const phase=state.phase,amp=u.petType==='cat'?.38:.35,lift=u.petType==='cat'?.030:.026;p.legs.forEach((leg,i)=>{const a=phase+(i===0||i===3?0:Math.PI),step=Math.sin(a);leg.rotation.z=0;leg.rotation.x=moving?step*amp:0;const base=leg.userData._agcbBaseY??(leg.userData._agcbBaseY=leg.position.y);leg.position.y=base+(moving?Math.max(0,step)*lift:0)});if(u.body){u.body.position.y=(u.baseBodyY||.48)-(moving?Math.abs(Math.sin(phase*2))*.012:0);u.body.rotation.z=moving?Math.sin(phase)*.012:0}if(p.tail&&moving)p.tail.rotation.y=Math.sin(phase)*.28}}
 
 function polishPet(g){
   const u=g?.userData;if(!u?.petType||polished.has(g))return false;const dog=u.petType==='dog';
@@ -46,7 +46,7 @@ function polishPet(g){
     ellipsoid(g,.032,0,.575,-.748,nose,[1.0,.72,.50],9);whisker(g,-.025,.565,-.735,-1);whisker(g,.025,.565,-.735,1);
     for(const x of[-.19,.19]){ellipsoid(g,.058,x,.085,-.19,paw,[1.08,.38,1.34],10);for(const dx of[-.021,0,.021])capsule(g,.004,.032,x+dx,.081,-.24,dark,[Math.PI/2,0,0])}
   }
-  polished.add(g);return true;
+  installPetLocomotion(g);polished.add(g);return true;
 }
 
 function polishLivestock(g){
@@ -54,11 +54,9 @@ function polishLivestock(g){
   if(type==='cow'){
     const hide=mat(0xf1eee7,.92),pinkSoft=mat(0xe7aaa9,.90),brown=mat(0x5a4a43,.88),collar=mat(0x8c5d43,.82),horn=mat(0xe3d3aa,.90);
     for(const x of[-.31,.31]){ellipsoid(g,.135,x,.53,-.14,hide,[1.05,.78,.88],12);ellipsoid(g,.14,x,.51,.34,hide,[1.06,.76,.90],12)}
-    // Fetlock details are attached to the four gait pivots so they track each leg swing.
     for(const leg of u.legs||[])if(leg)ellipsoid(leg,.075,0,-.14,-.025,brown,[1.05,.70,1.18],10);
     torus(g,.305,.025,0,.77,-.43,collar,[Math.PI/2,0,0]);ellipsoid(g,.047,0,.52,-.68,gold,[.90,1.05,.58],10);
     ellipsoid(g,.115,0,.69,-.50,hide,[1.08,1.28,.66],12);ellipsoid(g,.075,0,.64,-.61,pinkSoft,[1.24,.62,.72],10);
-    // Horn bases, nostrils and udder silhouette make the cow read as bovine from side/front views.
     for(const x of[-.18,.18]){cone(g,.038,.18,x,.99,-.72,horn,[0,0,x<0?.55:-.55],[.82,1,.82]);ellipsoid(g,.032,x*.33,.675,-.825,brown,[1,.52,.46],9)}
     ellipsoid(g,.13,0,.33,.27,pinkSoft,[1.15,.58,.92],12);for(const x of[-.065,.065])for(const z of[.22,.34])capsule(g,.014,.105,x,.225,z,pinkSoft,[0,0,0]);
   }else if(type==='sheep'){
@@ -82,4 +80,4 @@ function polishLivestock(g){
 function scan(){let avatars=0,pets=0,livestock=0;for(const a of globalThis.__AGCB_LIVE_AVATARS||[])if(polishAvatar(a))avatars++;for(const p of globalThis.__AGCB_LIVE_PETS||[])if(polishPet(p))pets++;for(const a of globalThis.__AGCB_LIVE_LIVESTOCK||[])if(polishLivestock(a))livestock++;return{avatars,pets,livestock}}
 let ticks=0;function loop(){requestAnimationFrame(loop);if(++ticks%120===0)scan()}
 const first=scan();requestAnimationFrame(loop);
-globalThis.__AGCB_CHARACTER_POLISH={schema:4,scan,polished,first,features:['avatar-cheeks','dog-muzzle-paws','cat-whiskers-paws','cow-horns-udder','sheep-ear-detail','chicken-beak-feet']};
+globalThis.__AGCB_CHARACTER_POLISH={schema:5,scan,polished,first,features:['avatar-cheeks','dog-muzzle-paws','cat-whiskers-paws','pet-distance-gait','cow-horns-udder','sheep-ear-detail','chicken-beak-feet']};
