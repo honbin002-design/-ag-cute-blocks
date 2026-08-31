@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime37`
+Active PWA cache: `ag-cute-blocks-v045-runtime38`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -14,12 +14,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime37`
 ## Real-device PASS already locked
 - iPhone simultaneous movement + Jump: PASS on 2026-08-31.
 - One finger may keep the movement joystick active while a second finger presses Jump.
-- `mobile-input-runtime.js` has not been changed during runtime31-37 performance/art/locomotion work; do not re-test this specific PASS unless future input work can affect it.
+- `mobile-input-runtime.js` has not been changed during runtime31-38 performance/art/locomotion work; do not re-test this specific PASS unless future input work can affect it.
 
 ## Runtime architecture
 - `bootstrap-v045.js` remains the single live module entrypoint.
 - Renderer/collision/raycast governance loads before the base world.
-- Base world then loads heading/furniture-safety, procedural building surfaces, mobile HUD/input, life, wildlife and weather extensions in deterministic order.
+- Base world then loads heading/furniture-safety, procedural building surfaces, character polish, pet grounding, mobile HUD/input, life, wildlife and weather extensions in deterministic order.
 - Cache presence alone is never treated as proof that a runtime is active.
 
 ## Daily progression — direct core migration COMPLETE
@@ -59,11 +59,17 @@ Active PWA cache: `ag-cute-blocks-v045-runtime37`
 ## Species locomotion pass — runtime35-37
 - Livestock gait phase is driven by actual movement speed and elapsed frame time instead of only wall-clock animation time.
 - Cow and sheep use diagonal quadruped stepping with visible leg lift and restrained body/head motion; chicken uses faster alternating two-leg cadence.
-- Pet and player gait are now driven in the dedicated polish RAF from actual XZ travel distance, so visible limb cadence follows movement distance and stops when travel stops.
+- Pet and player gait are driven in the dedicated polish RAF from actual XZ travel distance, so visible limb cadence follows movement distance and stops when travel stops.
 - Player legs/arms, body bob and slight roll are re-applied after the base loop; locked furniture poses (`sit`, `lie`, `sleep`, `swing`, `dine`) are excluded.
 - Dog/cat leg swing/lift, body bob and tail response follow actual parent travel; sleep/pet-response states remain excluded.
-- `character-polish-runtime.js` is schema 6 with a `WeakMap` travel-state registry rather than relying on Group `onBeforeRender` for pet gait.
-- This is not locomotion PASS yet: paw/ground contact, turns, stop transitions and subjective sliding still need concentrated device evidence.
+- `character-polish-runtime.js` is schema 6 with a `WeakMap` travel-state registry.
+
+## Pet ground-contact pass — runtime38
+- New `pet-grounding-runtime.js` attaches the visible dog/cat paw shell and toe accents directly to each animated leg pivot.
+- Legacy low root-level decorative paw meshes are hidden so the visible paw no longer stays behind while the leg swings.
+- Paw geometry therefore inherits the same leg rotation and vertical lift used by distance-based locomotion.
+- The runtime is additive and does not touch player input or animal life-state ownership.
+- This materially fixes the known detached-paw architecture issue, but visual ground contact and stop/turn feel still require device evidence before locomotion PASS.
 
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
@@ -91,25 +97,23 @@ Active PWA cache: `ag-cute-blocks-v045-runtime37`
 ## Automated validation / deployment
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
-- Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers and runtime37 player/pet/livestock travel-gait markers.
-- Runtime37 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime37 push building/collision/camera/spatial/anatomy/locomotion invariant checks: SUCCESS.
-- Runtime37 PR building-extension check: SUCCESS.
-- Runtime37 Pages build, deploy and report-build-status for head `4b23044f24635c87d27059c08f644e79b324e205`: SUCCESS.
+- Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
+- Runtime38 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime38 push building/collision/camera/spatial/anatomy/locomotion/paw-grounding invariant checks: SUCCESS.
+- Runtime38 Pages build/report steps passed; deployment was still finishing at the last status read before this checkpoint update.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
 - Subjective movement/render smoothness after runtime31-33 optimization needs device evidence.
-- Runtime34 anatomy and runtime35-37 locomotion need device evidence before visual/motion PASS.
-- Pet decorative paws are still not fully joint-bound, so final ground-contact quality remains a known refinement target.
+- Runtime34 anatomy and runtime35-38 locomotion need device evidence before visual/motion PASS.
 - Furniture safe exit, heading boundary behavior and thunderstorm visual quality still need concentrated device validation.
 - Current persistence remains local-device; six-player shared persistent cloud world is not implemented.
 - Full world/chunk streaming is not implemented.
 
 ## NEXT
 1. Reduce non-frame-critical O(n) interaction-nearby lookup without touching the locked multitouch input path.
-2. Bind pet paw visuals more cleanly to animated leg pivots and refine stop/turn transitions.
+2. Refine pet/player turn and stop transitions after the paw-grounding architecture is stable.
 3. Reduce build-aim target assembly after interaction lookup is stabilized.
 4. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
 5. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
