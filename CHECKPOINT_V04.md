@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime34`
+Active PWA cache: `ag-cute-blocks-v045-runtime36`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -14,7 +14,7 @@ Active PWA cache: `ag-cute-blocks-v045-runtime34`
 ## Real-device PASS already locked
 - iPhone simultaneous movement + Jump: PASS on 2026-08-31.
 - One finger may keep the movement joystick active while a second finger presses Jump.
-- `mobile-input-runtime.js` has not been changed during runtime31-34 performance/art work; do not re-test this specific PASS unless future input work can affect it.
+- `mobile-input-runtime.js` has not been changed during runtime31-36 performance/art/locomotion work; do not re-test this specific PASS unless future input work can affect it.
 
 ## Runtime architecture
 - `bootstrap-v045.js` remains the single live module entrypoint.
@@ -53,15 +53,23 @@ Active PWA cache: `ag-cute-blocks-v045-runtime34`
 - Controls are classified by role (`movement`, `primary-action`, `context-action`, `build-action`, `menu`) for future tool/run/fishing actions.
 
 ## Character / animal anatomy pass — runtime34
-- Farm-life chibi child retains articulated face/hair/clothing/sock/shoe polish and now adds restrained cheek/facial accents for better readability at Farm View distance.
+- Farm-life chibi child retains articulated face/hair/clothing/sock/shoe polish and adds restrained cheek/facial accents for better readability at Farm View distance.
 - Clothing/shoe polish remains attached to animated arm/leg joints instead of floating independently.
-- Dog silhouette now has stronger chest/muzzle definition, visible nose, paws/toes and collar bell.
-- Cat silhouette now has stronger muzzle, inner-ear detail, visible whiskers, paws/toes and collar bell.
-- Cow now has stronger fetlock/leg treatment, neck/muzzle definition, horns, nostrils, collar/bell and an udder silhouette so it reads more clearly as bovine from multiple angles.
-- Sheep now has denser wool/ear/muzzle/nose detail while keeping a lightweight procedural model.
-- Chicken now has clearer tail/wing feather shapes, wattle, sharper beak and visible feet/toes.
-- `character-polish-runtime.js` is schema 4 and remains a non-destructive visual layer over the existing animation/state owners.
-- This is a meaningful anatomy/readability improvement, not final art PASS; species proportions, locomotion quality and overall visual cohesion still require concentrated iPhone review later.
+- Dog silhouette has stronger chest/muzzle definition, visible nose, paws/toes and collar bell.
+- Cat silhouette has stronger muzzle, inner-ear detail, visible whiskers, paws/toes and collar bell.
+- Cow has stronger fetlock/leg treatment, neck/muzzle definition, horns, nostrils, collar/bell and an udder silhouette so it reads more clearly as bovine from multiple angles.
+- Sheep has denser wool/ear/muzzle/nose detail while keeping a lightweight procedural model.
+- Chicken has clearer tail/wing feather shapes, wattle, sharper beak and visible feet/toes.
+- This is a meaningful anatomy/readability improvement, not final art PASS.
+
+## Species locomotion pass — runtime35-36
+- Livestock gait phase is no longer driven only by wall-clock animation time. `animal-models.js` advances gait from actual movement speed and elapsed frame time, so cadence tracks travel rather than continuing to cycle independently of motion.
+- Cow and sheep use diagonal quadruped stepping with visible leg lift, restrained body roll/pitch and head/body bob; chicken uses a faster alternating two-leg cadence with larger lift.
+- Leg pivots retain base-height data so the animation can lift a stepping leg and reliably return it to its neutral height when movement stops.
+- Pet visual locomotion now samples actual parent travel distance during render and converts that travel into dog/cat gait phase, leg swing/lift, body bob and tail response instead of relying only on a fixed time oscillator.
+- Sleep and pet-response states remain owned by the existing life/state systems and are excluded from the travel-gait override.
+- `character-polish-runtime.js` is schema 5; pet travel gait is a non-destructive visual layer and does not touch the locked mobile input path.
+- This is not locomotion PASS yet: player gait, pet paw/ground-contact polish, turning/stop transitions and subjective sliding still need concentrated real-device review/refinement.
 
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits rather than scanning child geometry on every movement collision test.
@@ -98,24 +106,24 @@ Active PWA cache: `ag-cute-blocks-v045-runtime34`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule smoke tests cover normal/watered/thunderstorm crop growth, season pause, winter orange/apple behavior, sheep readiness and shipping settlement.
 - Direct-core daily authority, shop buildability, restored building catalog and mobile thumb-zone HUD are locked by CI.
-- Building-extension workflow locks stairs/tile/ceramic, collision geometry invalidation, spatial collision, persistent camera targets, reusable scratch paths, thunderstorm integration and runtime34 anatomy-polish markers.
-- Runtime34 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime34 push building/collision/camera/spatial/anatomy invariant checks: SUCCESS.
-- Runtime34 PR copies of both checks: SUCCESS.
-- Runtime34 Pages build, deploy and report-build-status for head `43b6c187dfb2030ebe419d612735ee9247f3618e`: SUCCESS.
+- Building-extension workflow locks stairs/tile/ceramic, collision geometry invalidation, spatial collision, persistent camera targets, reusable scratch paths, thunderstorm integration, anatomy markers and runtime36 pet/livestock distance-gait markers.
+- Runtime36 push JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime36 push building/collision/camera/spatial/anatomy/locomotion invariant checks: SUCCESS.
+- Runtime36 PR copies of JavaScript and building-extension checks: SUCCESS.
+- Runtime36 Pages build, deploy and report-build-status for head `9f4f9771bf145334ae2bfa308e9756cee4082bf5`: SUCCESS.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
 - Final character/pet/livestock/wildlife art quality is still intermediate.
 - Subjective movement/render smoothness after runtime31-33 optimization needs device evidence.
-- New runtime34 anatomy proportions/readability need device evidence before visual PASS.
+- Runtime34 anatomy proportions/readability and runtime35-36 locomotion quality need device evidence before visual/motion PASS.
 - Furniture safe exit, heading boundary behavior and thunderstorm visual quality still need concentrated device validation.
 - Current persistence remains local-device; six-player shared persistent cloud world is not implemented.
 - Full world/chunk streaming is not implemented; the spatial hash/persistent camera registry are preparation for larger worlds, not a substitute for chunk streaming.
 
 ## NEXT
 1. Reduce non-frame-critical O(n) interaction-nearby lookup without touching the locked multitouch input path.
-2. Continue species-specific locomotion and character/animal art refinement.
+2. Refine player gait and pet paw/ground-contact behavior so visible steps match travel and stop cleanly instead of sliding.
 3. Reduce build-aim target assembly after interaction lookup is stabilized.
 4. Add gentle wet-ground/puddle response only if it stays within the mobile performance budget.
 5. Begin a chunk/world-index scaffold once local-world behavior is stable enough that persistence can be migrated without breaking existing saves.
