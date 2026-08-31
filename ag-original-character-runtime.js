@@ -111,6 +111,10 @@ function applyPaperDoll(visual,c,bones,slots){
     dress.name='agcb-formal-dress';dress.position.set(0,-.18,0);dress.castShadow=true;slots.dress.add(dress);
   }
   slots.shoes.visible=true;
+  const leftShoe=roundGarment(slots.shoes,'agcb-shoe-l',0x665f5b,[0,-.04,-.08],[.20,.12,.30]);
+  const rightShoe=roundGarment(slots.shoes,'agcb-shoe-r',0x665f5b,[0,-.04,-.08],[.20,.12,.30]);
+  leftShoe.position.x=-.18;rightShoe.position.x=.18;
+  bones.footL.add(leftShoe);bones.footR.add(rightShoe);
 }
 function createOriginalCharacter(c){
   const visual=new THREE.Group();visual.name='agcb-original-connected-avatar';visual.userData.assetStatus='AG_ORIGINAL_CONNECTED_BODY';
