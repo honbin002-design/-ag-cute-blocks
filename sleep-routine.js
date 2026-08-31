@@ -5,6 +5,7 @@ const SETTINGS_KEY='ag_cute_blocks_settings_v03';
 const $=s=>document.querySelector(s);
 const read=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??fallback}catch{return fallback}};
 const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const naturalRain=w=>w==='rain'||w==='thunderstorm';
 
 const style=document.createElement('style');
 style.textContent=`
@@ -24,7 +25,7 @@ function advanceOneDay(world,settings){
   const oldDay=Number(settings.worldDay||1),newDay=oldDay+1,season=settings.season||'spring',weather=settings.weather||'sunny';
   const economy=createEconomyState(settings.economy||{});const earned=settleShipping(economy);
   for(const o of world.objects||[]){
-    if(['carrot','corn','pumpkin','tomato','strawberry','cabbage','potato'].includes(o.type)&&Number(o.growth||0)<1)o.growth=Math.min(1,Number(o.growth||0)+(weather==='rain'?.18:.10));
+    if(['carrot','corn','pumpkin','tomato','strawberry','cabbage','potato'].includes(o.type)&&Number(o.growth||0)<1)o.growth=Math.min(1,Number(o.growth||0)+(naturalRain(weather)?.18:.10));
     if(['appleTree','orangeTree','peachTree'].includes(o.type)&&Number(o.growth||0)<1&&season!=='winter')o.growth=Math.min(1,Number(o.growth||0)+.09);
     if(['cow','sheep','chicken'].includes(o.type)&&!o.productReady){const wait=o.type==='sheep'?3:1;if(newDay-Number(o.lastProductDay||0)>=wait)o.productReady=true}
   }
