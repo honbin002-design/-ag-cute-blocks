@@ -27,7 +27,7 @@ jobs:
       - name: Verify V0.4.5 extension invariants
         shell: python
         run: |
-          import pathlib,sys
+          import pathlib,sys,re
           app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
@@ -40,11 +40,11 @@ jobs:
           index=pathlib.Path('index.html').read_text(encoding='utf-8')
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","invalidateGeometry","schema:3"]
+          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","invalidateGeometry","reindexSolid","schema:4"]
           must_mat=["kind==='tile'","kind==='ceramic'","MeshStandardMaterial","MATERIAL_SCHEMA=2"]
           must_collision=['geometryToken','geometryInvalidations','explicitInvalidations','invalidateGeometry:invalidate','__agcbGeometryRevision']
           must_ray=['const nearby=[]','nearby.length=0','bufferReuses','persistent camera target registry']
-          must_app=['cameraTargets=[]','cameraTargetSet=new Set()','registerCameraTarget','unregisterCameraTarget','collisionPoint=new THREE.Vector3()','collisionBox=new THREE.Box3()','camRay.intersectObjects(cameraTargets,false)','pets.forEach','__AGCB_WORLD_HOTPATH','moveForward.set','desiredCamera.set']
+          must_app=['cameraTargets=[]','cameraTargetSet=new Set()','registerCameraTarget','unregisterCameraTarget','collisionPoint=new THREE.Vector3()','collisionBox=new THREE.Box3()','camRay.intersectObjects(cameraTargets,false)','pets.forEach','moveForward.set','desiredCamera.set','SOLID_CELL=4','solidGrid=new Map()','solidCells=new WeakMap()','registerSolid','unregisterSolid','reindexSolid','solidGrid.get(solidCellKey','__AGCB_WORLD_HOTPATH={schema:2']
           must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','schema:3']
           must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
           must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
@@ -55,14 +55,20 @@ jobs:
           if "objects.filter(o=>o.userData.pet).forEach" in app: missing.append('legacy per-frame pet filter still present')
           if "const p=new THREE.Vector3(x,1,z)" in app: missing.append('legacy per-collision Vector3 allocation still present')
           if "new THREE.Box3().setFromObject" in app: missing.append('legacy per-collision Box3 allocation still present')
+          solid_match=re.search(r'function solidAt\(x,z\)\{(.+?)\}function movePlayer',app,re.S)
+          solid_body=solid_match.group(1) if solid_match else ''
+          if not solid_match: missing.append('solidAt body not found')
+          if 'blocks.values()' in solid_body: missing.append('solidAt still scans all blocks')
+          if 'for(const g of objects)' in solid_body: missing.append('solidAt still scans all objects')
+          if 'const bucket=solidGrid.get' not in solid_body: missing.append('solidAt does not query spatial bucket')
           if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
           if "import './character-polish-runtime.js';" not in boot: missing.append('bootstrap character polish import')
           if "import './weather-visual-runtime.js';" not in boot: missing.append('bootstrap weather visual import')
           if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
           if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
           if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
-          if "runtime32" not in sw: missing.append('runtime32 cache version')
+          if "runtime33" not in sw: missing.append('runtime33 cache version')
           if missing:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
-          print('Building, O(1) collision cache, persistent camera hot path, articulated polish and gentle thunderstorm invariants passed.')
+          print('Building, O(1) cache, persistent camera path, spatial collision broad-phase, articulated polish and gentle thunderstorm invariants passed.')
