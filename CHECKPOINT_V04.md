@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 Branch: `dev-v0.1`
-Active PWA cache: `ag-cute-blocks-v045-runtime43`
+Active PWA cache: `ag-cute-blocks-v045-runtime44`
 
 ## Locked product direction
 - Original cozy farm-life chibi identity; do not copy recognizable protected characters, models, costumes, UI, maps, names, music or other protected expression.
@@ -99,6 +99,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime43`
 - Add/remove paths maintain entity membership and dirty entity/chunk tracking; `saveWorldIndex()` persists the derived index separately from the existing full snapshot.
 - Existing `localStorage` world snapshot remains compatible and authoritative during this scaffold stage; no cloud sync, realtime multiplayer or chunk streaming is claimed.
 
+## Explicit world partitions — runtime44
+- Chunk records now expose separate `terrain`, `buildings`, `objects`, `farms`, `animals` and `players` lists.
+- Ground, river and lake receive stable terrain IDs; blocks, furniture, crops, trees, pets, livestock and the local player are classified into the appropriate partition.
+- The index keeps a compatibility conversion path for older in-memory array-shaped chunk records while retaining the existing world snapshot format.
+- This is still a local indexing scaffold; cloud persistence, realtime multiplayer and full chunk streaming remain unimplemented.
+
 ## Collision hot path — runtime31
 - Static `Box3.setFromObject()` cache uses O(1) transform/geometry revision validation for normal hits.
 - Geometry replacement has explicit invalidation support.
@@ -126,9 +132,9 @@ Active PWA cache: `ag-cute-blocks-v045-runtime43`
 - JavaScript workflow parses every root `.js` module and validates relative named imports.
 - Daily-rule, shop, building catalog and mobile HUD checks remain locked.
 - Building-extension workflow locks stairs/tile/ceramic, collision invalidation/spatial path, persistent camera path, anatomy markers, player/pet/livestock travel gait and runtime38 pet paw grounding markers.
-- Runtime43 JavaScript syntax/import/rule/HUD checks: SUCCESS.
-- Runtime43 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index invariant checks: SUCCESS.
-- Runtime43 Pages build/deployment/report steps: SUCCESS.
+- Runtime44 JavaScript syntax/import/rule/HUD checks: SUCCESS.
+- Runtime44 building/collision/camera/spatial/anatomy/locomotion/paw-grounding/interaction-index/turn-stop/build-aim/wet-ground/world-index/partition invariant checks: SUCCESS.
+- Runtime44 Pages build/deployment/report steps: SUCCESS.
 
 ## Explicitly NOT PASS yet
 - V0.4.5 as a whole still needs a concentrated iPhone real-device validation batch.
@@ -140,5 +146,5 @@ Active PWA cache: `ag-cute-blocks-v045-runtime43`
 - Full world/chunk streaming is not implemented.
 
 ## NEXT
-1. Extend the world/chunk scaffold toward explicit terrain/building/object/farm/animal/player partitions without replacing the existing save format.
-2. Group enough stable changes before requesting the next concentrated iPhone validation.
+1. Consolidate the current stable runtime changes and prepare the concentrated iPhone validation batch.
+2. After device evidence, continue incremental persistence and chunk migration work without replacing existing saves.
