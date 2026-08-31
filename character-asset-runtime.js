@@ -56,8 +56,14 @@ function applyAsset(group,c,gltf){
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
-  const key=c.gender==='boy'?'boy':'girl';if(group.userData.assetVariant===key&&group.userData.assetRoot)return;
-  group.userData.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{group.userData.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
+  const u=group?.userData;
+  // AG-authored connected bodies own their visual stack; never replace underwear/paper-doll mode with a dressed technical GLB.
+  if(u?.agOriginal||u?.avatarVisualStyle==='ag-original-connected-v1'){
+    u.assetUpgradeSkipped='ag-original-owned';
+    return;
+  }
+  const key=c.gender==='boy'?'boy':'girl';if(u.assetVariant===key&&u.assetRoot)return;
+  u.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{u.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
 }
 globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const next=u.assetActions[state]||u.assetActions.idle;if(!next||u.assetAction===next)return;
@@ -66,6 +72,6 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
 };
-globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'KayKit Character Pack Adventures',sourceCommit:SOURCE_COMMIT,license:'CC0 1.0',loaded:0,failed:0};
+globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'KayKit Character Pack Adventures',sourceCommit:SOURCE_COMMIT,license:'CC0 1.0',loaded:0,failed:0,originalPreserved:true};
 globalThis.__AGCB_UPGRADE_AVATAR=(group,c)=>{upgrade(group,c);};
 for(const group of globalThis.__AGCB_LIVE_AVATARS||[])upgrade(group,group.userData.avatarCustomization||{gender:group.userData.avatarStyle||'girl'});
