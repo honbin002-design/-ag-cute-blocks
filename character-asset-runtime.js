@@ -38,7 +38,7 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  u.primitiveVisual.visible=false;u.visual.add(root);u.assetRoot=root;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetSource='KayKit CC0';
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){

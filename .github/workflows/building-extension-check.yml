@@ -75,7 +75,7 @@ jobs:
           if 'blocks.values()' in solid_body: missing.append('solidAt still scans all blocks')
           if 'for(const g of objects)' in solid_body: missing.append('solidAt still scans all objects')
           if 'const bucket=solidGrid.get' not in solid_body: missing.append('solidAt does not query spatial bucket')
-          if 'GLTFLoader' not in asset or 'SkeletonUtils' not in asset or 'continuous-skinned-mesh' not in asset: missing.append('rigged avatar asset loader markers missing')
+          if 'GLTFLoader' not in asset or 'SkeletonUtils' not in asset or 'continuous-skinned-mesh' not in asset or 'primitiveChildren' not in asset or 'assetLoaded=true' not in asset: missing.append('rigged avatar asset loader/visibility markers missing')
           if "import './character-asset-runtime.js';" not in boot: missing.append('bootstrap rigged avatar asset import')
           if "character-asset-runtime.js" not in sw: missing.append('service worker rigged avatar asset cache entry')
           if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
