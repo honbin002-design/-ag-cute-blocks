@@ -116,26 +116,26 @@ function bindConnectedBody(mesh,bones,positions){
 function addFaceAndHair(visual,c,bones){
   const head=bones.head,face=new THREE.Group();face.name='agcb-original-face';head.add(face);face.position.set(0,.12,-.33);
   const skinMat=new THREE.MeshStandardMaterial({color:SKIN[c.skin]||SKIN.light,roughness:.88}),hairMat=new THREE.MeshStandardMaterial({color:HAIR[c.hair]||HAIR.chestnut,roughness:.9}),hairLightMat=new THREE.MeshStandardMaterial({color:new THREE.Color(HAIR[c.hair]||HAIR.chestnut).offsetHSL(0,.02,.075),roughness:.88}),hairPartMat=new THREE.MeshStandardMaterial({color:new THREE.Color(HAIR[c.hair]||HAIR.chestnut).offsetHSL(0,.02,-.12),roughness:.92}),eyeMat=new THREE.MeshStandardMaterial({color:0x26333b,roughness:.55}),whiteMat=new THREE.MeshStandardMaterial({color:0xfffdf8,roughness:.8}),mouthMat=new THREE.MeshStandardMaterial({color:0x854a50,roughness:.8}),cheekMat=new THREE.MeshBasicMaterial({color:0xf0a19e,transparent:true,opacity:.5});
-  const female=c.gender==='girl',adult=c.age==='adult',eyeRadius=adult?(female?.075:.068):(female?.105:.098),eyeGap=adult?(female?.125:.135):(female?.145:.14);
+  const female=c.gender==='girl',male=!female,adult=c.age==='adult',eyeRadius=adult?(female?.066:.060):(female?.088:.082),eyeGap=adult?(female?.125:.138):(female?.145:.14);
   for(const x of[-eyeGap,eyeGap]){organicFeature(face,'agcb-eye-white',whiteMat,[x,.05,-.045],[eyeRadius,eyeRadius*.96,eyeRadius*.38]);organicFeature(face,'agcb-eye-pupil',eyeMat,[x,.05,-.088],[eyeRadius*.55,eyeRadius*.55,eyeRadius*.26]);organicFeature(face,'agcb-eye-highlight',whiteMat,[x-eyeRadius*.16,.077,-.108],[eyeRadius*.18,eyeRadius*.18,eyeRadius*.08]);}
-  for(const x of[-eyeGap,eyeGap])profileVolume(face,'agcb-brow',hairMat,[x,0,0],[{y:.125,rx:.018,rz:.012,cx:-.025,cz:-.092},{y:.145,rx:.021,rz:.013,cx:.025,cz:-.092},{y:.16,rx:.014,rz:.010,cx:.045,cz:-.092}],[0,0,x<0?-.10:.10]);
+  for(const x of[-eyeGap,eyeGap])profileVolume(face,'agcb-brow',hairMat,[x,0,0],[{y:.125,rx:male? .025:.017,rz:.012,cx:-.025,cz:-.092},{y:.145,rx:male? .028:.020,rz:.013,cx:.025,cz:-.092},{y:.16,rx:male? .018:.013,rz:.010,cx:.045,cz:-.092}],[0,0,x<0?-.10:.10]);
   organicFeature(face,'agcb-nose',skinMat,[0,-.015,-.070],[adult?(female?.026:.030):.024,adult?.024:.022,.014]);
   if(adult&&!female)organicFeature(face,'agcb-jaw-chin',skinMat,[0,-.105,-.018],[.14,.075,.075]);
   const smile=new THREE.Mesh(new THREE.TorusGeometry(female?(adult?.058:.052):(adult?.046:.042),.009,7,16,Math.PI),mouthMat);smile.rotation.z=Math.PI;smile.position.set(0,-.075,-.075);face.add(smile);
   organicFeature(face,'agcb-cheek-l',cheekMat,[-(adult?.22:.20),-.045,-.058],[adult?.040:.042,adult?.020:.023,.010]);organicFeature(face,'agcb-cheek-r',cheekMat,[adult?.22:.20,-.045,-.058],[adult?.040:.042,adult?.020:.023,.010]);
   if(female){for(const x of[-eyeGap,eyeGap])profileVolume(face,'agcb-eyelash',hairMat,[x,0,0],[{y:.115,rx:.010,rz:.008,cx:x<0?-.035:.035,cz:-.105},{y:.145,rx:.012,rz:.008,cx:x<0?-.015:.015,cz:-.105}],[0,0,x<0?-.22:.22])}
-  const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.14,.02);
+  const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.15,.035);
   const cap=female?(adult?.33:.36):(adult?.31:.33);
   // The crown is a rear/top mass.  The face stays open and the fringe is authored as separate tapered strands.
-  profileVolume(hair,'agcb-hair-back-mass',hairMat,[0,.08,.13],[{y:-.18,rx:cap*.72,rz:cap*.72,cz:.02},{y:-.06,rx:cap*.94,rz:cap*.82,cz:.04},{y:.10,rx:cap*1.00,rz:cap*.80,cz:.05},{y:.23,rx:cap*.78,rz:cap*.62,cz:.05},{y:.31,rx:cap*.34,rz:cap*.30,cz:.03}]);
-  profileVolume(hair,'agcb-hair-crown-highlight',hairLightMat,[0,.13,.065],[{y:.02,rx:cap*.64,rz:cap*.34,cz:.01},{y:.13,rx:cap*.72,rz:cap*.38,cz:.02},{y:.22,rx:cap*.50,rz:cap*.27,cz:.02}]);
+  profileVolume(hair,'agcb-hair-back-mass',hairMat,[0,.07,.14],[{y:-.18,rx:cap*.68,rz:cap*.50,cz:.02},{y:-.06,rx:cap*.92,rz:cap*.61,cz:.04},{y:.10,rx:cap*1.00,rz:cap*.63,cz:.06},{y:.23,rx:cap*.78,rz:cap*.52,cz:.06},{y:.31,rx:cap*.34,rz:cap*.28,cz:.04}]);
+  profileVolume(hair,'agcb-hair-crown-highlight',hairLightMat,[0,.15,.08],[{y:.02,rx:cap*.55,rz:cap*.22,cz:.01},{y:.13,rx:cap*.66,rz:cap*.27,cz:.02},{y:.22,rx:cap*.45,rz:cap*.20,cz:.02}]);
   const lock=(name,x,y,z,length,width,depth,tilt=0,material=hairMat)=>profileVolume(hair,name,material,[x,y,z],[{y:-length*.55,rx:width*.24,rz:depth*.22,cx:-tilt*.040,cz:0},{y:-length*.25,rx:width*.48,rz:depth*.36,cx:-tilt*.012,cz:-.01},{y:length*.18,rx:width*.62,rz:depth*.48,cx:tilt*.025,cz:-.01},{y:length*.52,rx:width*.26,rz:depth*.22,cx:tilt*.055,cz:0}],[0,0,tilt]);
   const style=c.hairStyle||'bob';
   const fringeXs=female?[-.28,-.17,-.06,.06,.17,.28]:[-.23,-.10,.04,.18,.28];
   const fringeLengths=style==='long'||style==='ponytail'?(female?[.27,.31,.34,.32,.28,.24]:[.24,.28,.30,.26,.21]):style==='curly'?(female?[.23,.27,.22,.28,.24,.20]:[.20,.22,.24,.20,.18]):(female?[.22,.27,.30,.27,.22,.19]:[.18,.22,.26,.22,.17]);
-  fringeXs.forEach((x,i)=>{const center=i-(fringeXs.length-1)/2,wave=center*.045+(style==='short'&&i>2?.035:0);lock('agcb-hair-fringe-'+i,x,wave,-.275,fringeLengths[i],female?.115:.10,female?.095:.085,center*.11,i%3===0?hairLightMat:hairMat)});
+  fringeXs.forEach((x,i)=>{const center=i-(fringeXs.length-1)/2,wave=center*.045+(style==='short'&&i>2?.035:0);lock('agcb-hair-fringe-'+i,x,.19+wave,-.225,fringeLengths[i],female?.105:.088,female?.075:.070,center*.11,i%3===0?hairLightMat:hairMat)});
   // A narrow part line and a swept lock make the hairstyle read as hair, rather than a cap.
-  profileVolume(hair,'agcb-hair-part-line',hairPartMat,[female?-.06:.08,.22,-.235],[{y:-.03,rx:.012,rz:.010,cx:0,cz:0},{y:.08,rx:.014,rz:.012,cx:.025,cz:0},{y:.15,rx:.010,rz:.009,cx:.045,cz:0}],[0,0,female?-.18:.22]);
+  profileVolume(hair,'agcb-hair-part-line',hairPartMat,[female?-.06:.08,.25,-.185],[{y:-.03,rx:.006,rz:.006,cx:0,cz:0},{y:.08,rx:.008,rz:.007,cx:.025,cz:0},{y:.15,rx:.006,rz:.006,cx:.045,cz:0}],[0,0,female?-.18:.22]);
   if(female){
     const sideLength=style==='long'||style==='ponytail'?.52:style==='curly'?.40:.34;
     lock('agcb-hair-side-l',-.34,-.04,.04,sideLength,.15,.13,-.10);
@@ -151,8 +151,8 @@ function addFaceAndHair(visual,c,bones){
       lock('agcb-hair-ponytail',.40,-.02,.23,.58,.19,.18,.14);
     }
   }else{
-    lock('agcb-hair-sideburn-l',-.29,-.06,-.02,adult?.25:.21,.095,.095,-.10);
-    lock('agcb-hair-sideburn-r',.29,-.06,-.02,adult?.25:.21,.095,.095,.10);
+    lock('agcb-hair-sideburn-l',-.29,-.015,.04,adult?.15:.12,.075,.075,-.08);
+    lock('agcb-hair-sideburn-r',.29,-.015,.04,adult?.15:.12,.075,.075,.08);
     if(style==='short')lock('agcb-hair-swept-lock',-.12,.12,-.285,adult?.27:.23,.13,.095,-.24,hairLightMat);
     if(style==='long'){
       lock('agcb-hair-back-l',-.25,-.12,.17,.40,.13,.15,-.06);
@@ -226,4 +226,4 @@ export function createOriginalCharacter(c){
   const ageScale=adult?[1.01,1.02,1.01]:[.90,.90,.90],genderScale=male?[1.04,1,1.01]:[.98,1,1],bodyScale=c.body==='tall'?[.95,1.07,.97]:c.body==='petite'?[.94,.94,.95]:[1.05,1,1.02];g.scale.set(ageScale[0]*genderScale[0]*bodyScale[0],ageScale[1]*bodyScale[1],ageScale[2]*bodyScale[2]);return g;
 }
 globalThis.__AGCB_CREATE_ORIGINAL_AVATAR=(c)=>createOriginalCharacter(c);
-globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v3',detailSet:'organic-profile-hair-face-garment-v2'};
+globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v4',detailSet:'organic-profile-hair-face-garment-v3'};
