@@ -3,6 +3,7 @@ import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/js
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
 // Complete-avatar pipeline: use a CC0 rigged character as the visible base.
+// continuous-skinned-mesh: complete GLB owns the visible body.
 // The old procedural character remains available as a data/compatibility layer,
 // but it must never be rendered beside the complete GLB.
 const RIGGED_AVATAR_SCHEMA=2;
