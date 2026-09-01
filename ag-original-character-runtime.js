@@ -133,7 +133,7 @@ function applyPaperDoll(visual,c,bones,slots){
 }
 export function createOriginalCharacter(c){
   const visual=new THREE.Group();visual.name='agcb-original-connected-avatar';visual.userData.assetStatus='AG_ORIGINAL_CONNECTED_BODY';
-  const geom=makeConnectedBodyGeometry(c),material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.86,metalness:.01});
+  const geom=makeConnectedBodyGeometry(c),material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
   const mesh=new THREE.SkinnedMesh(geom,material);mesh.name='agcb-original-connected-skinned-body';mesh.castShadow=true;mesh.receiveShadow=true;visual.add(mesh);
   const root=bone('agcb-root',null,0,0,0),hips=bone('agcb-hips',root,0,.78,0),spine=bone('agcb-spine',hips,0,.42,0),chest=bone('agcb-chest',spine,0,.28,0),neck=bone('agcb-neck',chest,0,.20,0),head=bone('agcb-head',neck,0,.20,0);
   const upperL=bone('agcb-upper-arm-l',chest,-.34,.02,0),foreL=bone('agcb-forearm-l',upperL,-.12,-.22,0),handL=bone('agcb-hand-l',foreL,-.03,-.22,0);
