@@ -64,7 +64,7 @@ export function animateCuteCharacter(group,time,moving=false,speed=1){
 }
 
 export const AVATAR_CUSTOMIZATION_SCHEMA=3;
-export const DEFAULT_AVATAR_CUSTOMIZATION={schema:3,gender:'girl',body:'round',skin:'light',hairStyle:'bob',hair:'chestnut',outfit:'underwear',top:'pink',bottom:'denim',hat:'none',glasses:'none',accessory:'none'};
+export const DEFAULT_AVATAR_CUSTOMIZATION={schema:3,gender:'girl',age:'child',body:'round',skin:'light',hairStyle:'bob',hair:'chestnut',outfit:'underwear',top:'pink',bottom:'denim',hat:'none',glasses:'none',accessory:'none'};
 const SKIN_PALETTE={light:0xf2c5a5,warm:0xc88963,deep:0x8c5a3c,rosy:0xf0b09e};
 const HAIR_PALETTE={chestnut:0x68483b,black:0x2c2528,honey:0xb87845,plum:0x543c67};
 const TOP_PALETTE={pink:0xf1a4b5,sky:0x74afd7,mint:0x8acbb9,lavender:0xbfa4e7};
@@ -73,7 +73,8 @@ export function normalizeAvatarCustomization(input={},legacyStyle='girl'){
   const src=input&&typeof input==='object'?input:{};
   const pick=(v,allowed,fallback)=>allowed.includes(v)?v:fallback;
   const gender=src.gender==='boy'||src.gender==='girl'?src.gender:legacyStyle==='boy'?'boy':'girl';
-  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:3,gender,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:pick(src.hairStyle,['bob','short','long','curly','ponytail'],gender==='girl'?'bob':'short'),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:pick(src.outfit,['underwear','overall','dress','hoodie'],Object.prototype.hasOwnProperty.call(src,'outfit')?'overall':'underwear'),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
+  const age=pick(src.age,['child','adult'],'child');
+  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:3,gender,age,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:pick(src.hairStyle,['bob','short','long','curly','ponytail'],gender==='girl'?'bob':'short'),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:pick(src.outfit,['underwear','overall','dress','hoodie'],Object.prototype.hasOwnProperty.call(src,'outfit')?'overall':'underwear'),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
 }
 function addAvatarAccessories(g,c,hair,shirt){
   const hatMat=mat(c.hat==='beanie'?0x8bb8d8:0xf0c86d,.88),frame=mat(0x4a3d4a,.72),accent=mat(c.accessory==='scarf'?0xe8898f:0xf3c95f,.82),vest=mat(c.outfit==='hoodie'?TOP_PALETTE[c.top]:0x9a6745,.86),trim=mat(0xffd978,.72);
