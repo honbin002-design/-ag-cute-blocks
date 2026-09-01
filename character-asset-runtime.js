@@ -21,6 +21,14 @@ function loadVariant(key){
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
 function bodyScale(c){const age=c.age==='child'?.84:1;const body=c.body==='tall'?1.04:c.body==='petite'?.93:1;return age*body}
+function tuneRigForCustomization(root,c){
+  const child=c.age==='child',find=name=>root.getObjectByName(name);
+  const head=find('head'),chest=find('chest'),hips=find('hips');
+  if(head){const s=child?1.14:1;head.scale.setScalar(s)}
+  if(chest)chest.scale.x*=child?.90:c.body==='tall'?1.04:c.body==='petite'?.96:1;
+  if(hips)hips.scale.x*=child?.93:c.body==='tall'?.98:c.body==='petite'?.96:1;
+  root.traverse(o=>{if(!o.name)return;if(child&&/Cape|Hat/i.test(o.name))o.visible=false});
+}
 function setAssetMaterialPolish(root,c){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
 }
@@ -42,7 +50,7 @@ function applyAsset(group,c,gltf){
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   const rawBox=new THREE.Box3().setFromObject(root),rawSize=rawBox.getSize(new THREE.Vector3());
   const scale=2.18/Math.max(rawSize.y,.001)*bodyScale(c);root.scale.setScalar(scale);root.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
+  tuneRigForCustomization(root,c);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
   const mixer=new THREE.AnimationMixer(root),clips=gltf.animations||[],actions={
     idle:findClip(clips,/idle|stand|breath|rest/i),
     walk:findClip(clips,/walk|move/i),
@@ -55,7 +63,7 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';u.assetAge=c.age||'child';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';u.assetAge=c.age||'child';u.assetShapeRevision='gender-age-rig-proportion-v1';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
