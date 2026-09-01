@@ -96,10 +96,13 @@ function roundGarment(parent,name,color,position,scale){
 function applyPaperDoll(visual,c,bones,slots){
   const clear=slot=>{while(slots[slot].children.length)slots[slot].remove(slots[slot].children[0]);slots[slot].visible=false};
   for(const slot of PAPER_DOLL_SLOTS)clear(slot);
+  if(c.outfit==='underwear'){
+    // The connected body already carries the underwear colors; skip a coplanar overlay to avoid z-fighting speckles.
+    slots.underlayer.visible=false;visual.userData.underwearLayerMode='body-color-only-z-fight-safe-v1';return;
+  }
   slots.underlayer.visible=true;
   roundGarment(slots.underlayer,'agcb-underlayer-top',UNDERWEAR,[0,.02,0],[.32,.28,.245]);
   roundGarment(slots.underlayer,'agcb-underlayer-bottom',UNDERWEAR,[0,-.04,0],[.30,.18,.24]);
-  if(c.outfit==='underwear')return;
   slots.top.visible=true;
   slots.top.userData.anchor='agcb-chest';
   roundGarment(bones.chest,'agcb-daily-top',TOP[c.top]||TOP.pink,[0,-.25,0],[.38,.42,.29]);
