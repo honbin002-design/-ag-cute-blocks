@@ -27,7 +27,7 @@ const TETS=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
 const EDGES=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
 function makeConnectedBodyGeometry(c){
   const nx=20,ny=31,nz=16,minX=-.78,maxX=.78,minY=-.08,maxY=2.30,minZ=-.62,maxZ=.58;
-  const dx=(maxX-minX)/nx,dy=(maxY-minY)/ny,dz=(maxZ-minZ)/nz,verts=[],colors=[],indices=[];
+  const dx=(maxX-minX)/nx,dy=(maxY-minY)/ny,dz=(maxZ-minZ)/nz,verts=[],colors=[],indices=[],vertexMap=new Map(),triangleSet=new Set();
   const sample=(ix,iy,iz)=>{const p={x:minX+ix*dx,y:minY+iy*dy,z:minZ+iz*dz};return {p,v:bodyField(p)}};
   const emitSurfaceTriangle=(a,b,c)=>{
     const ax=verts[a*3],ay=verts[a*3+1],az=verts[a*3+2],bx=verts[b*3],by=verts[b*3+1],bz=verts[b*3+2],cx=verts[c*3],cy=verts[c*3+1],cz=verts[c*3+2];
@@ -49,7 +49,7 @@ function makeConnectedBodyGeometry(c){
   };
   const pushPoint=(a,b)=>{
     const t=a.v/(a.v-b.v),p={x:a.p.x+(b.p.x-a.p.x)*t,y:a.p.y+(b.p.y-a.p.y)*t,z:a.p.z+(b.p.z-a.p.z)*t};
-    const i=verts.length/3;verts.push(p.x,p.y,p.z);const col=colorAt(p);colors.push(col.r,col.g,col.b);return i;
+    const key=[p.x,p.y,p.z].map(v=>Math.round(v*100000)).join(',');\n    const existing=vertexMap.get(key);if(existing!==undefined)return existing;\n    const i=verts.length/3;vertexMap.set(key,i);verts.push(p.x,p.y,p.z);const col=colorAt(p);colors.push(col.r,col.g,col.b);return i;
   };
   for(let x=0;x<nx;x++)for(let y=0;y<ny;y++)for(let z=0;z<nz;z++){
     const q=[sample(x,y,z),sample(x+1,y,z),sample(x+1,y,z+1),sample(x,y,z+1),sample(x,y+1,z),sample(x+1,y+1,z),sample(x+1,y+1,z+1),sample(x,y+1,z+1)];
@@ -59,7 +59,7 @@ function makeConnectedBodyGeometry(c){
       if(cut.length>=3)for(let i=1;i<cut.length-1;i++)emitSurfaceTriangle(cut[0],cut[i],cut[i+1]);
     }
   }
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g;
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();g.userData={geometryTopology:'deduped-marching-tetra-v1',vertexCount:verts.length/3,triangleCount:indices.length/3};return g;
 }
 function bone(name,parent,x,y,z){const b=new THREE.Bone();b.name=name;b.position.set(x,y,z);(parent||null)?.add(b);return b}
 function segmentDistance(p,a,b){const ab=new THREE.Vector3().subVectors(b,a),t=Math.max(0,Math.min(1,ab.dot(new THREE.Vector3().subVectors(p,a))/Math.max(ab.lengthSq(),.0001)));return p.distanceTo(new THREE.Vector3().copy(a).addScaledVector(ab,t))}
