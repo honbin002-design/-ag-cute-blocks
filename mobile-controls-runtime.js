@@ -12,4 +12,4 @@ function annotate(){
 }
 annotate();
 const observer=new MutationObserver(annotate);observer.observe(document.body,{childList:true,subtree:true});
-globalThis.__AGCB_MOBILE_CONTROLS={version:'3.0',layout:'aov-lower-right-cluster',stylesheet:href,roles,observer};
+globalThis.__AGCB_MOBILE_CONTROLS={version:'3.1',layout:'aov-lower-right-cluster-reserved-hotbar-lane',stylesheet:href,roles,observer};
