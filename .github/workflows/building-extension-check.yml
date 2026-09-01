@@ -111,6 +111,7 @@ jobs:
           grep -q "FARM_DISTANCE_MIN=3.8" app-v043.js
           grep -q "FARM_DISTANCE_DEFAULT=6.8" app-v043.js
           grep -q "THIRD_CAMERA_DISTANCE=3.8" app-v043.js
+          grep -q "CAMERA_TUNING_REVISION=1" app-v043.js
           grep -q "aov-lower-right-cluster" mobile-controls-runtime.js
           grep -q "width:148px" mobile-controls.css
           grep -q "grid-template-columns:repeat(2,84px)" mobile-controls.css
