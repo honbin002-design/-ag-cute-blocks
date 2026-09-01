@@ -52,7 +52,7 @@ function makeConnectedBodyGeometry(c){
     let cx=0,cy=0,cz=0;for(const i of points){cx+=verts[i*3];cy+=verts[i*3+1];cz+=verts[i*3+2]}cx/=points.length;cy/=points.length;cz/=points.length;
     const e=.006,gx=bodyField({x:cx+e,y:cy,z:cz})-bodyField({x:cx-e,y:cy,z:cz}),gy=bodyField({x:cx,y:cy+e,z:cz})-bodyField({x:cx,y:cy-e,z:cz}),gz=bodyField({x:cx,y:cy,z:cz+e})-bodyField({x:cx,y:cy,z:cz-e}),gl=Math.hypot(gx,gy,gz)||1,nx=gx/gl,ny=gy/gl,nz=gz/gl;
     const ax=Math.abs(ny)>.92?1:0,ay=Math.abs(ny)>.92?0:1,az=0,ux0=ay*nz-az*ny,uy0=az*nx-ax*nz,uz0=ax*ny-ay*nx,ul=Math.hypot(ux0,uy0,uz0)||1,ux=ux0/ul,uy=uy0/ul,uz=uz0/ul,vx=ny*uz-nz*uy,vy=nz*ux-nx*uz,vz=nx*uy-ny*ux;
-    return points.slice().sort((a,b)=>{const apx=verts[a*3]-cx,apy=verts[a*3+1]-cy,apz=verts[a*3+2]-cz,bpx=verts[b*3]-cx,bpy=verts[b*3+1]-cy,bpz=verts[b*3+2]-cz;return Math.atan2(apy*vy+apz*vz+apx*vx,0)-Math.atan2(bpy*vy+bpz*vz+bpx*vx,0)});
+    return points.slice().sort((a,b)=>{const apx=verts[a*3]-cx,apy=verts[a*3+1]-cy,apz=verts[a*3+2]-cz,bpx=verts[b*3]-cx,bpy=verts[b*3+1]-cy,bpz=verts[b*3+2]-cz;return Math.atan2(apy*vy+apz*vz+apx*vx,apy*uy+apz*uz+apx*ux)-Math.atan2(bpy*vy+bpz*vz+bpx*vx,bpy*uy+bpz*uz+bpx*ux)});
   };
   const pushPoint=(a,b)=>{
     const t=a.v/(a.v-b.v),p={x:a.p.x+(b.p.x-a.p.x)*t,y:a.p.y+(b.p.y-a.p.y)*t,z:a.p.z+(b.p.z-a.p.z)*t};
