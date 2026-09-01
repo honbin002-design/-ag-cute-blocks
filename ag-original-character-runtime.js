@@ -47,6 +47,13 @@ function makeConnectedBodyGeometry(c){
     }
     return new THREE.Color(color);
   };
+  const orderCutPolygon=points=>{
+    if(points.length<4)return points;
+    let cx=0,cy=0,cz=0;for(const i of points){cx+=verts[i*3];cy+=verts[i*3+1];cz+=verts[i*3+2]}cx/=points.length;cy/=points.length;cz/=points.length;
+    const e=.006,gx=bodyField({x:cx+e,y:cy,z:cz})-bodyField({x:cx-e,y:cy,z:cz}),gy=bodyField({x:cx,y:cy+e,z:cz})-bodyField({x:cx,y:cy-e,z:cz}),gz=bodyField({x:cx,y:cy,z:cz+e})-bodyField({x:cx,y:cy,z:cz-e}),gl=Math.hypot(gx,gy,gz)||1,nx=gx/gl,ny=gy/gl,nz=gz/gl;
+    const ax=Math.abs(ny)>.92?1:0,ay=Math.abs(ny)>.92?0:1,az=0,ux0=ay*nz-az*ny,uy0=az*nx-ax*nz,uz0=ax*ny-ay*nx,ul=Math.hypot(ux0,uy0,uz0)||1,ux=ux0/ul,uy=uy0/ul,uz=uz0/ul,vx=ny*uz-nz*uy,vy=nz*ux-nx*uz,vz=nx*uy-ny*ux;
+    return points.slice().sort((a,b)=>{const apx=verts[a*3]-cx,apy=verts[a*3+1]-cy,apz=verts[a*3+2]-cz,bpx=verts[b*3]-cx,bpy=verts[b*3+1]-cy,bpz=verts[b*3+2]-cz;return Math.atan2(apy*vy+apz*vz+apx*vx,0)-Math.atan2(bpy*vy+bpz*vz+bpx*vx,0)});
+  };
   const pushPoint=(a,b)=>{
     const t=a.v/(a.v-b.v),p={x:a.p.x+(b.p.x-a.p.x)*t,y:a.p.y+(b.p.y-a.p.y)*t,z:a.p.z+(b.p.z-a.p.z)*t};
     const key=[p.x,p.y,p.z].map(v=>Math.round(v*100000)).join(',');
@@ -58,7 +65,7 @@ function makeConnectedBodyGeometry(c){
     for(const ids of TETS){
       const t=ids.map(i=>q[i]),inside=t.filter(v=>v.v<0).length;if(!inside||inside===4)continue;
       const cut=[];for(const [a,b] of EDGES)if((t[a].v<0)!==(t[b].v<0))cut.push(pushPoint(t[a],t[b]));
-      if(cut.length>=3)for(let i=1;i<cut.length-1;i++)emitSurfaceTriangle(cut[0],cut[i],cut[i+1]);
+      if(cut.length>=3){const ordered=orderCutPolygon(cut);for(let i=1;i<ordered.length-1;i++)emitSurfaceTriangle(ordered[0],ordered[i],ordered[i+1])}
     }
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();g.userData={geometryTopology:'deduped-marching-tetra-v1',vertexCount:verts.length/3,triangleCount:indices.length/3};return g;
