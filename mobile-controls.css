@@ -1,104 +1,104 @@
-/* AG Cute Blocks — ergonomic mobile game HUD v2 */
-/* Thumb zones: movement left, primary/secondary actions right, quick-build bar centered. */
+/* AG Cute Blocks — ergonomic mobile game HUD v3 */
+/* Lower-right thumb cluster: jump is primary, build actions are deliberately separated. */
 .actions{
-  right:max(20px,calc(env(safe-area-inset-right) + 12px));
-  bottom:max(104px,calc(env(safe-area-inset-bottom) + 94px));
+  right:max(24px,calc(env(safe-area-inset-right) + 18px));
+  bottom:max(30px,calc(env(safe-area-inset-bottom) + 22px));
   display:grid;
-  grid-template-columns:repeat(2,66px);
-  grid-template-rows:repeat(2,66px);
-  column-gap:16px;
-  row-gap:14px;
+  grid-template-columns:repeat(2,84px);
+  grid-template-rows:repeat(2,84px);
+  column-gap:20px;
+  row-gap:16px;
   align-items:center;
   justify-items:center;
 }
 .btn{
-  width:66px;
-  height:66px;
+  width:82px;
+  height:82px;
   border-radius:50%;
-  font-size:25px;
+  font-size:31px;
   font-weight:900;
   background:#fffde8f2;
-  border:2px solid #ffffffde;
-  box-shadow:0 5px 16px #0003,inset 0 1px 0 #fff;
+  border:3px solid #ffffffde;
+  box-shadow:0 6px 18px #0003,inset 0 1px 0 #fff;
   -webkit-tap-highlight-color:transparent;
   transition:filter .08s ease,box-shadow .08s ease;
 }
-/* Staggered gamepad cluster. Jump is the dominant, easiest thumb target. */
-#add{transform:translate(-9px,7px)}
-#del{transform:translate(7px,-7px)}
-#jump{transform:translate(9px,2px);width:74px;height:74px;font-size:29px;background:#fff4baf5;box-shadow:0 6px 18px #0004,inset 0 1px 0 #fff}
-#rot{transform:translate(-7px,-4px)}
+/* A staggered 2x2 cluster keeps each thumb target visually distinct. */
+#add{transform:translate(-12px,10px)}
+#del{transform:translate(10px,-10px)}
+#jump{transform:translate(12px,4px);width:92px;height:92px;font-size:35px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
+#rot{transform:translate(-10px,-8px)}
 .btn:active{filter:brightness(.94)}
-#add:active{transform:translate(-9px,7px) scale(.90)}
-#del:active{transform:translate(7px,-7px) scale(.90)}
-#jump:active{transform:translate(9px,2px) scale(.90)}
-#rot:active{transform:translate(-7px,-4px) scale(.90)}
+#add:active{transform:translate(-12px,10px) scale(.90)}
+#del:active{transform:translate(10px,-10px) scale(.90)}
+#jump:active{transform:translate(12px,4px) scale(.90)}
+#rot:active{transform:translate(-10px,-8px) scale(.90)}
 
-/* Context interaction is a first-class action beside the main cluster, not a tiny floating utility. */
+/* Context interaction sits above and left of the action cluster. */
 .lifeInteract{
-  right:max(176px,calc(env(safe-area-inset-right) + 168px))!important;
-  bottom:max(154px,calc(env(safe-area-inset-bottom) + 144px))!important;
-  width:72px!important;
-  height:72px!important;
-  border:2px solid #ffffffde!important;
+  right:max(224px,calc(env(safe-area-inset-right) + 216px))!important;
+  bottom:max(164px,calc(env(safe-area-inset-bottom) + 154px))!important;
+  width:84px!important;
+  height:84px!important;
+  border:3px solid #ffffffde!important;
   background:#fff7ccf4!important;
-  box-shadow:0 5px 16px #0003,inset 0 1px 0 #fff!important;
-  font-size:27px!important;
+  box-shadow:0 6px 18px #0003,inset 0 1px 0 #fff!important;
+  font-size:32px!important;
   -webkit-tap-highlight-color:transparent;
 }
-.lifeInteract small{font-size:10px!important;line-height:11px;font-weight:900}
+.lifeInteract small{font-size:11px!important;line-height:12px;font-weight:900}
 .lifeInteract:active{transform:scale(.90)}
 
-/* Watering is contextual: show it above the thumb cluster as a readable pill, away from movement. */
+/* Context watering control remains readable without entering the thumb cluster. */
 .waterCropBtn{
   left:auto!important;
-  right:max(172px,calc(env(safe-area-inset-right) + 164px))!important;
-  bottom:max(236px,calc(env(safe-area-inset-bottom) + 226px))!important;
-  min-height:48px!important;
-  min-width:104px!important;
-  padding:10px 14px!important;
-  border:2px solid #ffffffd8!important;
-  border-radius:24px!important;
-  font-size:12px!important;
-  box-shadow:0 4px 14px #0003!important;
+  right:max(218px,calc(env(safe-area-inset-right) + 210px))!important;
+  bottom:max(272px,calc(env(safe-area-inset-bottom) + 262px))!important;
+  min-height:54px!important;
+  min-width:122px!important;
+  padding:11px 16px!important;
+  border:3px solid #ffffffd8!important;
+  border-radius:28px!important;
+  font-size:14px!important;
+  box-shadow:0 5px 16px #0003!important;
 }
 
-/* Movement zone stays generous and visually separate from actions. */
+/* Enlarged movement zone; app logic derives its active radius from this geometry. */
 .joy{
-  left:max(22px,calc(env(safe-area-inset-left) + 12px));
-  bottom:max(98px,calc(env(safe-area-inset-bottom) + 88px));
-  width:122px;
-  height:122px;
-  border-width:3px;
+  left:max(24px,calc(env(safe-area-inset-left) + 14px));
+  bottom:max(30px,calc(env(safe-area-inset-bottom) + 22px));
+  width:148px;
+  height:148px;
+  border-width:4px;
 }
-.knob{left:35px;top:35px;width:48px;height:48px}
+.knob{left:43px;top:43px;width:58px;height:58px}
 
-/* The build hotbar owns the safe center lane and never extends under either thumb zone. */
+/* The build bar owns the center lane and stays clear of both thumb zones. */
 .catalog{
-  width:min(calc(100vw - 370px),680px)!important;
-  min-width:250px;
-  bottom:max(8px,env(safe-area-inset-bottom))!important;
+  width:min(calc(100vw - 470px),860px)!important;
+  min-width:300px;
+  bottom:max(10px,env(safe-area-inset-bottom))!important;
 }
-.cats,.items{gap:7px!important}
-.item{min-width:58px!important;height:52px!important}
-.cat{padding:6px 10px!important}
+.cats,.items{gap:10px!important}
+.cat{padding:9px 13px!important;font-size:15px!important}
+.item{min-width:72px!important;height:64px!important;font-size:26px!important}
 
 @media(max-height:430px){
   .actions{
-    right:max(15px,calc(env(safe-area-inset-right) + 8px));
-    bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));
-    grid-template-columns:repeat(2,60px);
-    grid-template-rows:repeat(2,60px);
-    column-gap:13px;
-    row-gap:11px;
+    right:max(18px,calc(env(safe-area-inset-right) + 12px));
+    bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px));
+    grid-template-columns:repeat(2,72px);
+    grid-template-rows:repeat(2,72px);
+    column-gap:14px;
+    row-gap:12px;
   }
-  .btn{width:60px;height:60px;font-size:23px}
-  #jump{width:68px;height:68px;font-size:26px}
-  .lifeInteract{right:max(156px,calc(env(safe-area-inset-right) + 148px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:64px!important;height:64px!important;font-size:24px!important}
-  .waterCropBtn{right:max(151px,calc(env(safe-area-inset-right) + 143px))!important;bottom:max(202px,calc(env(safe-area-inset-bottom) + 192px))!important;min-height:42px!important;padding:8px 11px!important;font-size:10px!important}
-  .joy{width:108px;height:108px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px))}
-  .knob{left:30px;top:30px;width:44px;height:44px}
-  .catalog{width:min(calc(100vw - 330px),610px)!important;min-width:220px}
-  .item{min-width:50px!important;height:44px!important}
-  .cat{padding:5px 8px!important}
+  .btn{width:70px;height:70px;font-size:28px}
+  #jump{width:80px;height:80px;font-size:32px}
+  .lifeInteract{right:max(188px,calc(env(safe-area-inset-right) + 180px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:74px!important;height:74px!important;font-size:28px!important}
+  .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
+  .joy{width:128px;height:128px;bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px))}
+  .knob{left:39px;top:39px;width:50px;height:50px}
+  .catalog{width:min(calc(100vw - 390px),760px)!important;min-width:240px}
+  .cat{padding:7px 10px!important;font-size:13px!important}
+  .item{min-width:62px!important;height:54px!important;font-size:23px!important}
 }
