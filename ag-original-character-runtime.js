@@ -11,7 +11,7 @@ const UNDERWEAR=0xf3a8b7;
 
 function smoothUnion(a,b,k=.075){const h=Math.max(k-Math.abs(a-b),0);return Math.min(a,b)-h*h/(4*k)}
 function ellipsoid(p,c,r){const dx=(p.x-c[0])/r[0],dy=(p.y-c[1])/r[1],dz=(p.z-c[2])/r[2];return (Math.sqrt(dx*dx+dy*dy+dz*dz)-1)*Math.min(r[0],r[1],r[2])}
-function bodyField(p){
+function bodyField(p,c=bodyField.variant||{gender:'girl',age:'child'}){
   const adult=c.age==='adult',male=c.gender==='boy';
   const shoulder=male?(adult?1.12:1.05):(adult?.96:.90);
   const chest=male?(adult?1.04:1.0):(adult?.98:.96);
@@ -29,6 +29,7 @@ function bodyField(p){
 const TETS=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
 const EDGES=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
 function makeConnectedBodyGeometry(c){
+  bodyField.variant=c;
   const nx=20,ny=31,nz=16,minX=-.78,maxX=.78,minY=-.08,maxY=2.30,minZ=-.62,maxZ=.58;
   const dx=(maxX-minX)/nx,dy=(maxY-minY)/ny,dz=(maxZ-minZ)/nz,verts=[],colors=[],indices=[],vertexMap=new Map(),triangleSet=new Set();
   const sample=(ix,iy,iz)=>{const p={x:minX+ix*dx,y:minY+iy*dy,z:minZ+iz*dz};return {p,v:bodyField(p)}};
