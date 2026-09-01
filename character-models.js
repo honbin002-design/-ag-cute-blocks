@@ -13,7 +13,7 @@ export function createCuteChildAvatar(style='girl',options={}){
   const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};
   const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');
   const original=createAGOriginalCharacter(c,options);
-  if(original){original.userData={...original.userData,avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'ag-original-connected-v2',pose:'idle'};LIVE_AVATARS.add(original);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(original,pose);return original;}
+  if(original){original.userData={...original.userData,avatarStyle:c.gender,avatarCustomization:c,avatarVisualStyle:'ag-original-connected-v2',pose:'idle'};LIVE_AVATARS.add(original);globalThis.AGCB_UPGRADE_AVATAR?.(original,c);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(original,pose);return original;}
   throw new Error('AG original character factory did not return a character');
 }
 
