@@ -75,7 +75,11 @@
 
 /* The build bar owns the center lane and stays clear of both thumb zones. */
 .catalog{
-  width:min(calc(100vw - 470px),860px)!important;
+  left:24px!important;
+  right:max(250px,calc(env(safe-area-inset-right) + 240px))!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:none!important;
   min-width:300px;
   bottom:max(10px,env(safe-area-inset-bottom))!important;
 }
@@ -98,7 +102,7 @@
   .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
   .joy{width:128px;height:128px;bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px))}
   .knob{left:39px;top:39px;width:50px;height:50px}
-  .catalog{width:min(calc(100vw - 390px),760px)!important;min-width:240px}
+  .catalog{left:18px!important;right:max(212px,calc(env(safe-area-inset-right) + 202px))!important;transform:none!important;width:auto!important;min-width:240px}
   .cat{padding:7px 10px!important;font-size:13px!important}
   .item{min-width:62px!important;height:54px!important;font-size:23px!important}
 }
