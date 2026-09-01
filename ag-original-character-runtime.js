@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
 const AG_ORIGINAL_CHARACTER_SCHEMA=1;
-const AG_ORIGINAL_CHARACTER_TOPOLOGY='deduped-marching-tetra-v2';
+const AG_ORIGINAL_CHARACTER_TOPOLOGY='deduped-marching-tetra-v3';
 const PAPER_DOLL_SLOTS=['bodyBase','underlayer','top','bottom','dress','shoes','hair','hat','glasses','accessory'];
 const SKIN={light:0xf2c5a5,warm:0xc88963,deep:0x8c5a3c,rosy:0xf0b09e};
 const HAIR={chestnut:0x68483b,black:0x2c2528,honey:0xb87845,plum:0x543c67};
@@ -9,15 +9,15 @@ const TOP={pink:0xf1a4b5,sky:0x74afd7,mint:0x8acbb9,lavender:0xbfa4e7};
 const BOTTOM={denim:0x6685a3,navy:0x4e5c88,cream:0xe8c78b,rose:0xc87891};
 const UNDERWEAR=0xf3a8b7;
 
-function smoothUnion(a,b,k=.09){const h=Math.max(k-Math.abs(a-b),0);return Math.min(a,b)-h*h/(4*k)}
+function smoothUnion(a,b,k=.075){const h=Math.max(k-Math.abs(a-b),0);return Math.min(a,b)-h*h/(4*k)}
 function ellipsoid(p,c,r){const dx=(p.x-c[0])/r[0],dy=(p.y-c[1])/r[1],dz=(p.z-c[2])/r[2];return (Math.sqrt(dx*dx+dy*dy+dz*dz)-1)*Math.min(r[0],r[1],r[2])}
 function bodyField(p){
   const parts=[
-    [[0,.78,0],[.29,.22,.23]],[[0,1.05,0],[.29,.28,.23]],[[0,1.31,0],[.32,.28,.24]],[[0,1.52,0],[.28,.17,.22]],[[0,1.68,0],[.13,.11,.14]],[[0,1.90,0],[.31,.34,.28]],
-    [[-.32,1.39,0],[.12,.21,.13]],[[-.43,1.12,0],[.105,.21,.12]],[[-.46,.86,-.015],[.095,.12,.13]],
-    [[.32,1.39,0],[.12,.21,.13]],[[.43,1.12,0],[.105,.21,.12]],[[.46,.86,-.015],[.095,.12,.13]],
-    [[-.18,.67,0],[.12,.22,.15]],[[.18,.67,0],[.12,.22,.15]],[[-.18,.36,0],[.105,.22,.13]],[[.18,.36,0],[.105,.22,.13]],
-    [[-.18,.10,-.08],[.14,.11,.21]],[[.18,.10,-.08],[.14,.11,.21]]
+    [[0,.77,0],[.27,.19,.21]],[[0,1.02,0],[.24,.20,.20]],[[0,1.28,0],[.31,.26,.23]],[[0,1.49,0],[.28,.16,.21]],[[0,1.67,0],[.12,.11,.14]],[[0,1.92,0],[.30,.33,.28]],
+    [[-.34,1.40,0],[.12,.19,.13]],[[-.45,1.14,0],[.095,.18,.12]],[[-.49,.91,-.015],[.085,.105,.12]],
+    [[.34,1.40,0],[.12,.19,.13]],[[.45,1.14,0],[.095,.18,.12]],[[.49,.91,-.015],[.085,.105,.12]],
+    [[-.17,.66,0],[.11,.20,.14]],[[.17,.66,0],[.11,.20,.14]],[[-.17,.36,0],[.095,.20,.12]],[[.17,.36,0],[.095,.20,.12]],
+    [[-.17,.10,-.10],[.13,.10,.20]],[[.17,.10,-.10],[.13,.10,.20]]
   ];  let value=Infinity;for(const part of parts)value=smoothUnion(value,ellipsoid(p,part[0],part[1]));return value;
 }
 const TETS=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
@@ -120,7 +120,7 @@ function applyPaperDoll(visual,c,bones,slots){
   roundGarment(slots.underlayer,'agcb-underlayer-bottom',UNDERWEAR,[0,-.04,0],[.30,.18,.24]);
   slots.top.visible=true;
   slots.top.userData.anchor='agcb-chest';
-  roundGarment(bones.chest,'agcb-daily-top',TOP[c.top]||TOP.pink,[0,-.25,0],[.38,.42,.29]);
+  roundGarment(bones.chest,'agcb-daily-top',TOP[c.top]||TOP.pink,[0,-.09,0],[.31,.30,.25]);
   if(c.outfit==='hoodie')roundGarment(bones.chest,'agcb-hoodie-pocket',0x6d9fca,[0,-.34,-.27],[.17,.10,.035]);
   if(c.outfit==='overall'){
     slots.bottom.visible=true;
@@ -142,7 +142,7 @@ function applyPaperDoll(visual,c,bones,slots){
 }
 export function createOriginalCharacter(c){
   const visual=new THREE.Group();visual.name='agcb-original-connected-avatar';visual.userData.assetStatus='AG_ORIGINAL_CONNECTED_BODY';
-  const geom=makeConnectedBodyGeometry(c),material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+  const geom=makeConnectedBodyGeometry(c),material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.84,metalness:.01,side:THREE.DoubleSide});
   const mesh=new THREE.SkinnedMesh(geom,material);mesh.name='agcb-original-connected-skinned-body';mesh.castShadow=true;mesh.receiveShadow=true;visual.add(mesh);
   const root=bone('agcb-root',null,0,0,0),hips=bone('agcb-hips',root,0,.78,0),spine=bone('agcb-spine',hips,0,.42,0),chest=bone('agcb-chest',spine,0,.28,0),neck=bone('agcb-neck',chest,0,.20,0),head=bone('agcb-head',neck,0,.20,0);
   const upperL=bone('agcb-upper-arm-l',chest,-.34,.02,0),foreL=bone('agcb-forearm-l',upperL,-.12,-.22,0),handL=bone('agcb-hand-l',foreL,-.03,-.22,0);
