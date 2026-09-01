@@ -2,8 +2,10 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
-// Technical rigged-avatar pass: continuous-skinned-mesh proof using a fixed CC0 source commit.
-const RIGGED_AVATAR_SCHEMA=1;
+// Complete-avatar pipeline: use a CC0 rigged character as the visible base.
+// The old procedural character remains available as a data/compatibility layer,
+// but it must never be rendered beside the complete GLB.
+const RIGGED_AVATAR_SCHEMA=2;
 const SOURCE_COMMIT='672074b73ba276876a19e8816ecdc5241817ab47';
 const SOURCES={
   girl:'https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/'+SOURCE_COMMIT+'/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb',
@@ -17,7 +19,7 @@ function loadVariant(key){
   pending.set(key,p);return p;
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
-function bodyScale(c){return c.body==='tall'?1.04:c.body==='petite'?.91:1}
+function bodyScale(c){const age=c.age==='child'?.84:1;const body=c.body==='tall'?1.04:c.body==='petite'?.93:1;return age*body}
 function setAssetMaterialPolish(root,c){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
 }
@@ -39,7 +41,7 @@ function applyAsset(group,c,gltf){
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   const rawBox=new THREE.Box3().setFromObject(root),rawSize=rawBox.getSize(new THREE.Vector3());
   const scale=2.18/Math.max(rawSize.y,.001)*bodyScale(c);root.scale.setScalar(scale);root.updateMatrixWorld(true);
-  const box=new THREE.Box3().setFromObject(root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);const detailLayer=addAssetDetailLayer(u.visual,c,box);
+  const box=new THREE.Box3().setFromObject(root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
   const mixer=new THREE.AnimationMixer(root),clips=gltf.animations||[],actions={
     idle:findClip(clips,/idle|stand|breath|rest/i),
     walk:findClip(clips,/walk|move/i),
@@ -52,16 +54,11 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=detailLayer;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='KayKit CC0';u.assetAge=c.age||'child';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
   const u=group?.userData;
-  // AG-authored connected bodies own their visual stack; never replace underwear/paper-doll mode with a dressed technical GLB.
-  if(u?.agOriginal||u?.avatarVisualStyle==='ag-original-connected-v1'){
-    u.assetUpgradeSkipped='ag-original-owned';
-    return;
-  }
   const key=c.gender==='boy'?'boy':'girl';if(u.assetVariant===key&&u.assetRoot)return;
   u.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{u.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
 }
@@ -72,6 +69,6 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
 };
-globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'KayKit Character Pack Adventures',sourceCommit:SOURCE_COMMIT,license:'CC0 1.0',loaded:0,failed:0,originalPreserved:true};
+globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'KayKit Character Pack Adventures',sourceCommit:SOURCE_COMMIT,license:'CC0 1.0',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
 globalThis.__AGCB_UPGRADE_AVATAR=(group,c)=>{upgrade(group,c);};
 for(const group of globalThis.__AGCB_LIVE_AVATARS||[])upgrade(group,group.userData.avatarCustomization||{gender:group.userData.avatarStyle||'girl'});
