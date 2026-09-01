@@ -65,7 +65,7 @@ jobs:
           must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
           must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
           must_care=["w==='rain'||w==='thunderstorm'"]
-          must_app[1]="const VERSION='V0.4.34'"
+          must_app[1]="const VERSION='V0.4.35'"
           must_index=['option value="thunderstorm"','雷雨只有柔和視覺效果']
           missing=[x for x in must_original if x not in original]+[x for x in must_character if x not in character]+[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]+[x for x in must_collision if x not in collision]+[x for x in must_ray if x not in ray]+[x for x in must_app if x not in app]+[x for x in must_polish if x not in polish]+[x for x in must_grounding if x not in grounding]+[x for x in must_animal if x not in connected_animal]+[x for x in must_weather if x not in weather]+[x for x in must_daily if x not in daily]+[x for x in must_care if x not in care]+[x for x in must_index if x not in index]
           if "const tar=[];blocks.forEach" in app: missing.append('legacy per-frame camera target rebuild still present')
@@ -100,13 +100,13 @@ jobs:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
           print('Building, O(1) cache, spatial collision, persistent camera path, anatomy polish, travel gait, pet paw grounding and gentle thunderstorm invariants passed.')
-      - name: Verify V0.4.34 character identity layer
+      - name: Verify V0.4.35 character identity layer
         run: |
-          test "$(grep -o "const VERSION='V0.4.34'" app-v043.js)" = "const VERSION='V0.4.34'"
-          grep -q "ag-cute-blocks-v045-runtime78" sw.js
-          grep -q "featureSet:'gender-age-silhouette-face-hair-v6'" ag-original-character-runtime.js
-          grep -q "detailSet:'four-hero-proportion-garment-v5'" ag-original-character-runtime.js
+          test "$(grep -o "const VERSION='V0.4.35'" app-v043.js)" = "const VERSION='V0.4.35'"
+          grep -q "ag-cute-blocks-v045-runtime79" sw.js
+          grep -q "featureSet:'gender-age-silhouette-face-hair-v7'" ag-original-character-runtime.js
+          grep -q "detailSet:'four-hero-proportion-garment-v6'" ag-original-character-runtime.js
           ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
-          grep -q "meta name=\"ag-runtime-version\" content=\"V0.4.34\"" index.html
+          grep -q "meta name=\"ag-runtime-version\" content=\"V0.4.35\"" index.html
           grep -q "agcb-hair-part-line" ag-original-character-runtime.js
           grep -q "agcb-hair-back-mass" ag-original-character-runtime.js
