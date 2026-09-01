@@ -75,9 +75,10 @@ export function normalizeAvatarCustomization(input={},legacyStyle='girl'){
   const gender=src.gender==='boy'||src.gender==='girl'?src.gender:legacyStyle==='boy'?'boy':'girl';
   const age=pick(src.age,['child','adult'],'child');
   const defaultHair=gender==='boy'?'short':age==='adult'?'long':'ponytail';
-  const defaultOutfit=gender==='boy'?(age==='adult'?'overall':'hoodie'):'dress';
+  const defaultOutfit=gender==='boy'?(age==='adult'?'formal':'hoodie'):'dress';
   const legacyUnderwear=!Object.prototype.hasOwnProperty.call(src,'appearanceRevision')&&src.outfit==='underwear';
-  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:3,appearanceRevision:2,gender,age,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:legacyUnderwear?defaultHair:pick(src.hairStyle,['bob','short','long','curly','ponytail'],defaultHair),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:legacyUnderwear?defaultOutfit:pick(src.outfit,['underwear','overall','dress','hoodie'],defaultOutfit),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
+  const migrateDesign=legacyUnderwear||Number(src.appearanceRevision||0)<3;
+  return {...DEFAULT_AVATAR_CUSTOMIZATION,schema:3,appearanceRevision:3,gender,age,body:pick(src.body,['round','tall','petite'],'round'),skin:pick(src.skin,Object.keys(SKIN_PALETTE),'light'),hairStyle:migrateDesign?defaultHair:pick(src.hairStyle,['bob','short','long','curly','ponytail'],defaultHair),hair:pick(src.hair,Object.keys(HAIR_PALETTE),'chestnut'),outfit:migrateDesign?defaultOutfit:pick(src.outfit,['underwear','overall','dress','hoodie','formal'],defaultOutfit),top:pick(src.top,Object.keys(TOP_PALETTE),gender==='girl'?'pink':'sky'),bottom:pick(src.bottom,Object.keys(BOTTOM_PALETTE),'denim'),hat:pick(src.hat,['none','sun','beanie'],'none'),glasses:pick(src.glasses,['none','round'],'none'),accessory:pick(src.accessory,['none','scarf','backpack','bow'],'none')};
 }
 function addAvatarAccessories(g,c,hair,shirt){
   const hatMat=mat(c.hat==='beanie'?0x8bb8d8:0xf0c86d,.88),frame=mat(0x4a3d4a,.72),accent=mat(c.accessory==='scarf'?0xe8898f:0xf3c95f,.82),vest=mat(c.outfit==='hoodie'?TOP_PALETTE[c.top]:0x9a6745,.86),trim=mat(0xffd978,.72);
