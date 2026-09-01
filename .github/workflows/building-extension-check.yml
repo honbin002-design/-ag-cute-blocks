@@ -107,6 +107,6 @@ jobs:
           grep -q "featureSet:'gender-age-silhouette-face-hair-v4'" ag-original-character-runtime.js
           grep -q "detailSet:'organic-profile-hair-face-garment-v3'" ag-original-character-runtime.js
           ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
-          grep -q "meta name=\"ag-runtime-version\" content=\"V0.4.31\"" index.html
+          grep -q "meta name=\"ag-runtime-version\" content=\"V0.4.32\"" index.html
           grep -q "agcb-hair-part-line" ag-original-character-runtime.js
           grep -q "agcb-hair-back-mass" ag-original-character-runtime.js
