@@ -49,7 +49,9 @@ function makeConnectedBodyGeometry(c){
   };
   const pushPoint=(a,b)=>{
     const t=a.v/(a.v-b.v),p={x:a.p.x+(b.p.x-a.p.x)*t,y:a.p.y+(b.p.y-a.p.y)*t,z:a.p.z+(b.p.z-a.p.z)*t};
-    const key=[p.x,p.y,p.z].map(v=>Math.round(v*100000)).join(',');\n    const existing=vertexMap.get(key);if(existing!==undefined)return existing;\n    const i=verts.length/3;vertexMap.set(key,i);verts.push(p.x,p.y,p.z);const col=colorAt(p);colors.push(col.r,col.g,col.b);return i;
+    const key=[p.x,p.y,p.z].map(v=>Math.round(v*100000)).join(',');
+    const existing=vertexMap.get(key);if(existing!==undefined)return existing;
+    const i=verts.length/3;vertexMap.set(key,i);verts.push(p.x,p.y,p.z);const col=colorAt(p);colors.push(col.r,col.g,col.b);return i;
   };
   for(let x=0;x<nx;x++)for(let y=0;y<ny;y++)for(let z=0;z<nz;z++){
     const q=[sample(x,y,z),sample(x+1,y,z),sample(x+1,y,z+1),sample(x,y,z+1),sample(x,y+1,z),sample(x+1,y+1,z),sample(x+1,y+1,z+1),sample(x,y+1,z+1)];
