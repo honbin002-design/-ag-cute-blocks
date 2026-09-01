@@ -11,6 +11,23 @@ const UNDERWEAR=0xf3a8b7;
 
 function smoothUnion(a,b,k=.075){const h=Math.max(k-Math.abs(a-b),0);return Math.min(a,b)-h*h/(4*k)}
 function ellipsoid(p,c,r){const dx=(p.x-c[0])/r[0],dy=(p.y-c[1])/r[1],dz=(p.z-c[2])/r[2];return (Math.sqrt(dx*dx+dy*dy+dz*dz)-1)*Math.min(r[0],r[1],r[2])}
+function makeOrganicFeatureGeometry(rx,ry,rz,sides=16,rings=9){
+  const verts=[],indices=[];
+  for(let j=0;j<=rings;j++){const phi=-Math.PI/2+Math.PI*j/rings,cp=Math.cos(phi),sp=Math.sin(phi);for(let i=0;i<sides;i++){const a=2*Math.PI*i/sides;verts.push(Math.cos(a)*cp*rx,sp*ry,Math.sin(a)*cp*rz)}}
+  for(let j=0;j<rings;j++)for(let i=0;i<sides;i++){const n=(i+1)%sides,a=j*sides+i,b=j*sides+n,c=(j+1)*sides+n,d=(j+1)*sides+i;indices.push(a,b,d,b,c,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex(indices);g.computeVertexNormals();return g;
+}
+function makeProfileVolumeGeometry(profile,sides=10){
+  const verts=[],indices=[];
+  for(const ring of profile)for(let i=0;i<sides;i++){const a=2*Math.PI*i/sides;verts.push((ring.cx||0)+Math.cos(a)*ring.rx,ring.y,(ring.cz||0)+Math.sin(a)*ring.rz)}
+  for(let j=0;j<profile.length-1;j++)for(let i=0;i<sides;i++){const n=(i+1)%sides,a=j*sides+i,b=j*sides+n,c=(j+1)*sides+n,d=(j+1)*sides+i;indices.push(a,d,b,b,d,c)}
+  const first=verts.length/3;verts.push(profile[0].cx||0,profile[0].y,profile[0].cz||0);const end=profile[profile.length-1],last=verts.length/3;verts.push(end.cx||0,end.y,end.cz||0);
+  for(let i=0;i<sides;i++){const n=(i+1)%sides;indices.push(first,n,i,last,(profile.length-1)*sides+i,(profile.length-1)*sides+n)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex(indices);g.computeVertexNormals();return g;
+}
+function organicFeature(parent,name,material,position,radii,rotation=[0,0,0]){const mesh=new THREE.Mesh(makeOrganicFeatureGeometry(...radii),material);mesh.name=name;mesh.position.set(...position);mesh.rotation.set(...rotation);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh}
+function profileVolume(parent,name,material,position,profile,rotation=[0,0,0]){const mesh=new THREE.Mesh(makeProfileVolumeGeometry(profile),material);mesh.name=name;mesh.position.set(...position);mesh.rotation.set(...rotation);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh}
+function flatRingGeometry(outer,inner,depth,sides=24){const verts=[],indices=[];for(const z of[-depth/2,depth/2])for(const r of[outer,inner])for(let i=0;i<sides;i++){const a=2*Math.PI*i/sides;verts.push(Math.cos(a)*r,Math.sin(a)*r,z)}const o0=0,i0=sides,o1=sides*2,i1=sides*3;for(let i=0;i<sides;i++){const n=(i+1)%sides;indices.push(o0+i,o0+n,i0+i,o0+n,i0+n,i0+i,o1+i,i1+i,o1+n,o1+n,i1+i,i1+n,o0+i,o1+i,o0+n,o0+n,o1+i,o1+n,i0+i,i0+n,i1+i,i0+n,i1+n,i1+i)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex(indices);g.computeVertexNormals();return g}
 function bodyField(p,c=bodyField.variant||{gender:'girl',age:'child'}){
   const adult=c.age==='adult',male=c.gender==='boy';
   const shoulder=male?(adult?1.24:1.07):(adult?.91:.87);
@@ -97,17 +114,34 @@ function bindConnectedBody(mesh,bones,positions){
 }
 function addFaceAndHair(visual,c,bones){
   const head=bones.head,face=new THREE.Group();face.name='agcb-original-face';head.add(face);face.position.set(0,.12,-.33);
-  const skinMat=new THREE.MeshStandardMaterial({color:SKIN[c.skin]||SKIN.light,roughness:.88}),hairMat=new THREE.MeshStandardMaterial({color:HAIR[c.hair]||HAIR.chestnut,roughness:.9}),eyeMat=new THREE.MeshStandardMaterial({color:0x26333b,roughness:.55}),whiteMat=new THREE.MeshStandardMaterial({color:0xfffdf8,roughness:.8}),mouthMat=new THREE.MeshStandardMaterial({color:0x854a50,roughness:.8});
-  const sphere=(parent,r,x,y,z,mat,scale)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,18,12),mat);m.position.set(x,y,z);if(scale)m.scale.set(...scale);m.castShadow=true;parent.add(m);return m};
-  const female=c.gender==='girl',eyeRadius=c.age==='adult'?.078:.105,eyeGap=c.age==='adult'?.125:.145;for(const x of[-eyeGap,eyeGap]){sphere(face,eyeRadius,x,.05,-.045,whiteMat,[1,.96,.38]);sphere(face,eyeRadius*.55,x,.05,-.088,eyeMat,[1,1,.48]);sphere(face,eyeRadius*.18,x-eyeRadius*.16,.077,-.108,whiteMat,[1,1,.45]);sphere(face,.014,x,.135,-.092,hairMat,[female?1.65:1.15,.42,.25])}
-  sphere(face,.024,0,-.015,-.070,skinMat,[.8,.72,.65]);const smile=new THREE.Mesh(new THREE.TorusGeometry(.052,.009,7,16,Math.PI),mouthMat);smile.rotation.z=Math.PI;smile.position.set(0,-.075,-.075);face.add(smile);sphere(face,.042,-.22,-.045,-.058,new THREE.MeshBasicMaterial({color:0xf0a19e,transparent:true,opacity:.5}),[1,.48,.24]);sphere(face,.042,.22,-.045,-.058,new THREE.MeshBasicMaterial({color:0xf0a19e,transparent:true,opacity:.5}),[1,.48,.24]);
-  const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.14,.02);sphere(hair,c.gender==='boy'?(c.age==='adult'?.31:.32):(c.age==='adult'?.38:.40),0,.10,.02,hairMat,[1.08,.66,.94]);for(const x of(c.gender==='boy'?[-.25,-.12,.12,.25]:[-.28,-.18,-.06,.06,.18,.28])){const lock=sphere(hair,c.gender==='boy'?.09:(c.age==='adult'?.10:.11),x,.04,-.30,hairMat,[.95,.82,.54]);lock.rotation.z=(x/.28)*.16}
-  if(c.hairStyle==='ponytail'||c.hairStyle==='long'){sphere(hair,.18,.34,.02,.25,hairMat,[.8,1.45,.8]);sphere(hair,.16,.28,-.18,.20,hairMat,[.9,1.3,.8])}
-  if(c.hat==='beanie'){sphere(hair,.29,0,.36,.02,new THREE.MeshStandardMaterial({color:0x8bb8d8,roughness:.86}),[1.08,.72,1])}
-  if(c.hat==='sun'){const hatMat=new THREE.MeshStandardMaterial({color:0xf0c56b,roughness:.88});const brim=new THREE.Mesh(new THREE.TorusGeometry(.34,.055,8,24),hatMat);brim.rotation.x=Math.PI/2;brim.position.set(0,.31,-.01);hair.add(brim);const crown=new THREE.Mesh(new THREE.CylinderGeometry(.20,.23,.20,20),hatMat);crown.position.set(0,.39,.01);hair.add(crown)}
-  if(c.glasses==='round'){const frame=new THREE.MeshStandardMaterial({color:0x453d48,roughness:.62});for(const x of[-.145,.145]){const ring=new THREE.Mesh(new THREE.TorusGeometry(.086,.012,8,20),frame);ring.position.set(x,.05,-.102);face.add(ring)}const bridge=new THREE.Mesh(new THREE.BoxGeometry(.10,.012,.012),frame);bridge.position.set(0,.05,-.103);face.add(bridge)}
+  const skinMat=new THREE.MeshStandardMaterial({color:SKIN[c.skin]||SKIN.light,roughness:.88}),hairMat=new THREE.MeshStandardMaterial({color:HAIR[c.hair]||HAIR.chestnut,roughness:.9}),eyeMat=new THREE.MeshStandardMaterial({color:0x26333b,roughness:.55}),whiteMat=new THREE.MeshStandardMaterial({color:0xfffdf8,roughness:.8}),mouthMat=new THREE.MeshStandardMaterial({color:0x854a50,roughness:.8}),cheekMat=new THREE.MeshBasicMaterial({color:0xf0a19e,transparent:true,opacity:.5});
+  const female=c.gender==='girl',adult=c.age==='adult',eyeRadius=adult?.078:.105,eyeGap=adult?.125:.145;
+  for(const x of[-eyeGap,eyeGap]){organicFeature(face,'agcb-eye-white',whiteMat,[x,.05,-.045],[eyeRadius,eyeRadius*.96,eyeRadius*.38]);organicFeature(face,'agcb-eye-pupil',eyeMat,[x,.05,-.088],[eyeRadius*.55,eyeRadius*.55,eyeRadius*.26]);organicFeature(face,'agcb-eye-highlight',whiteMat,[x-eyeRadius*.16,.077,-.108],[eyeRadius*.18,eyeRadius*.18,eyeRadius*.08]);}
+  for(const x of[-eyeGap,eyeGap])profileVolume(face,'agcb-brow',hairMat,[x,0,0],[{y:.125,rx:.018,rz:.012,cx:-.025,cz:-.092},{y:.145,rx:.021,rz:.013,cx:.025,cz:-.092},{y:.16,rx:.014,rz:.010,cx:.045,cz:-.092}],[0,0,x<0?-.10:.10]);
+  organicFeature(face,'agcb-nose',skinMat,[0,-.015,-.070],[.024,.022,.014]);
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(female?.055:.052,.009,7,16,Math.PI),mouthMat);smile.rotation.z=Math.PI;smile.position.set(0,-.075,-.075);face.add(smile);
+  organicFeature(face,'agcb-cheek-l',cheekMat,[-.22,-.045,-.058],[.042,.020,.010]);organicFeature(face,'agcb-cheek-r',cheekMat,[.22,-.045,-.058],[.042,.020,.010]);
+  if(female){for(const x of[-eyeGap,eyeGap])profileVolume(face,'agcb-eyelash',hairMat,[x,0,0],[{y:.115,rx:.010,rz:.008,cx:x<0?-.035:.035,cz:-.105},{y:.145,rx:.012,rz:.008,cx:x<0?-.015:.015,cz:-.105}],[0,0,x<0?-.22:.22])}
+  const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.14,.02);
+  const cap=female?(adult?.35:.39):(adult?.32:.34);
+  profileVolume(hair,'agcb-hair-cap',hairMat,[0,.10,.02],[{y:-.19,rx:cap*.76,rz:cap*.64,cz:.01},{y:-.08,rx:cap*.98,rz:cap*.84,cz:.02},{y:.08,rx:cap*1.03,rz:cap*.88,cz:.03},{y:.21,rx:cap*.80,rz:cap*.70,cz:.03},{y:.28,rx:cap*.30,rz:cap*.28,cz:.02}]);
+  const lock=(name,x,y,z,length,width,depth,tilt=0)=>profileVolume(hair,name,hairMat,[x,y,z],[{y:-length*.55,rx:width*.34,rz:depth*.28,cx:-tilt*.025,cz:0},{y:-length*.25,rx:width*.55,rz:depth*.40,cx:0,cz:-.01},{y:length*.18,rx:width*.62,rz:depth*.48,cx:tilt*.025,cz:-.01},{y:length*.52,rx:width*.34,rz:depth*.25,cx:tilt*.045,cz:0}],[0,0,tilt]);
+  const fringeXs=female?[-.30,-.20,-.10,0,.10,.20,.30]:[-.25,-.13,0,.14,.26];
+  fringeXs.forEach((x,i)=>{const wave=(i-(fringeXs.length-1)/2)*.06;const len=female?(c.hairStyle==='long'||c.hairStyle==='ponytail'?.30:.24):(c.hairStyle==='curly'?.22:.18);lock('agcb-hair-fringe-'+i,x,wave,-.30,len,female?.13:.11,female?.11:.09,(x/.30)*.13)});
+  if(female){
+    const sideLength=c.hairStyle==='long'||c.hairStyle==='ponytail'?.52:.36;lock('agcb-hair-side-l',-.33,-.04,.02,sideLength,.17,.14,-.08);lock('agcb-hair-side-r',.33,-.04,.02,sideLength,.17,.14,.08);
+    if(c.hairStyle==='curly')for(let i=0;i<3;i++){lock('agcb-hair-curl-l-'+i,-.38+i*.05,.12,.05,.24+i*.035,.13,.13,-.18);lock('agcb-hair-curl-r-'+i,.38-i*.05,.12,.05,.24+i*.035,.13,.13,.18)}
+    if(c.hairStyle==='ponytail'||c.hairStyle==='long')lock('agcb-hair-ponytail',.36,.02,.20,.52,.22,.20,.12);
+  }else{
+    lock('agcb-hair-sideburn-l',-.29,-.06,-.02,adult?.28:.24,.10,.10,-.10);lock('agcb-hair-sideburn-r',.29,-.06,-.02,adult?.28:.24,.10,.10,.10);
+    lock('agcb-hair-part',adult?.10:.13,.18,-.29,adult?.26:.22,.12,.10,.18);
+    if(c.hairStyle==='long')lock('agcb-hair-back',.26,-.10,.18,.38,.14,.15,.10);
+  }
+  if(c.hat==='beanie'){const hatMat=new THREE.MeshStandardMaterial({color:0x8bb8d8,roughness:.86});profileVolume(hair,'agcb-beanie-crown',hatMat,[0,.28,.02],[{y:-.08,rx:.25,rz:.23,cz:.01},{y:.08,rx:.30,rz:.27,cz:.02},{y:.22,rx:.24,rz:.22,cz:.02},{y:.28,rx:.12,rz:.12,cz:.01}])}
+  if(c.hat==='sun'){const hatMat=new THREE.MeshStandardMaterial({color:0xf0c56b,roughness:.88});const brim=new THREE.Mesh(flatRingGeometry(.36,.20,.045),hatMat);brim.name='agcb-sunhat-brim';brim.rotation.x=Math.PI/2;brim.position.set(0,.31,-.01);hair.add(brim);profileVolume(hair,'agcb-sunhat-crown',hatMat,[0,.34,.01],[{y:-.06,rx:.19,rz:.17},{y:.10,rx:.22,rz:.19},{y:.18,rx:.16,rz:.14}])}
+  if(c.glasses==='round'){const frame=new THREE.MeshStandardMaterial({color:0x453d48,roughness:.62});for(const x of[-.145,.145]){const ring=new THREE.Mesh(flatRingGeometry(.086,.073,.014,20),frame);ring.name='agcb-glasses-ring';ring.position.set(x,.05,-.102);face.add(ring)}profileVolume(face,'agcb-glasses-bridge',frame,[0,.05,-.103],[{y:-.009,rx:.045,rz:.007},{y:.009,rx:.045,rz:.007}])}
   if(c.accessory==='scarf'){const scarf=new THREE.Mesh(new THREE.TorusGeometry(.25,.035,8,24),new THREE.MeshStandardMaterial({color:0xe48791,roughness:.84}));scarf.rotation.x=Math.PI/2;scarf.position.set(0,-.23,.02);head.add(scarf)}
-  if(c.accessory==='bow'){const bow=new THREE.Group();bow.name='agcb-bow-accessory';for(const x of[-.10,.10])sphere(bow,.12,x,0,-.02,new THREE.MeshStandardMaterial({color:0xe48791,roughness:.84}),[1.25,.75,.35]);sphere(bow,.045,0,0,-.05,new THREE.MeshStandardMaterial({color:0xd96779,roughness:.82}),[1,.8,.5]);bow.position.set(0,-.18,-.34);head.add(bow)}
+  if(c.accessory==='bow'){const bow=new THREE.Group();bow.name='agcb-bow-accessory';for(const x of[-.10,.10])organicFeature(bow,'agcb-bow-wing',new THREE.MeshStandardMaterial({color:0xe48791,roughness:.84}),[x,0,-.02],[.15,.09,.035],[0,0,x<0?-.18:.18]);organicFeature(bow,'agcb-bow-knot',new THREE.MeshStandardMaterial({color:0xd96779,roughness:.82}),[0,0,-.05],[.045,.036,.018]);bow.position.set(0,-.18,-.34);head.add(bow)}
   if(c.accessory==='backpack'){const pack=new THREE.Mesh(new THREE.BoxGeometry(.32,.38,.12),new THREE.MeshStandardMaterial({color:0xf09a68,roughness:.88}));pack.name='agcb-backpack-accessory';pack.position.set(0,.02,.31);head.add(pack)}
   return {face,hair};
 }
@@ -116,8 +150,8 @@ function addPaperDollMarkers(visual,c){
   visual.userData.paperDollSlots=slots;visual.userData.paperDollSchema=1;return slots;
 }
 function roundGarment(parent,name,color,position,scale){
-  const material=new THREE.MeshStandardMaterial({color,roughness:.82,metalness:.01}),mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),material);
-  mesh.name=name;mesh.position.set(...position);mesh.scale.set(...scale);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  const material=new THREE.MeshStandardMaterial({color,roughness:.82,metalness:.01});
+  return organicFeature(parent,name,material,position,scale,[0,0,0]);
 }
 function applyPaperDoll(visual,c,bones,slots){
   const clear=slot=>{while(slots[slot].children.length)slots[slot].remove(slots[slot].children[0]);slots[slot].visible=false};
@@ -142,8 +176,7 @@ function applyPaperDoll(visual,c,bones,slots){
     slots.dress.visible=true;
     slots.dress.userData.anchor='agcb-hips';
     const dressMat=new THREE.MeshStandardMaterial({color:TOP[c.top]||TOP.pink,roughness:.84});
-    const dress=new THREE.Mesh(new THREE.CylinderGeometry(.34,.46,.54,24),dressMat);
-    dress.name='agcb-formal-dress';dress.position.set(0,-.18,0);dress.castShadow=true;bones.hips.add(dress);
+    profileVolume(bones.hips,'agcb-formal-dress',dressMat,[0,-.18,0],[{y:-.28,rx:.44,rz:.31},{y:-.12,rx:.40,rz:.29},{y:.12,rx:.34,rz:.26},{y:.26,rx:.30,rz:.24}]);
   }
   slots.shoes.visible=true;
   const leftShoe=roundGarment(slots.shoes,'agcb-shoe-l',0x665f5b,[0,-.04,-.08],[.20,.12,.30]);
@@ -168,4 +201,4 @@ export function createOriginalCharacter(c){
   const ageScale=c.age==='adult'?[1.03,1.08,1.02]:[.88,.88,.88],genderScale=c.gender==='boy'?[1.03,1,1]:[.98,1,1],bodyScale=c.body==='tall'?[.95,1.07,.97]:c.body==='petite'?[.94,.94,.95]:[1.05,1,1.02];g.scale.set(ageScale[0]*genderScale[0]*bodyScale[0],ageScale[1]*bodyScale[1],ageScale[2]*bodyScale[2]);return g;
 }
 globalThis.__AGCB_CREATE_ORIGINAL_AVATAR=(c)=>createOriginalCharacter(c);
-globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v1'};
+globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v2',detailSet:'organic-profile-hair-face-garment-v1'};

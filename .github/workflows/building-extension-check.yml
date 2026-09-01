@@ -99,3 +99,11 @@ jobs:
             print('Missing V0.4.5 invariants:')
             print('\n'.join(missing));sys.exit(1)
           print('Building, O(1) cache, spatial collision, persistent camera path, anatomy polish, travel gait, pet paw grounding and gentle thunderstorm invariants passed.')
+      - name: Verify V0.4.30 character detail layer
+        run: |
+          test "$(grep -o "const VERSION='V0.4.30'" app-v043.js)" = "const VERSION='V0.4.30'"
+          grep -q "ag-cute-blocks-v045-runtime74" sw.js
+          grep -q "featureSet:'gender-age-silhouette-face-hair-v2'" ag-original-character-runtime.js
+          grep -q "detailSet:'organic-profile-hair-face-garment-v1'" ag-original-character-runtime.js
+          ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
+          grep -q "meta name=\"ag-runtime-version\" content=\"V0.4.30\"" index.html
