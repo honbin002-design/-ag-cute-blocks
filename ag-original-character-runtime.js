@@ -137,12 +137,14 @@ function addFaceAndHair(visual,c,bones){
   organicFeature(face,'agcb-ear-l',skinMat,[-headWidth,.005,.005],[.034,.060,.022]);organicFeature(face,'agcb-ear-r',skinMat,[headWidth,.005,.005],[.034,.060,.022]);
   const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.10,.045);
   const requestedStyle=c.hairStyle||'bob',style=female?requestedStyle:(requestedStyle==='bob'?'short':requestedStyle),cap=female?(adult?.225:.255):(adult?.205:.235);
-  const capProfile=[{y:-.11,rx:cap*.58,rz:cap*.38,cx:0,cz:.13},{y:0,rx:cap*.90,rz:cap*.48,cx:0,cz:.14},{y:.13,rx:cap,rz:cap*.50,cx:-.01,cz:.12},{y:.23,rx:cap*.74,rz:cap*.38,cx:.02,cz:.08},{y:.29,rx:cap*.32,rz:cap*.18,cx:.03,cz:.03}];
+  const capProfile=[{y:-.10,rx:cap*.58,rz:cap*.38,cx:0,cz:.13},{y:0,rx:cap*.90,rz:cap*.48,cx:0,cz:.14},{y:.11,rx:cap,rz:cap*.50,cx:-.01,cz:.12},{y:.20,rx:cap*.74,rz:cap*.38,cx:.02,cz:.08},{y:.24,rx:cap*.32,rz:cap*.18,cx:.03,cz:.03}];
   profileVolume(hair,'agcb-hair-cap',hairMat,[0,.04,.10],capProfile);
   const lock=(name,x,y,z,length,width,depth,tilt=0,material=hairMat)=>profileVolume(hair,name,material,[x,y,z],[{y:-length*.52,rx:width*.22,rz:depth*.20,cx:-tilt*.03,cz:0},{y:-length*.20,rx:width*.46,rz:depth*.33,cx:-tilt*.01,cz:-.008},{y:length*.20,rx:width*.58,rz:depth*.42,cx:tilt*.02,cz:-.008},{y:length*.50,rx:width*.24,rz:depth*.20,cx:tilt*.04,cz:0}],[0,0,tilt]);
   const fringeXs=female?[-.23,-.13,-.045,.045,.13,.23]:[-.18,-.09,0,.09,.18];
   const fringeLengths=style==='long'||style==='ponytail'?(female?[.18,.22,.26,.24,.20,.16]:[.16,.19,.22,.19,.15]):style==='curly'?(female?[.16,.19,.18,.21,.18,.14]:[.14,.17,.19,.16,.13]):(female?[.13,.17,.20,.17,.14,.11]:[.11,.14,.17,.14,.10]);
-  fringeXs.forEach((x,i)=>{const center=i-(fringeXs.length-1)/2;lock('agcb-hair-fringe-'+i,x,.185+Math.abs(center)*.006,-.205,fringeLengths[i],female?.075:.065,female?.055:.050,center*.09,i%3===0?hairLightMat:hairMat)});
+  // Keep the fringe slightly in front of the forehead so it remains readable
+  // at gameplay distance instead of disappearing inside the connected head.
+  fringeXs.forEach((x,i)=>{const center=i-(fringeXs.length-1)/2;lock('agcb-hair-fringe-'+i,x,.185+Math.abs(center)*.006,-.245,fringeLengths[i],female?.075:.065,female?.055:.050,center*.09,i%3===0?hairLightMat:hairMat)});
   profileVolume(hair,'agcb-hair-side-part',hairPartMat,[female?-.04:.045,.235,-.16],[{y:-.02,rx:.003,rz:.004},{y:.07,rx:.004,rz:.005,cx:.02},{y:.13,rx:.003,rz:.004,cx:.035}],[0,0,female?-.18:.18]);
   if(female){
     if(style==='curly')for(let i=0;i<3;i++){const curl=.16+i*.035;lock('agcb-hair-curl-l-'+i,-.27+i*.035,.04,.06,curl,.085+i*.01,.08+i*.01,-.12,i%2?hairMat:hairLightMat);lock('agcb-hair-curl-r-'+i,.27-i*.035,.04,.06,curl,.085+i*.01,.08+i*.01,.12,i%2?hairMat:hairLightMat)}
@@ -276,4 +278,4 @@ export function createOriginalCharacter(c){
   const ageScale=adult?[1.01,1.02,1.01]:[.90,.90,.90],genderScale=male?[1.04,1,1.01]:[.98,1,1],bodyScale=c.body==='tall'?[.95,1.07,.97]:c.body==='petite'?[.94,.94,.95]:[1.05,1,1.02];g.scale.set(ageScale[0]*genderScale[0]*bodyScale[0],ageScale[1]*bodyScale[1],ageScale[2]*bodyScale[2]);return g;
 }
 globalThis.__AGCB_CREATE_ORIGINAL_AVATAR=(c)=>createOriginalCharacter(c);
-globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v8',detailSet:'four-hero-proportion-garment-v7'};
+globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v9',detailSet:'four-hero-proportion-garment-v8'};
