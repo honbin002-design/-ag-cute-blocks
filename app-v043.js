@@ -6,7 +6,7 @@ import {createEconomyState,addInventory,shipAllSellable,settleShipping,buyShopIt
 import {getFurnitureInteraction,furnitureAnchorWorld,furnitureExitWorld,furnitureYaw,isFurnitureInteractable} from './furniture-interaction.js';
 import {advanceDailyRecord} from './daily-progression-system.js';
 
-const VERSION='V0.4.38',WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72,FARM_DISTANCE_MIN=3.8,FARM_DISTANCE_DEFAULT=6.8,THIRD_CAMERA_DISTANCE=3.8;
+const VERSION='V0.4.38',WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72,FARM_DISTANCE_MIN=3.8,FARM_DISTANCE_DEFAULT=6.8,THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;
 const versionBadge=document.querySelector('.title small');if(versionBadge)versionBadge.textContent=VERSION;const versionNote=document.querySelector('.note');if(versionNote)versionNote.textContent=versionNote.textContent.replace(/^V0\.4\.29：/,'V0.4.38：').replace(/^V0\.4\.30：/,'V0.4.38：').replace(/^V0\.4\.31：/,'V0.4.38：').replace(/^V0\.4\.32：/,'V0.4.38：').replace(/^V0\.4\.33：/,'V0.4.38：').replace(/^V0\.4\.34：/,'V0.4.38：').replace(/^V0\.4\.37：/,'V0.4.38：');
 const SAVE_KEY='ag_cute_blocks_world_v04',OLD_SAVE_KEY='ag_cute_blocks_world_v03',SETTINGS_KEY='ag_cute_blocks_settings_v03',CARE_KEY='ag_cute_blocks_crop_care_v1';
 const $=s=>document.querySelector(s);
@@ -39,7 +39,7 @@ const plotCenters=[[-58,-30],[-58,28],[-4,-54],[-2,53],[52,-8],[55,48]];for(cons
 const blocks=new Map(),objects=[],ranch=[],pets=[],cameraTargets=[],cameraTargetSet=new Set();
 const SOLID_CELL=4,solidGrid=new Map(),solidCells=new WeakMap(),solidIndexBox=new THREE.Box3();
 const INTERACTION_CELL=4,interactionGrid=new Map(),interactionCells=new WeakMap(),interactionNearby=[];let changed=false,settings={};try{settings=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch{}
-let season=settings.season||'spring',weather=settings.weather||'sunny',timeSpeed=Number(settings.timeSpeed||1),simMinutes=settings.simMinutes??480,worldDay=Number(settings.worldDay||1),economy=createEconomyState(settings.economy||{});let farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,Number(settings.farmDistance)||FARM_DISTANCE_DEFAULT)),farmPitch=Math.max(.42,Math.min(1.12,Number(settings.farmPitch)||.64)),farmYaw=Number.isFinite(Number(settings.farmYaw))?Number(settings.farmYaw):FARM_YAW;
+let season=settings.season||'spring',weather=settings.weather||'sunny',timeSpeed=Number(settings.timeSpeed||1),simMinutes=settings.simMinutes??480,worldDay=Number(settings.worldDay||1),economy=createEconomyState(settings.economy||{}),cameraTuningNeedsMigration=settings.cameraTuningRevision!==CAMERA_TUNING_REVISION;settings.cameraTuningRevision=CAMERA_TUNING_REVISION;let farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,cameraTuningNeedsMigration?FARM_DISTANCE_DEFAULT:Number(settings.farmDistance)||FARM_DISTANCE_DEFAULT)),farmPitch=Math.max(.42,Math.min(1.12,Number(settings.farmPitch)||.64)),farmYaw=Number.isFinite(Number(settings.farmYaw))?Number(settings.farmYaw):FARM_YAW;
 function registerCameraMesh(m){if(m?.isMesh&&!cameraTargetSet.has(m)){cameraTargetSet.add(m);cameraTargets.push(m)}}
 function registerCameraTarget(root){if(root?.isMesh)registerCameraMesh(root);else root?.traverse?.(registerCameraMesh)}
 function unregisterCameraTarget(root){const drop=m=>{if(!m?.isMesh||!cameraTargetSet.delete(m))return;const i=cameraTargets.indexOf(m);if(i>=0)cameraTargets.splice(i,1)};if(root?.isMesh)drop(root);else root?.traverse?.(drop)}
