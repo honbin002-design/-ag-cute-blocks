@@ -64,7 +64,7 @@ function bindConnectedBody(mesh,bones,positions){
     const idx=[0,0,0,0],weight=[0,0,0,0];order.forEach((x,j)=>{idx[j]=x[1];weight[j]=(1/(x[0]+.045))/total});si.push(...idx);sw.push(...weight);
   }
   mesh.geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));mesh.geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4));
-  const skeleton=new THREE.Skeleton(bones);mesh.add(bones[0]);mesh.bind(skeleton);return skeleton;
+  mesh.add(bones[0]);bones[0].updateMatrixWorld(true);mesh.updateMatrixWorld(true);const skeleton=new THREE.Skeleton(bones);mesh.bind(skeleton);mesh.pose();return skeleton;
 }
 function addFaceAndHair(visual,c,bones){
   const head=bones.head,face=new THREE.Group();face.name='agcb-original-face';head.add(face);face.position.set(0,.12,-.33);
