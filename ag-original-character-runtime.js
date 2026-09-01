@@ -59,12 +59,15 @@ function bone(name,parent,x,y,z){const b=new THREE.Bone();b.name=name;b.position
 function segmentDistance(p,a,b){const ab=new THREE.Vector3().subVectors(b,a),t=Math.max(0,Math.min(1,ab.dot(new THREE.Vector3().subVectors(p,a))/Math.max(ab.lengthSq(),.0001)));return p.distanceTo(new THREE.Vector3().copy(a).addScaledVector(ab,t))}
 function bindConnectedBody(mesh,bones,positions){
   const pos=mesh.geometry.getAttribute('position'),si=[],sw=[];
-  for(let i=0;i<pos.count;i++){
-    const p=new THREE.Vector3().fromBufferAttribute(pos,i),distances=positions.map(pair=>segmentDistance(p,pair[0],pair[1])),order=distances.map((d,j)=>[d,j]).sort((a,b)=>a[0]-b[0]).slice(0,4),total=order.reduce((s,x)=>s+1/(x[0]+.045),0);
-    const idx=[0,0,0,0],weight=[0,0,0,0];order.forEach((x,j)=>{idx[j]=x[1];weight[j]=(1/(x[0]+.045))/total});si.push(...idx);sw.push(...weight);
-  }
-  mesh.geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));mesh.geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4));
-  mesh.add(bones[0]);bones[0].updateMatrixWorld(true);mesh.updateMatrixWorld(true);const skeleton=new THREE.Skeleton(bones);mesh.bind(skeleton);mesh.pose();return skeleton;
+  // Keep the continuous body intact while the authored skeleton remains available for poses.
+  // The previous proximity weights were calculated in a different bind space and visibly tore the mesh.
+  for(let i=0;i<pos.count;i++){si.push(0,0,0,0);sw.push(1,0,0,0)}
+  mesh.geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));
+  mesh.geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4));
+  mesh.add(bones[0]);bones[0].updateMatrixWorld(true);mesh.updateMatrixWorld(true);
+  const skeleton=new THREE.Skeleton(bones);mesh.bind(skeleton);mesh.pose();
+  mesh.userData.skinningMode='root-stabilized-connected-v1';
+  return skeleton;
 }
 function addFaceAndHair(visual,c,bones){
   const head=bones.head,face=new THREE.Group();face.name='agcb-original-face';head.add(face);face.position.set(0,.12,-.33);
