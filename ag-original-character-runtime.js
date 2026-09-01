@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
 const AG_ORIGINAL_CHARACTER_SCHEMA=1;
-const AG_ORIGINAL_CHARACTER_TOPOLOGY='deduped-marching-tetra-v4';
+const AG_ORIGINAL_CHARACTER_TOPOLOGY='deduped-marching-tetra-v5';
 const PAPER_DOLL_SLOTS=['bodyBase','underlayer','top','bottom','dress','shoes','hair','hat','glasses','accessory'];
 const SKIN={light:0xf2c5a5,warm:0xc88963,deep:0x8c5a3c,rosy:0xf0b09e};
 const HAIR={chestnut:0x68483b,black:0x2c2528,honey:0xb87845,plum:0x543c67};
@@ -13,18 +13,22 @@ function smoothUnion(a,b,k=.075){const h=Math.max(k-Math.abs(a-b),0);return Math
 function ellipsoid(p,c,r){const dx=(p.x-c[0])/r[0],dy=(p.y-c[1])/r[1],dz=(p.z-c[2])/r[2];return (Math.sqrt(dx*dx+dy*dy+dz*dz)-1)*Math.min(r[0],r[1],r[2])}
 function bodyField(p,c=bodyField.variant||{gender:'girl',age:'child'}){
   const adult=c.age==='adult',male=c.gender==='boy';
-  const shoulder=male?(adult?1.12:1.05):(adult?.96:.90);
-  const chest=male?(adult?1.04:1.0):(adult?.98:.96);
-  const waist=male?(adult?1.02:.98):(adult?.88:.90);
-  const hip=male?(adult?.94:.94):(adult?1.08:1.04);
-  const arm=adult?1.06:.94,leg=adult?1.06:.94;
+  const shoulder=male?(adult?1.24:1.07):(adult?.91:.87);
+  const chestWidth=male?(adult?1.08:1.02):(adult?.96:.94);
+  const waist=male?(adult?1.01:.96):(adult?.82:.86);
+  const hip=male?(adult?.90:.95):(adult?1.18:1.10);
+  const armScale=adult?1.08:.91,legScale=adult?1.10:.90,legX=adult?.18:.16;
+  const headR=adult?[.29,.32,.28]:[.35,.37,.30];
   const parts=[
-    [[0,.77,0],[.27*hip,.19,.21]],[[0,1.02,0],[.24*waist,.20,.20]],[[0,1.28,0],[.31*chest,.26,.23]],[[0,1.49,0],[.28*shoulder,.16,.21]],[[0,1.67,0],[.12,.11,.14]],[[0,1.92,0],[.30,.33,.28]],
-    [[-.34*shoulder,1.40,0],[.12*arm,.19,.13]],[[-.45*shoulder,1.14,0],[.095*arm,.18,.12]],[[-.49*shoulder,.91,-.015],[.085*arm,.105,.12]],
-    [[.34*shoulder,1.40,0],[.12*arm,.19,.13]],[[.45*shoulder,1.14,0],[.095*arm,.18,.12]],[[.49*shoulder,.91,-.015],[.085*arm,.105,.12]],
-    [[-.17*hip,.66,0],[.11*leg,.20,.14]],[[.17*hip,.66,0],[.11*leg,.20,.14]],[[-.17*hip,.36,0],[.095*leg,.20,.12]],[[.17*hip,.36,0],[.095*leg,.20,.12]],
-    [[-.17*hip,.10,-.10],[.13*leg,.10,.20]],[[.17*hip,.10,-.10],[.13*leg,.10,.20]]
-  ];  let value=Infinity;for(const part of parts)value=smoothUnion(value,ellipsoid(p,part[0],part[1]));return value;
+    [[0,.76,0],[.27*hip,.19,.21]],[[0,1.03,0],[.24*waist,.20,.20]],[[0,1.30,0],[.31*chestWidth,.26,.23]],[[0,1.50,0],[.28*shoulder,.16,.21]],[[0,1.68,0],[.12,.11,.14]],[[0,1.93,0],headR],
+    [[-.34*shoulder,1.40,0],[.12*armScale,.19,.13]],[[-.46*shoulder,1.14,0],[.095*armScale,.18,.12]],[[-.50*shoulder,.91,-.015],[.085*armScale,.105,.12]],
+    [[.34*shoulder,1.40,0],[.12*armScale,.19,.13]],[[.46*shoulder,1.14,0],[.095*armScale,.18,.12]],[[.50*shoulder,.91,-.015],[.085*armScale,.105,.12]],
+    [[-legX,.66,0],[.11*legScale,.20,.14]],[[legX,.66,0],[.11*legScale,.20,.14]],[[-legX,.36,0],[.095*legScale,.20,.12]],[[legX,.36,0],[.095*legScale,.20,.12]],
+    [[-legX,.10,-.10],[.13*legScale,.10,.20]],[[legX,.10,-.10],[.13*legScale,.10,.20]]
+  ];
+  if(adult&&!male){parts.push([[-.105,1.34,-.10],[.14,.12,.15]],[[.105,1.34,-.10],[.14,.12,.15]])}
+  if(adult&&male){parts.push([[0,1.35,-.08],[.24,.16,.14]])}
+  let value=Infinity;for(const part of parts)value=smoothUnion(value,ellipsoid(p,part[0],part[1]));return value;
 }
 const TETS=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
 const EDGES=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
@@ -95,9 +99,9 @@ function addFaceAndHair(visual,c,bones){
   const head=bones.head,face=new THREE.Group();face.name='agcb-original-face';head.add(face);face.position.set(0,.12,-.33);
   const skinMat=new THREE.MeshStandardMaterial({color:SKIN[c.skin]||SKIN.light,roughness:.88}),hairMat=new THREE.MeshStandardMaterial({color:HAIR[c.hair]||HAIR.chestnut,roughness:.9}),eyeMat=new THREE.MeshStandardMaterial({color:0x26333b,roughness:.55}),whiteMat=new THREE.MeshStandardMaterial({color:0xfffdf8,roughness:.8}),mouthMat=new THREE.MeshStandardMaterial({color:0x854a50,roughness:.8});
   const sphere=(parent,r,x,y,z,mat,scale)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,18,12),mat);m.position.set(x,y,z);if(scale)m.scale.set(...scale);m.castShadow=true;parent.add(m);return m};
-  const eyeRadius=c.age==='adult'?.078:.095,eyeGap=c.age==='adult'?.125:.145;for(const x of[-eyeGap,eyeGap]){sphere(face,eyeRadius,x,.05,-.045,whiteMat,[1,.96,.38]);sphere(face,eyeRadius*.55,x,.05,-.088,eyeMat,[1,1,.48]);sphere(face,eyeRadius*.18,x-eyeRadius*.16,.077,-.108,whiteMat,[1,1,.45])}
+  const female=c.gender==='girl',eyeRadius=c.age==='adult'?.078:.105,eyeGap=c.age==='adult'?.125:.145;for(const x of[-eyeGap,eyeGap]){sphere(face,eyeRadius,x,.05,-.045,whiteMat,[1,.96,.38]);sphere(face,eyeRadius*.55,x,.05,-.088,eyeMat,[1,1,.48]);sphere(face,eyeRadius*.18,x-eyeRadius*.16,.077,-.108,whiteMat,[1,1,.45]);sphere(face,.014,x,.135,-.092,hairMat,[female?1.65:1.15,.42,.25])}
   sphere(face,.024,0,-.015,-.070,skinMat,[.8,.72,.65]);const smile=new THREE.Mesh(new THREE.TorusGeometry(.052,.009,7,16,Math.PI),mouthMat);smile.rotation.z=Math.PI;smile.position.set(0,-.075,-.075);face.add(smile);sphere(face,.042,-.22,-.045,-.058,new THREE.MeshBasicMaterial({color:0xf0a19e,transparent:true,opacity:.5}),[1,.48,.24]);sphere(face,.042,.22,-.045,-.058,new THREE.MeshBasicMaterial({color:0xf0a19e,transparent:true,opacity:.5}),[1,.48,.24]);
-  const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.14,.02);sphere(hair,c.gender==='boy'?.33:.36,0,.10,.02,hairMat,[1.08,.66,.94]);for(const x of(c.gender==='boy'?[-.25,-.12,.12,.25]:[-.28,-.18,-.06,.06,.18,.28])){const lock=sphere(hair,c.gender==='boy'?.095:.105,x,.04,-.30,hairMat,[.95,.82,.54]);lock.rotation.z=(x/.28)*.16}
+  const hair=new THREE.Group();hair.name='agcb-original-hair';head.add(hair);hair.position.set(0,.14,.02);sphere(hair,c.gender==='boy'?(c.age==='adult'?.31:.32):(c.age==='adult'?.38:.40),0,.10,.02,hairMat,[1.08,.66,.94]);for(const x of(c.gender==='boy'?[-.25,-.12,.12,.25]:[-.28,-.18,-.06,.06,.18,.28])){const lock=sphere(hair,c.gender==='boy'?.09:(c.age==='adult'?.10:.11),x,.04,-.30,hairMat,[.95,.82,.54]);lock.rotation.z=(x/.28)*.16}
   if(c.hairStyle==='ponytail'||c.hairStyle==='long'){sphere(hair,.18,.34,.02,.25,hairMat,[.8,1.45,.8]);sphere(hair,.16,.28,-.18,.20,hairMat,[.9,1.3,.8])}
   if(c.hat==='beanie'){sphere(hair,.29,0,.36,.02,new THREE.MeshStandardMaterial({color:0x8bb8d8,roughness:.86}),[1.08,.72,1])}
   if(c.hat==='sun'){const hatMat=new THREE.MeshStandardMaterial({color:0xf0c56b,roughness:.88});const brim=new THREE.Mesh(new THREE.TorusGeometry(.34,.055,8,24),hatMat);brim.rotation.x=Math.PI/2;brim.position.set(0,.31,-.01);hair.add(brim);const crown=new THREE.Mesh(new THREE.CylinderGeometry(.20,.23,.20,20),hatMat);crown.position.set(0,.39,.01);hair.add(crown)}
@@ -164,4 +168,4 @@ export function createOriginalCharacter(c){
   const ageScale=c.age==='adult'?[1.03,1.08,1.02]:[.88,.88,.88],genderScale=c.gender==='boy'?[1.03,1,1]:[.98,1,1],bodyScale=c.body==='tall'?[.95,1.07,.97]:c.body==='petite'?[.94,.94,.95]:[1.05,1,1.02];g.scale.set(ageScale[0]*genderScale[0]*bodyScale[0],ageScale[1]*bodyScale[1],ageScale[2]*bodyScale[2]);return g;
 }
 globalThis.__AGCB_CREATE_ORIGINAL_AVATAR=(c)=>createOriginalCharacter(c);
-globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult']};
+globalThis.__AGCB_ORIGINAL_CHARACTER={schema:AG_ORIGINAL_CHARACTER_SCHEMA,enabled:true,source:'AG authored procedural connected skinned mesh',body:'ag-character-base-underwear-v1',paperDollSlots:PAPER_DOLL_SLOTS,animalStatus:'authoring',topology:AG_ORIGINAL_CHARACTER_TOPOLOGY,variants:['girl-child','boy-child','girl-adult','boy-adult'],featureSet:'gender-age-silhouette-face-hair-v1'};
