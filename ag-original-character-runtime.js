@@ -29,6 +29,12 @@ function makeConnectedBodyGeometry(c){
   const nx=20,ny=31,nz=16,minX=-.78,maxX=.78,minY=-.08,maxY=2.30,minZ=-.62,maxZ=.58;
   const dx=(maxX-minX)/nx,dy=(maxY-minY)/ny,dz=(maxZ-minZ)/nz,verts=[],colors=[],indices=[];
   const sample=(ix,iy,iz)=>{const p={x:minX+ix*dx,y:minY+iy*dy,z:minZ+iz*dz};return {p,v:bodyField(p)}};
+  const emitSurfaceTriangle=(a,b,c)=>{
+    const ax=verts[a*3],ay=verts[a*3+1],az=verts[a*3+2],bx=verts[b*3],by=verts[b*3+1],bz=verts[b*3+2],cx=verts[c*3],cy=verts[c*3+1],cz=verts[c*3+2];
+    const abx=bx-ax,aby=by-ay,abz=bz-az,acx=cx-ax,acy=cy-ay,acz=cz-az,nx=aby*acz-abz*acy,ny=abz*acx-abx*acz,nz=abx*acy-aby*acx,px=(ax+bx+cx)/3,py=(ay+by+cy)/3,pz=(az+bz+cz)/3,e=.006;
+    const gx=bodyField({x:px+e,y:py,z:pz})-bodyField({x:px-e,y:py,z:pz}),gy=bodyField({x:px,y:py+e,z:pz})-bodyField({x:px,y:py-e,z:pz}),gz=bodyField({x:px,y:py,z:pz+e})-bodyField({x:px,y:py,z:pz-e});
+    if(nx*gx+ny*gy+nz*gz<0)indices.push(a,c,b);else indices.push(a,b,c);
+  };
   const colorAt=p=>{
     let color=SKIN[c.skin]||SKIN.light;
     if(c.outfit==='underwear'){
@@ -50,7 +56,7 @@ function makeConnectedBodyGeometry(c){
     for(const ids of TETS){
       const t=ids.map(i=>q[i]),inside=t.filter(v=>v.v<0).length;if(!inside||inside===4)continue;
       const cut=[];for(const [a,b] of EDGES)if((t[a].v<0)!==(t[b].v<0))cut.push(pushPoint(t[a],t[b]));
-      if(cut.length>=3)for(let i=1;i<cut.length-1;i++)indices.push(cut[0],cut[i],cut[i+1]);
+      if(cut.length>=3)for(let i=1;i<cut.length-1;i++)emitSurfaceTriangle(cut[0],cut[i],cut[i+1]);
     }
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g;
