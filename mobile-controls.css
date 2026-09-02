@@ -1,38 +1,34 @@
-/* AG Cute Blocks — ergonomic mobile game HUD v3 */
-/* Lower-right thumb cluster: jump is primary, build actions are deliberately separated. */
+/* AG Cute Blocks — mobile game HUD v4 */
+/* The left thumb stays above the build bar; the right thumb uses a
+   MOBA-style radial cluster: one primary button with three surrounding actions. */
 .actions{
   right:max(24px,calc(env(safe-area-inset-right) + 18px));
   bottom:max(30px,calc(env(safe-area-inset-bottom) + 22px));
-  display:grid;
-  grid-template-columns:repeat(2,84px);
-  grid-template-rows:repeat(2,84px);
-  column-gap:20px;
-  row-gap:16px;
-  align-items:center;
-  justify-items:center;
+  width:230px;
+  height:230px;
+  display:block;
+  overflow:visible;
 }
 .btn{
-  width:82px;
-  height:82px;
+  position:absolute;
+  width:72px;
+  height:72px;
   border-radius:50%;
-  font-size:31px;
+  font-size:29px;
   font-weight:900;
   background:#fffde8f2;
   border:3px solid #ffffffde;
   box-shadow:0 6px 18px #0003,inset 0 1px 0 #fff;
   -webkit-tap-highlight-color:transparent;
-  transition:filter .08s ease,box-shadow .08s ease;
+  transition:filter .08s ease,box-shadow .08s ease,transform .08s ease;
 }
-/* A staggered 2x2 cluster keeps each thumb target visually distinct. */
-#add{transform:translate(-12px,10px)}
-#del{transform:translate(10px,-10px)}
-#jump{transform:translate(12px,4px);width:92px;height:92px;font-size:35px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
-#rot{transform:translate(-10px,-8px)}
-.btn:active{filter:brightness(.94)}
-#add:active{transform:translate(-12px,10px) scale(.90)}
-#del:active{transform:translate(10px,-10px) scale(.90)}
-#jump:active{transform:translate(12px,4px) scale(.90)}
-#rot:active{transform:translate(-10px,-8px) scale(.90)}
+/* Primary action at lower-right; the three secondary actions arc above/left. */
+#jump{right:0;bottom:0;width:96px;height:96px;font-size:36px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
+#add{right:108px;bottom:8px}
+#del{right:128px;bottom:100px}
+#rot{right:32px;bottom:126px}
+.btn:active{filter:brightness(.94);transform:scale(.90)}
+#jump:active{transform:scale(.90)}
 
 /* Context interaction sits above and left of the action cluster. */
 .lifeInteract{
@@ -63,10 +59,10 @@
   box-shadow:0 5px 16px #0003!important;
 }
 
-/* Enlarged movement zone; app logic derives its active radius from this geometry. */
+/* Enlarged movement zone, lifted clear of the bottom build bar. */
 .joy{
   left:max(24px,calc(env(safe-area-inset-left) + 14px));
-  bottom:max(30px,calc(env(safe-area-inset-bottom) + 22px));
+  bottom:max(164px,calc(env(safe-area-inset-bottom) + 148px));
   width:148px;
   height:148px;
   border-width:4px;
@@ -91,16 +87,17 @@
   .actions{
     right:max(18px,calc(env(safe-area-inset-right) + 12px));
     bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px));
-    grid-template-columns:repeat(2,72px);
-    grid-template-rows:repeat(2,72px);
-    column-gap:14px;
-    row-gap:12px;
+    width:196px;
+    height:196px;
   }
-  .btn{width:70px;height:70px;font-size:28px}
-  #jump{width:80px;height:80px;font-size:32px}
+  .btn{width:64px;height:64px;font-size:27px}
+  #jump{right:0;bottom:0;width:82px;height:82px;font-size:32px}
+  #add{right:92px;bottom:5px}
+  #del{right:108px;bottom:84px}
+  #rot{right:28px;bottom:102px}
   .lifeInteract{right:max(188px,calc(env(safe-area-inset-right) + 180px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:74px!important;height:74px!important;font-size:28px!important}
   .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
-  .joy{width:128px;height:128px;bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px))}
+  .joy{width:128px;height:128px;bottom:max(124px,calc(env(safe-area-inset-bottom) + 108px))}
   .knob{left:39px;top:39px;width:50px;height:50px}
   .catalog{left:18px!important;right:max(212px,calc(env(safe-area-inset-right) + 202px))!important;transform:none!important;width:auto!important;min-width:240px}
   .cat{padding:7px 10px!important;font-size:13px!important}
