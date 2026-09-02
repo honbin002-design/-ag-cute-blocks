@@ -1,0 +1,119 @@
+name: Building extension check
+
+on:
+  push:
+    branches: [dev-v0.1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  building-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse extension modules
+        run: |
+          node --input-type=module --check < building-extension-runtime.js
+          node --input-type=module --check < procedural-material-runtime.js
+          node --input-type=module --check < collision-cache-runtime.js
+          node --input-type=module --check < raycast-budget-runtime.js
+          node --input-type=module --check < character-polish-runtime.js
+          node --input-type=module --check < character-models.js
+          node --input-type=module --check < character-asset-runtime.js
+          node --input-type=module --check < ag-original-character-runtime.js
+          node --input-type=module --check < ag-original-animal-runtime.js
+          node --input-type=module --check < pet-grounding-runtime.js
+          node --input-type=module --check < animal-models.js
+          node --input-type=module --check < weather-visual-runtime.js
+          node --input-type=module --check < daily-progression-system.js
+          node --input-type=module --check < crop-care-runtime.js
+      - name: Verify V0.4.5 extension invariants
+        shell: python
+        run: |
+          import pathlib,sys,re
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
+          mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
+          collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8')
+          ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8')
+          polish=pathlib.Path('character-polish-runtime.js').read_text(encoding='utf-8')
+          character=pathlib.Path('character-models.js').read_text(encoding='utf-8')
+          asset=pathlib.Path('character-asset-runtime.js').read_text(encoding='utf-8')
+          original=pathlib.Path('ag-original-character-runtime.js').read_text(encoding='utf-8')
+          grounding=pathlib.Path('pet-grounding-runtime.js').read_text(encoding='utf-8')
+          animal=pathlib.Path('animal-models.js').read_text(encoding='utf-8')
+          connected_animal=pathlib.Path('ag-original-animal-runtime.js').read_text(encoding='utf-8')
+          weather=pathlib.Path('weather-visual-runtime.js').read_text(encoding='utf-8')
+          daily=pathlib.Path('daily-progression-system.js').read_text(encoding='utf-8')
+          care=pathlib.Path('crop-care-runtime.js').read_text(encoding='utf-8')
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
+          must_ext=["data-agcb-build-value=\"stairs\"","data-agcb-build-value=\"tile\"","data-agcb-build-value=\"ceramic\"","created.userData.shape='stairs'","created.userData.mat=STATE.material","invalidateGeometry","reindexSolid","schema:4"]
+          must_mat=["kind==='tile'","kind==='ceramic'","MeshStandardMaterial","MATERIAL_SCHEMA=2"]
+          must_collision=['geometryToken','geometryInvalidations','explicitInvalidations','invalidateGeometry:invalidate','__agcbGeometryRevision']
+          must_ray=['const nearby=[]','nearby.length=0','bufferReuses','persistent camera target registry']
+          must_app=["close:$('#lifeCloseFloat')","const VERSION='V0.4.29'",'closeAdminFloat','lifeCloseFloat','panelCloseFloat','cameraTargets=[]','cameraTargetSet=new Set()','registerCameraTarget','unregisterCameraTarget','collisionPoint=new THREE.Vector3()','collisionBox=new THREE.Box3()','camRay.intersectObjects(cameraTargets,false)','pets.forEach','moveForward.set','desiredCamera.set','SOLID_CELL=4','solidGrid=new Map()','solidCells=new WeakMap()','registerSolid','unregisterSolid','reindexSolid','solidGrid.get(solidCellKey','INTERACTION_CELL=4','interactionGrid=new Map()','interactionCells=new WeakMap()','function registerInteractionTarget','function updateInteractionTarget','interactionTargetsNear','for(const o of interactionTargetsNear','function turnHeading','turnHeading(player.rotation.y','turnHeading(g.rotation.y','buildAimTargets','buildAimTargetSet','registerBuildAimTarget','unregisterBuildAimTarget','ray.intersectObjects(buildAimTargets,true)','wetGroundGroup','refreshWetGround','wet-ground','CHUNK_SIZE=32','WORLD_INDEX_KEY','worldIndex','registerWorldEntity','updateWorldEntity','unregisterWorldEntity','saveWorldIndex','__AGCB_WORLD_HOTPATH={schema:7','WORLD_PARTITIONS','worldPartitionFor','ensureWorldChunk','partition','terrain-ground','partitions:worldIndex.partitions','get worldPartitionCount','avatarCustomization','replaceAvatarCustomization','ui.avatarBody','ui.avatarHairStyle','ui.avatarHat','ui.avatarGlasses','ui.avatarAccessory']
+          must_polish=['p.leftArm','p.rightArm','p.leftLeg','p.rightLeg','u.legs||[]','function whisker','dog-muzzle-paws','cat-whiskers-paws','cow-horns-udder','chicken-beak-feet','function updateAvatarTravel','function updatePetTravel','function applyTravelLocomotion','travelState=new WeakMap','petLocomotionSchema=3','travel*20','travel*18','player-distance-gait','pet-distance-gait-raf','schema:6','motion=THREE.MathUtils.lerp']
+          must_grounding=['paw-bound-to-leg-pivot','legacy-root-paw-hide','ground-contact-follow-gait','pawGroundingSchema=1','agcb-grounded-paw','hiddenRootPaws=new WeakMap']
+          must_original=['AG_ORIGINAL_CHARACTER_SCHEMA=1','export function createOriginalCharacter','PAPER_DOLL_SLOTS','agcb-original-connected-skinned-body','SkinnedMesh','skinIndex','skinWeight','ag-character-base-underwear-v1','AG authored procedural connected skinned mesh','function applyPaperDoll','agcb-underlayer-top','agcb-daily-top','agcb-formal-dress','agcb-shoe-l','updateMatrixWorld(true)','mesh.pose()','root-stabilized-connected-v1','underwearLayerMode=\'body-color-only-z-fight-safe-v1\'','emitSurfaceTriangle','MeshBasicMaterial','vertexMap=new Map()','triangleSet=new Set()','deduped-marching-tetra-v5','orderCutPolygon(cut)']
+          must_character=['AVATAR_CUSTOMIZATION_SCHEMA=3','createOriginalCharacter as createAGOriginalCharacter','DEFAULT_AVATAR_CUSTOMIZATION','normalizeAvatarCustomization','addAvatarAccessories','avatarCustomization:c','glasses','accessory','collarMat','__AGCB_UPGRADE_AVATAR','avatarVisualStyle']
+          must_animal=['locomotionSchema:3','function animateAnimal','p.userData.baseY','connectedMesh:true','continuous implicit-surface skinned mesh','prohibitedAssembly:false','function makeContinuousGeometry']
+          must_weather=["kind==='thunderstorm'","drawLightning","installThunderstormOption"]
+          must_daily=["weather==='rain'||weather==='thunderstorm'","advanceDailySnapshot"]
+          must_care=["w==='rain'||w==='thunderstorm'"]
+          must_app[1]="const VERSION='V0.4.42'"
+          must_index=['option value="thunderstorm"','雷雨只有柔和視覺效果']
+          missing=[x for x in must_original if x not in original]+[x for x in must_character if x not in character]+[x for x in must_ext if x not in ext]+[x for x in must_mat if x not in mat]+[x for x in must_collision if x not in collision]+[x for x in must_ray if x not in ray]+[x for x in must_app if x not in app]+[x for x in must_polish if x not in polish]+[x for x in must_grounding if x not in grounding]+[x for x in must_animal if x not in connected_animal]+[x for x in must_weather if x not in weather]+[x for x in must_daily if x not in daily]+[x for x in must_care if x not in care]+[x for x in must_index if x not in index]
+          if "const tar=[];blocks.forEach" in app: missing.append('legacy per-frame camera target rebuild still present')
+          if 'premium-chibi-v4' in character: missing.append('legacy dressed avatar fallback still present')
+          if "objects.filter(o=>o.userData.pet).forEach" in app: missing.append('legacy per-frame pet filter still present')
+          if "for(const o of objects){const d=Math.hypot" in app: missing.append('nearestTarget still scans all objects')
+          if "function allTargets()" in app: missing.append('build aim still rebuilds target array')
+          if "function refreshWetGround" not in app: missing.append('wet-ground refresh layer missing')
+          if "const p=new THREE.Vector3(x,1,z)" in app: missing.append('legacy per-collision Vector3 allocation still present')
+          if "new THREE.Box3().setFromObject" in app: missing.append('legacy per-collision Box3 allocation still present')
+          solid_match=re.search(r'function solidAt\(x,z\)\{(.+?)\}function movePlayer',app,re.S)
+          solid_body=solid_match.group(1) if solid_match else ''
+          if not solid_match: missing.append('solidAt body not found')
+          if 'blocks.values()' in solid_body: missing.append('solidAt still scans all blocks')
+          if 'for(const g of objects)' in solid_body: missing.append('solidAt still scans all objects')
+          if 'const bucket=solidGrid.get' not in solid_body: missing.append('solidAt does not query spatial bucket')
+          if 'GLTFLoader' not in asset or 'SkeletonUtils' not in asset or 'continuous-skinned-mesh' not in asset or 'primitiveChildren' not in asset or 'assetLoaded=true' not in asset or ('agOriginal-owned' not in asset and 'originalPreserved:true' not in asset): missing.append('rigged avatar asset loader/visibility/original ownership markers missing')
+          if "import './character-asset-runtime.js';" not in boot: missing.append('bootstrap rigged avatar asset import')
+          if "import './ag-original-character-runtime.js';" not in boot: missing.append('bootstrap original connected character import')
+          if "character-asset-runtime.js" not in sw: missing.append('service worker rigged avatar asset cache entry')
+          if "ag-original-character-runtime.js" not in sw: missing.append('service worker original connected character cache entry')
+          if "import './building-extension-runtime.js';" not in boot: missing.append('bootstrap building extension import')
+          if "import './character-polish-runtime.js';" not in boot: missing.append('bootstrap character polish import')
+          if "import './pet-grounding-runtime.js';" not in boot: missing.append('bootstrap pet grounding import')
+          if "import './weather-visual-runtime.js';" not in boot: missing.append('bootstrap weather visual import')
+          if "building-extension-runtime.js" not in sw: missing.append('service worker building extension cache entry')
+          if "character-polish-runtime.js" not in sw: missing.append('service worker character polish cache entry')
+          if "pet-grounding-runtime.js" not in sw: missing.append('service worker pet grounding cache entry')
+          if "weather-visual-runtime.js" not in sw: missing.append('service worker weather visual cache entry')
+          if not re.search(r"const CACHE='ag-cute-blocks-v045-runtime\d+';", sw): missing.append('runtime cache version')
+          if missing:
+            print('Missing V0.4.5 invariants:')
+            print('\n'.join(missing));sys.exit(1)
+          print('Building, O(1) cache, spatial collision, persistent camera path, anatomy polish, travel gait, pet paw grounding and gentle thunderstorm invariants passed.')
+      - name: Verify V0.4.42 character identity layer
+        run: |
+          test "$(grep -o "const VERSION='V0.4.42'" app-v043.js)" = "const VERSION='V0.4.42'"
+          grep -q "ag-cute-blocks-v045-runtime86" sw.js
+          grep -q "featureSet:'gender-age-silhouette-face-hair-v9'" ag-original-character-runtime.js
+          grep -q "detailSet:'four-hero-proportion-garment-v8'" ag-original-character-runtime.js
+          ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
+          grep -q "meta name=\"ag-runtime-version\" content=\"V0.4.42\"" index.html
+          grep -q "FARM_DISTANCE_MIN=3.8" app-v043.js
+          grep -q "FARM_DISTANCE_DEFAULT=6.8" app-v043.js
+          grep -q "THIRD_CAMERA_DISTANCE=3.8" app-v043.js
+          grep -q "CAMERA_TUNING_REVISION=1" app-v043.js
+          grep -q "aov-lower-right-cluster-reserved-hotbar-lane" mobile-controls-runtime.js
+          grep -q "grid-template-columns:repeat(2,84px)" mobile-controls.css
+          grep -q "reserved-hotbar-lane" mobile-controls-runtime.js
+          grep -q "agcb-hair-side-part" ag-original-character-runtime.js
+          grep -q "agcb-hair-cap" ag-original-character-runtime.js

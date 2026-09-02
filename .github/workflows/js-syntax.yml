@@ -1,0 +1,139 @@
+name: JavaScript syntax check
+
+on:
+  push:
+    branches: [dev-v0.1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse browser ES modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in *.js; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done
+      - name: Validate relative named imports
+        shell: python
+        run: |
+          import pathlib,re,sys
+          files={p.name:p.read_text(encoding='utf-8') for p in pathlib.Path('.').glob('*.js')}
+          failures=[]
+          export_re=re.compile(r'export\s+(?:async\s+)?(?:function|class|const|let|var)\s+([A-Za-z_$][\w$]*)')
+          export_list_re=re.compile(r'export\s*\{([^}]+)\}')
+          import_re=re.compile(r'import\s*\{([^}]+)\}\s*from\s*[\'\"](\./[^\'\"]+)[\'\"]')
+          for source_name,source in files.items():
+            for names,target in import_re.findall(source):
+              target_name=pathlib.Path(target).name
+              if target_name not in files:
+                failures.append(f'{source_name}: missing relative module {target}')
+                continue
+              target_src=files[target_name]
+              exports=set(export_re.findall(target_src))
+              for block in export_list_re.findall(target_src):
+                for item in block.split(','):
+                  raw=item.strip().split(' as ')[0].strip()
+                  if raw: exports.add(raw)
+              for item in names.split(','):
+                imported=item.strip().split(' as ')[0].strip()
+                if imported and imported not in exports:
+                  failures.append(f'{source_name}: imports {imported} from {target_name}, but it is not exported')
+          if failures:
+            print('\n'.join(failures))
+            sys.exit(1)
+          print('Relative named-import validation passed.')
+      - name: Verify centralized daily progression rules
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {advanceDailyRecord,advanceDailySnapshot} from './daily-progression-system.js';
+          const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
+          let r={type:'carrot',growth:.2};advanceDailyRecord(r,{fromDay:2,toDay:3,season:'spring',weather:'sunny'});close(r.growth,.30);
+          r={type:'carrot',growth:.2};advanceDailyRecord(r,{fromDay:2,toDay:3,season:'spring',weather:'sunny',care:{wateredDay:2}});close(r.growth,.38);
+          r={type:'carrot',growth:.2};advanceDailyRecord(r,{fromDay:2,toDay:3,season:'spring',weather:'thunderstorm'});close(r.growth,.40);
+          r={type:'carrot',growth:.2};advanceDailyRecord(r,{fromDay:2,toDay:3,season:'summer',weather:'rain'});close(r.growth,.20);
+          r={type:'orangeTree',growth:.4};advanceDailyRecord(r,{fromDay:2,toDay:3,season:'winter'});close(r.growth,.49);
+          r={type:'appleTree',growth:.4};advanceDailyRecord(r,{fromDay:2,toDay:3,season:'winter'});close(r.growth,.40);
+          r={type:'sheep',lastProductDay:1,productReady:false};advanceDailyRecord(r,{fromDay:3,toDay:4});assert.equal(r.productReady,true);
+          const world={objects:[{id:'c1',type:'corn',growth:.2}]},settings={worldDay:5,season:'summer',weather:'rain',economy:{coins:3,shipping:[{itemId:'egg',qty:2,unit:18}]}};
+          const result=advanceDailySnapshot(world,settings,{},{});assert.equal(result.toDay,6);assert.equal(result.earned,36);assert.equal(settings.economy.coins,39);assert.equal(settings.economy.shipping.length,0);assert.ok(world.objects[0].growth>.2);
+          console.log('Central daily progression checks passed.');
+          NODE
+      - name: Verify direct core daily authority wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "advanceDailyRecord" app-v043.js
+          grep -q "CARE_KEY='ag_cute_blocks_crop_care_v1'" app-v043.js
+          grep -q "lastProductDay=worldDay" app-v043.js
+          ! test -e daily-progression-runtime.js
+          ! grep -q "daily-progression-runtime" bootstrap-v045.js
+          ! grep -q "daily-progression-runtime" sw.js
+          echo "Direct core daily progression wiring passed."
+      - name: Verify shop rewards become buildable
+        shell: python
+        run: |
+          import pathlib,re,sys
+          economy=pathlib.Path('economy-system.js').read_text(encoding='utf-8')
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          ids=re.findall(r"\{id:'([^']+)',name:'[^']+',price:\d+,kind:'[^']+',icon:'[^']+'\}",economy)
+          expected={'sapling-peach':'peachTree','pet-bed-round':'petBedRound','lamp-cloud':'cloudLamp','arch-flower':'flowerArch','swing-garden':'swingGarden','bed-star':'starBed'}
+          failures=[]
+          for shop_id in ids:
+            build=expected.get(shop_id)
+            if not build: failures.append(f'unmapped shop item: {shop_id}'); continue
+            if f"'{shop_id}':['{build}'" not in app: failures.append(f'{shop_id} missing SHOP_BUILD_UNLOCKS mapping to {build}')
+            if build not in app: failures.append(f'{build} missing from app runtime')
+          for required in ('petBedRound','cloudLamp','flowerArch','swingGarden','starBed'):
+            if f"t==='{required}'" not in app and required!='starBed': failures.append(f'{required} missing geometry branch')
+          if "t==='bed'||t==='starBed'" not in app: failures.append('starBed geometry branch missing')
+          if "syncShopCatalog()" not in app or "category='收藏'" not in app: failures.append('shop catalog refresh path missing')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Shop reward buildability checks passed.')
+      - name: Verify restored building catalog stays present
+        shell: python
+        run: |
+          import pathlib,sys
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          required_tokens=[
+            "if(s==='triangle')","if(s==='roof')","'建材':","'建築':","'家電':",
+            "t==='door'","t==='window'","t==='fence'","t==='fridge'","t==='stove'",
+            "t==='washer'","t==='tv'","t==='cabinet'","plotCenters=[[-58,-30]",
+            "selectedMat='wood'","category==='形狀'||category==='建材'"
+          ]
+          missing=[token for token in required_tokens if token not in app]
+          materials=['wood','darkwood','stone','marble','brick','concrete','glass','roof','pink']
+          for material in materials:
+            if f"['{material}'" not in app and f",['{material}'" not in app:
+              missing.append(f'material:{material}')
+          if missing:
+            print('Missing restored V0.4.2 invariants:')
+            print('\n'.join(missing));sys.exit(1)
+          print('Restored building catalog checks passed.')
+      - name: Verify mobile thumb-zone HUD stays ergonomic
+        shell: python
+        run: |
+          import pathlib,sys
+          css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
+          runtime=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
+          bootstrap=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
+          required=['grid-template-columns:repeat(2,84px)','width:92px;height:92px','.lifeInteract{','.waterCropBtn{','right:max(250px,calc(env(safe-area-inset-right) + 240px))']
+          missing=[x for x in required if x not in css]
+          if "layout:'aov-lower-right-cluster-reserved-hotbar-lane'" not in runtime: missing.append('lower-right cluster runtime classification')
+          if "mobile-controls-runtime.js" not in bootstrap: missing.append('bootstrap activation')
+          if "mobile-controls.css" not in sw or "mobile-controls-runtime.js" not in sw: missing.append('PWA cache entries')
+          if missing:
+            print('Missing mobile HUD invariants:');print('\n'.join(missing));sys.exit(1)
+          print('Mobile thumb-zone HUD checks passed.')

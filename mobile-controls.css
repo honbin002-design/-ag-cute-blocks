@@ -1,0 +1,105 @@
+/* AG Cute Blocks — mobile game HUD v4 */
+/* The left thumb stays above the build bar; the right thumb uses a
+   MOBA-style radial cluster: one primary button with three surrounding actions. */
+.actions{
+  right:max(24px,calc(env(safe-area-inset-right) + 18px));
+  bottom:max(30px,calc(env(safe-area-inset-bottom) + 22px));
+  width:230px;
+  height:230px;
+  display:block;
+  overflow:visible;
+}
+.btn{
+  position:absolute;
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  font-size:29px;
+  font-weight:900;
+  background:#fffde8f2;
+  border:3px solid #ffffffde;
+  box-shadow:0 6px 18px #0003,inset 0 1px 0 #fff;
+  -webkit-tap-highlight-color:transparent;
+  transition:filter .08s ease,box-shadow .08s ease,transform .08s ease;
+}
+/* Primary action at lower-right; the three secondary actions arc above/left. */
+#jump{right:0;bottom:0;width:96px;height:96px;font-size:36px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
+#add{right:108px;bottom:8px}
+#del{right:128px;bottom:100px}
+#rot{right:32px;bottom:126px}
+.btn:active{filter:brightness(.94);transform:scale(.90)}
+#jump:active{transform:scale(.90)}
+
+/* Context interaction sits above and left of the action cluster. */
+.lifeInteract{
+  right:max(224px,calc(env(safe-area-inset-right) + 216px))!important;
+  bottom:max(164px,calc(env(safe-area-inset-bottom) + 154px))!important;
+  width:84px!important;
+  height:84px!important;
+  border:3px solid #ffffffde!important;
+  background:#fff7ccf4!important;
+  box-shadow:0 6px 18px #0003,inset 0 1px 0 #fff!important;
+  font-size:32px!important;
+  -webkit-tap-highlight-color:transparent;
+}
+.lifeInteract small{font-size:11px!important;line-height:12px;font-weight:900}
+.lifeInteract:active{transform:scale(.90)}
+
+/* Context watering control remains readable without entering the thumb cluster. */
+.waterCropBtn{
+  left:auto!important;
+  right:max(218px,calc(env(safe-area-inset-right) + 210px))!important;
+  bottom:max(272px,calc(env(safe-area-inset-bottom) + 262px))!important;
+  min-height:54px!important;
+  min-width:122px!important;
+  padding:11px 16px!important;
+  border:3px solid #ffffffd8!important;
+  border-radius:28px!important;
+  font-size:14px!important;
+  box-shadow:0 5px 16px #0003!important;
+}
+
+/* Enlarged movement zone, lifted clear of the bottom build bar. */
+.joy{
+  left:max(24px,calc(env(safe-area-inset-left) + 14px));
+  bottom:max(164px,calc(env(safe-area-inset-bottom) + 148px));
+  width:148px;
+  height:148px;
+  border-width:4px;
+}
+.knob{left:43px;top:43px;width:58px;height:58px}
+
+/* The build bar owns the center lane and stays clear of both thumb zones. */
+.catalog{
+  left:24px!important;
+  right:max(250px,calc(env(safe-area-inset-right) + 240px))!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:none!important;
+  min-width:300px;
+  bottom:max(10px,env(safe-area-inset-bottom))!important;
+}
+.cats,.items{gap:10px!important}
+.cat{padding:9px 13px!important;font-size:15px!important}
+.item{min-width:72px!important;height:64px!important;font-size:26px!important}
+
+@media(max-height:430px){
+  .actions{
+    right:max(18px,calc(env(safe-area-inset-right) + 12px));
+    bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px));
+    width:196px;
+    height:196px;
+  }
+  .btn{width:64px;height:64px;font-size:27px}
+  #jump{right:0;bottom:0;width:82px;height:82px;font-size:32px}
+  #add{right:92px;bottom:5px}
+  #del{right:108px;bottom:84px}
+  #rot{right:28px;bottom:102px}
+  .lifeInteract{right:max(188px,calc(env(safe-area-inset-right) + 180px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:74px!important;height:74px!important;font-size:28px!important}
+  .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
+  .joy{width:128px;height:128px;bottom:max(124px,calc(env(safe-area-inset-bottom) + 108px))}
+  .knob{left:39px;top:39px;width:50px;height:50px}
+  .catalog{left:18px!important;right:max(212px,calc(env(safe-area-inset-right) + 202px))!important;transform:none!important;width:auto!important;min-width:240px}
+  .cat{padding:7px 10px!important;font-size:13px!important}
+  .item{min-width:62px!important;height:54px!important;font-size:23px!important}
+}
