@@ -8,7 +8,7 @@ import {advanceDailyRecord} from './daily-progression-system.js';
 
 const VERSION='V0.4.42',WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72,FARM_DISTANCE_MIN=3.8,FARM_DISTANCE_DEFAULT=6.8,THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;
 const versionBadge=document.querySelector('.title small');if(versionBadge)versionBadge.textContent=VERSION;const versionNote=document.querySelector('.note');if(versionNote)versionNote.textContent=versionNote.textContent.replace(/^V0\.4\.\d+：/,`${VERSION}：`);
-const SAVE_KEY='ag_cute_blocks_world_v04',OLD_SAVE_KEY='ag_cute_blocks_world_v03',SETTINGS_KEY='ag_cute_blocks_settings_v03',CARE_KEY='ag_cute_blocks_crop_care_v1';
+const SAVE_KEY='ag_cute_blocks_world_v04',OLD_SAVE_KEY='ag_cute_blocks_world_v03',SETTINGS_KEY='ag_cute_blocks_settings_v042_special_r2',CARE_KEY='ag_cute_blocks_crop_care_v1';
 const $=s=>document.querySelector(s);
 const ui={status:$('#status'),cats:$('#cats'),items:$('#items'),cam:$('#cam'),admin:$('#admin'),panel:$('#adminPanel'),season:$('#season'),weather:$('#weather'),timeSpeed:$('#timeSpeed'),avatar:$('#avatar'),avatarAge:$('#avatarAge'),avatarBody:$('#avatarBody'),avatarSkin:$('#avatarSkin'),avatarHairStyle:$('#avatarHairStyle'),avatarHair:$('#avatarHair'),avatarOutfit:$('#avatarOutfit'),avatarTop:$('#avatarTop'),avatarBottom:$('#avatarBottom'),avatarHat:$('#avatarHat'),avatarGlasses:$('#avatarGlasses'),avatarAccessory:$('#avatarAccessory'),save:$('#saveNow'),closeAdmin:$('#closeAdminFloat'),add:$('#add'),del:$('#del'),jump:$('#jump'),rot:$('#rot'),joy:$('#joy'),knob:$('#knob'),clock:$('#clock')};
 
