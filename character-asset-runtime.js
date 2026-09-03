@@ -101,13 +101,32 @@ function addAssetDetailLayer(parent,c,box){
   if(c.accessory==='scarf'){const scarf=new THREE.Mesh(new THREE.TorusGeometry(size.x*.18,size.y*.022,8,22),new THREE.MeshBasicMaterial({color:0xe48791}));scarf.rotation.x=Math.PI/2;scarf.position.set(0,min.y+size.y*.62,0);layer.add(scarf)}else if(c.accessory==='bow'){const bowMat=new THREE.MeshBasicMaterial({color:0xe48791});for(const x of[-size.x*.10,size.x*.10]){const b=new THREE.Mesh(new THREE.SphereGeometry(size.y*.065,12,8),bowMat);b.scale.set(1.25,.72,.30);b.position.set(x,min.y+size.y*.55,torsoZ-.02);layer.add(b)}}else if(c.accessory==='backpack'){const pack=new THREE.Mesh(new THREE.BoxGeometry(size.x*.30,size.y*.24,size.z*.10),new THREE.MeshBasicMaterial({color:0xf09a68}));pack.position.set(0,min.y+size.y*.38,box.max.z+size.z*.04);layer.add(pack)}
   parent.add(layer);return layer;
 }
+function augmentWalkClip(clip,bones,baseQuaternions){
+  if(!clip)return clip;
+  const names=new Set(Object.values(bones).filter(Boolean).map(b=>b.name));
+  const duration=Number.isFinite(clip.duration)&&clip.duration>0?clip.duration:1;
+  const times=Array.from({length:9},(_,i)=>duration*i/8),tracks=clip.tracks.filter(track=>!names.has(String(track.name).split('.')[0]));
+  const profiles={upperL:[.34,.42],lowerL:[.18,.25],handL:[.10,.18],upperR:[.34,.42],lowerR:[.18,.25],handR:[.10,.18]};
+  for(const [key,bone] of Object.entries(bones)){
+    if(!bone)continue;
+    const base=baseQuaternions[key]?.clone?.()||bone.quaternion.clone(),values=[];
+    for(const time of times){
+      const swing=Math.sin(time/duration*Math.PI*2),[yAmp,zAmp]=profiles[key]||[0,0];
+      const delta=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,swing*yAmp,swing*zAmp));
+      values.push(...base.clone().multiply(delta).toArray());
+    }
+    tracks.push(new THREE.QuaternionKeyframeTrack(bone.name+'.quaternion',times,values));
+  }
+  return new THREE.AnimationClip((clip.name||'Walk_Cycle')+'-agcb-hands',duration,tracks);
+}
+
 function applyAsset(group,c,gltf){
   if(!group?.parent)return;
   const u=group.userData;if(u.assetRoot)u.visual.remove(u.assetRoot);if(u.assetDetailLayer)u.visual.remove(u.assetDetailLayer);
   const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-manus5-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
   const selectedVariant=selectManus5Variant(root,c.manus5Variant||MANUS5_DEFAULT_VARIANT);repairManus5LimbWeights(root,selectedVariant);
   const assetWalkBones={upperL:root.getObjectByName('upperarm_L'),lowerL:root.getObjectByName('lowerarm_L'),handL:root.getObjectByName('hand_L'),upperR:root.getObjectByName('upperarm_R'),lowerR:root.getObjectByName('lowerarm_R'),handR:root.getObjectByName('hand_R')};
-  const assetArmBaseline={};for(const [key,bone] of Object.entries(assetWalkBones))if(bone)assetArmBaseline[key]={x:bone.rotation.x,y:bone.rotation.y,z:bone.rotation.z};
+  const assetArmBaseline={},assetArmBaseQuaternions={};for(const [key,bone] of Object.entries(assetWalkBones))if(bone){assetArmBaseline[key]={x:bone.rotation.x,y:bone.rotation.y,z:bone.rotation.z};assetArmBaseQuaternions[key]=bone.quaternion.clone();}
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   setManus5AlphaMaterials(root);
   const rawBox=new THREE.Box3().setFromObject(selectedVariant||root),rawSize=rawBox.getSize(new THREE.Vector3());
@@ -124,8 +143,9 @@ function applyAsset(group,c,gltf){
     dine:findClip(clips,/eat|dine/i),
     swing:findClip(clips,/swing/i)
   };
+  if(actions.walk)actions.walk=augmentWalkClip(actions.walk,assetWalkBones,assetArmBaseQuaternions);
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmBaseline=assetArmBaseline;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmBaseline=assetArmBaseline;u.assetArmBaseQuaternions=assetArmBaseQuaternions;u.assetArmClip=true;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
@@ -139,7 +159,7 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const u=group?.userData,b=u?.assetWalkBones;if(!u||!b)return;
-  // V0.4.55: every Euler component must be finite, even at zero blend.
+  // V0.4.56: every Euler component must be finite, even at zero blend.
   // undefined * 0 is NaN and corrupts the bone matrix (and skinned vertices).
   const finite=value=>Number.isFinite(value)?value:0;
   const step=Math.min(.12,Math.max(0,finite(dt)));
@@ -151,7 +171,10 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
     upperL:{x:0,y:s*.34,z:s*.42},lowerL:{x:0,y:s*.18,z:s*.25},handL:{x:0,y:s*.10,z:s*.18},
     upperR:{x:0,y:s*.34,z:s*.42},lowerR:{x:0,y:s*.18,z:s*.25},handR:{x:0,y:s*.10,z:s*.18}
   };
-  for(const [key,bone] of Object.entries(b)){
+  // The loaded GLB uses a real Walk_Cycle clip with arm quaternion tracks.
+  // Keep this hook for compatibility and finite-state telemetry; only legacy
+  // callers without the clip receive the old Euler fallback.
+  if(!u.assetArmClip)for(const [key,bone] of Object.entries(b)){
     if(!bone)continue;
     const base=u.assetArmBaseline?.[key]||{},pose=offsets[key]||{};
     bone.rotation.set(finite(base.x)+finite(pose.x)*blend,finite(base.y)+finite(pose.y)*blend,finite(base.z)+finite(pose.z)*blend);

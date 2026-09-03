@@ -6,6 +6,9 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const sourcePath = process.argv[2] || path.join(root, 'character-asset-runtime.js');
 const source = fs.readFileSync(sourcePath, 'utf8');
+assert.match(source, /function augmentWalkClip/);
+assert.match(source, /QuaternionKeyframeTrack/);
+assert.match(source, /u\.assetArmClip/);
 const runtime = { GLTFLoader: class {}, console };
 // Execute the real module's callbacks, without network, rendering, or asset loading.
 vm.runInNewContext(source.replace(/^import .*;\s*$/gm, ''), runtime, {filename: sourcePath});
