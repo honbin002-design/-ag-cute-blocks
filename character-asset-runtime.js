@@ -22,7 +22,7 @@ function selectManus5Variant(root,requested=MANUS5_DEFAULT_VARIANT){
   const variants=[];
   root.traverse(o=>{if(/^CHARACTER_\d+_/.test(o.name))variants.push(o)});
   const selected=variants.find(o=>o.name===requested)||variants[0]||null;
-  variants.forEach(o=>{o.visible=o===selected;if(o===selected){o.position.x=0;o.position.z=0}});
+  variants.forEach(o=>{o.visible=o===selected;if(o===selected){o.position.set(0,0,0);o.traverse(child=>{if(child.isMesh)child.visible=true})}});
   const source=root.getObjectByName('Mesh_0');if(source)source.visible=false;
   return selected;
 }
@@ -54,6 +54,9 @@ function tuneRigForCustomization(root,c){
   if(hips)hips.scale.x*=child?.93:c.body==='tall'?.98:c.body==='petite'?.96:1;
   root.traverse(o=>{if(!o.name)return;if(child&&/Cape|Hat/i.test(o.name))o.visible=false});
 }
+function setManus5AlphaMaterials(root){
+  root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;m.transparent=true;m.alphaTest=.08;m.depthTest=true;m.depthWrite=true;if(m.map)m.map.needsUpdate=true;}});
+}
 function setAssetMaterialPolish(root,c){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
 }
@@ -74,6 +77,7 @@ function applyAsset(group,c,gltf){
   const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-manus5-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
   const selectedVariant=selectManus5Variant(root,c.manus5Variant||MANUS5_DEFAULT_VARIANT);
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
+  setManus5AlphaMaterials(root);
   const rawBox=new THREE.Box3().setFromObject(selectedVariant||root),rawSize=rawBox.getSize(new THREE.Vector3());
   const scale=2.18/Math.max(rawSize.y,.001)*bodyScale(c);root.scale.setScalar(scale);root.updateMatrixWorld(true);
   tuneRigForCustomization(root,c);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(selectedVariant||root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
