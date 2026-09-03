@@ -12,13 +12,13 @@ const MANUS5_SOURCE='./assets/characters/manus5/chibi_8_variants_rigged.glb';
 // The runtime reassembles these exact binary parts before GLTFLoader.parse().
 const MANUS5_CHUNK_BASE='./assets/characters/manus5/chibi_8_variants_rigged.glb.part';
 const MANUS5_CHUNK_BYTES=4000000,MANUS5_TOTAL_BYTES=62191812,MANUS5_CHUNK_COUNT=16;
-const GENERAL_BOY_SOURCE='./assets/characters/general/boy.v052.glb';
-const GENERAL_GIRL_SOURCE='./assets/characters/general/girl.v052.glb';
+const GENERAL_BOY_BASE='./assets/characters/general/boy.v052.glb.part',GENERAL_BOY_TOTAL_BYTES=983248,GENERAL_BOY_PART_COUNT=2;
+const GENERAL_GIRL_BASE='./assets/characters/general/girl.v052.glb.part',GENERAL_GIRL_TOTAL_BYTES=1070664,GENERAL_GIRL_PART_COUNT=2;
 const SPECIAL2_BASE='./assets/characters/special2/model.v051.b64.',SPECIAL2_TOTAL_BYTES=48368084,SPECIAL2_PART_COUNT=17;
 const SPECIAL3_BASE='./assets/characters/special3/model.v051.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=13;
 const SOURCES={
-  girl:GENERAL_GIRL_SOURCE,
-  boy:GENERAL_BOY_SOURCE,
+  girl:GENERAL_GIRL_BASE,
+  boy:GENERAL_BOY_BASE,
   special:SPECIAL3_BASE
 };
 const loader=new GLTFLoader(),loaded=new Map(),pending=new Map();
@@ -50,11 +50,15 @@ async function loadBase64Gltf(base,count,total){
   if(offset!==total)throw new Error(`Avatar model size mismatch: ${offset}/${total}`);
   return await new Promise((resolve,reject)=>loader.parse(bytes.buffer,'',resolve,reject));
 }
-async function loadDirectGltf(source){
-  const response=await fetch(source,{cache:'force-cache'});
-  if(!response.ok)throw new Error(`Avatar model failed: ${response.status}`);
-  const bytes=await response.arrayBuffer();
-  return await new Promise((resolve,reject)=>loader.parse(bytes,'',resolve,reject));
+async function loadBinaryGltf(base,count,total){
+  const parts=await Promise.all(Array.from({length:count},(_,i)=>fetch(base+String(i).padStart(3,'0'),{cache:'force-cache'}).then(async response=>{
+    if(!response.ok)throw new Error(`Avatar model part ${i+1}/${count} failed: ${response.status}`);
+    return await response.arrayBuffer();
+  })));
+  const bytes=new Uint8Array(total);let offset=0;
+  for(const part of parts){const chunk=new Uint8Array(part);if(offset+chunk.length>total)throw new Error('Avatar model part size mismatch');bytes.set(chunk,offset);offset+=chunk.length;}
+  if(offset!==total)throw new Error(`Avatar model size mismatch: ${offset}/${total}`);
+  return await new Promise((resolve,reject)=>loader.parse(bytes.buffer,'',resolve,reject));
 }
 async function loadManus5Gltf(){
   const bytes=new Uint8Array(MANUS5_TOTAL_BYTES);let offset=0;
@@ -71,7 +75,7 @@ async function loadManus5Gltf(){
 function loadVariant(key){
   if(loaded.has(key))return Promise.resolve(loaded.get(key));
   if(pending.has(key))return pending.get(key);
-  const p=(key==='boy'?loadDirectGltf(GENERAL_BOY_SOURCE):key==='girl'?loadDirectGltf(GENERAL_GIRL_SOURCE):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});
+  const p=(key==='boy'?loadBinaryGltf(GENERAL_BOY_BASE,GENERAL_BOY_PART_COUNT,GENERAL_BOY_TOTAL_BYTES):key==='girl'?loadBinaryGltf(GENERAL_GIRL_BASE,GENERAL_GIRL_PART_COUNT,GENERAL_GIRL_TOTAL_BYTES):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});
   pending.set(key,p);return p;
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
@@ -124,7 +128,7 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special'||c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':c.gender==='boy'?'03_boy.glb':'04_girl.glb';u.assetAge=c.age||'child';u.assetShapeRevision='user-supplied-exact-glb-v1';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special'||c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':c.gender==='boy'?'03_boy.glb (完整分片)':'04_girl.glb (完整分片)';u.assetAge=c.age||'child';u.assetShapeRevision='user-supplied-exact-glb-v1';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
