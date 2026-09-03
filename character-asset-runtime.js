@@ -12,6 +12,8 @@ const MANUS5_SOURCE='./assets/characters/manus5/chibi_8_variants_rigged.glb';
 // The runtime reassembles these exact binary parts before GLTFLoader.parse().
 const MANUS5_CHUNK_BASE='./assets/characters/manus5/chibi_8_variants_rigged.glb.part';
 const MANUS5_CHUNK_BYTES=4000000,MANUS5_TOTAL_BYTES=62191812,MANUS5_CHUNK_COUNT=16;
+const SPECIAL2_BASE='./assets/characters/special2/model.b64.',SPECIAL2_TOTAL_BYTES=48368084,SPECIAL2_PART_COUNT=9;
+const SPECIAL3_BASE='./assets/characters/special3/model.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=7;
 const SOURCES={
   girl:MANUS5_SOURCE,
   boy:MANUS5_SOURCE,
@@ -26,6 +28,18 @@ function selectManus5Variant(root,requested=MANUS5_DEFAULT_VARIANT){
   variants.forEach(o=>{o.visible=o===selected;if(o===selected){o.position.set(0,0,0);o.traverse(child=>{if(child.isMesh)child.visible=true})}});
   const source=root.getObjectByName('Mesh_0');if(source)source.visible=false;
   return selected;
+}
+async function loadBase64Gltf(base,count,total){
+  let encoded='';
+  for(let i=0;i<count;i++){
+    const response=await fetch(base+String(i).padStart(3,'0'),{cache:'force-cache'});
+    if(!response.ok)throw new Error(`Avatar model part ${i+1}/${count} failed: ${response.status}`);
+    encoded+=await response.text();
+  }
+  const raw=atob(encoded),bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  if(bytes.byteLength!==total)throw new Error(`Avatar model size mismatch: ${bytes.byteLength}/${total}`);
+  return await new Promise((resolve,reject)=>loader.parse(bytes.buffer,'',resolve,reject));
 }
 async function loadManus5Gltf(){
   const bytes=new Uint8Array(MANUS5_TOTAL_BYTES);let offset=0;
@@ -42,7 +56,7 @@ async function loadManus5Gltf(){
 function loadVariant(key){
   if(loaded.has(key))return Promise.resolve(loaded.get(key));
   if(pending.has(key))return pending.get(key);
-  const p=loadManus5Gltf().then(gltf=>{loaded.set(key,gltf);return gltf});
+  const p=(key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):key==='special3'?loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES):loadManus5Gltf()).then(gltf=>{loaded.set(key,gltf);return gltf});
   pending.set(key,p);return p;
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
@@ -95,12 +109,12 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=c.role==='special'?'special':c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':'Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
   const u=group?.userData;
-  const key=c.role==='special'?'special':null;if(!key)return;if(u.assetVariant===key&&u.assetRoot)return;
+  const key=['special','special2','special3'].includes(c.role)?c.role:null;if(!key)return;if(u.assetVariant===key&&u.assetRoot)return;
   u.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{u.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
 }
 globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
@@ -114,6 +128,6 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
 };
-globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,variant:MANUS5_DEFAULT_VARIANT,license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
+globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,special2Source:'Meshy_AI_Chibi_Figure_0902142703_texture.glb',special3Source:'Meshy_AI_Meshy_Merged_Animations.glb',license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
 globalThis.__AGCB_UPGRADE_AVATAR=(group,c)=>{upgrade(group,c);};
 for(const group of globalThis.__AGCB_LIVE_AVATARS||[])upgrade(group,group.userData.avatarCustomization||{gender:group.userData.avatarStyle||'girl'});
