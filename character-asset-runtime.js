@@ -138,7 +138,8 @@ function upgrade(group,c){
   u.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{u.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
 }
 globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
-  const u=group?.userData;if(!u?.assetActions)return;const next=u.assetActions[state]||u.assetActions.idle;if(!next||u.assetAction===next)return;
+  const u=group?.userData;if(!u?.assetActions)return;const next=u.assetActions[state]||u.assetActions.idle;
+  if(!next){if(state==='idle'&&['special','special2','special3'].includes(u.assetVariant)&&u.assetAction){u.assetAction.fadeOut(.12);u.assetAction.stop();u.assetAction=null}return}if(u.assetAction===next)return;
   if(u.assetAction)u.assetAction.fadeOut(.18);next.reset().fadeIn(.18).play();next.setEffectiveTimeScale(state==='walk'?1.35:1);u.assetAction=next;
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
