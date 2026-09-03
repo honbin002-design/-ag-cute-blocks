@@ -60,9 +60,10 @@ function setManus5AlphaMaterials(root){
 function setAssetMaterialPolish(root,c){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
 }
-function repairManus5ArmWeights(root,selectedVariant){
+function repairManus5LimbWeights(root,selectedVariant){
   if(!selectedVariant)return;
   const isArmName=name=>/^(upperarm|lowerarm|hand|thumb_|index_|middle_|ring_|pinky_)/.test(name||'');
+  const isLegName=name=>/^(thigh|shin|foot)_/.test(name||'');
   const sideOf=name=>/_L$/.test(name)?'L':/_R$/.test(name)?'R':'';
   selectedVariant.traverse(mesh=>{
     if(!mesh.isSkinnedMesh||!mesh.skeleton)return;
@@ -70,11 +71,17 @@ function repairManus5ArmWeights(root,selectedVariant){
     if(!pos?.array||!ji?.array||!sw?.array)return;
     const rootIndex=Math.max(0,bones.findIndex(bone=>bone.name==='root')),pa=pos.array,ja=ji.array,wa=sw.array;
     for(let i=0;i<pos.count;i++){
-      const x=pa[i*3],y=pa[i*3+1],side=y>-.42&&y<.58&&Math.abs(x)>.23?(x>0?'L':'R'):'';
+      const x=pa[i*3],y=pa[i*3+1];
+      // Keep arm weights only on the lateral upper-limb zone. This prevents
+      // arm rotations from pulling the head, hair, chest or opposite side.
+      const armSide=y>-.24&&y<.50&&Math.abs(x)>.22?(x>0?'L':'R'):'';
+      // Keep thigh/shin/foot weights below the pelvis and on their own side.
+      const legSide=y<-.36&&Math.abs(x)>.025?(x>0?'L':'R'):'';
       let sum=0;
       for(let k=0;k<4;k++){
-        const at=i*4+k,name=bones[ja[at]]?.name||'',arm=isArmName(name);
-        if(arm&&(!side||sideOf(name)!==side))wa[at]=0;
+        const at=i*4+k,name=bones[ja[at]]?.name||'',arm=isArmName(name),leg=isLegName(name);
+        if(arm&&(!armSide||sideOf(name)!==armSide))wa[at]=0;
+        if(leg&&(!legSide||sideOf(name)!==legSide))wa[at]=0;
         sum+=wa[at];
       }
       if(sum<.001){ja[i*4]=rootIndex;wa[i*4]=1;ja[i*4+1]=ja[i*4+2]=ja[i*4+3]=0;wa[i*4+1]=wa[i*4+2]=wa[i*4+3]=0;sum=1}
@@ -98,7 +105,7 @@ function applyAsset(group,c,gltf){
   if(!group?.parent)return;
   const u=group.userData;if(u.assetRoot)u.visual.remove(u.assetRoot);if(u.assetDetailLayer)u.visual.remove(u.assetDetailLayer);
   const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-manus5-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
-  const selectedVariant=selectManus5Variant(root,c.manus5Variant||MANUS5_DEFAULT_VARIANT);repairManus5ArmWeights(root,selectedVariant);
+  const selectedVariant=selectManus5Variant(root,c.manus5Variant||MANUS5_DEFAULT_VARIANT);repairManus5LimbWeights(root,selectedVariant);
   const assetWalkBones={upperL:root.getObjectByName('upperarm_L'),lowerL:root.getObjectByName('lowerarm_L'),handL:root.getObjectByName('hand_L'),upperR:root.getObjectByName('upperarm_R'),lowerR:root.getObjectByName('lowerarm_R'),handR:root.getObjectByName('hand_R')};
   const assetArmBaseline={};for(const [key,bone] of Object.entries(assetWalkBones))if(bone)assetArmBaseline[key]={x:bone.rotation.x,y:bone.rotation.y,z:bone.rotation.z};
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
@@ -135,8 +142,8 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const step=Math.min(.12,Math.max(0,dt||0));u.assetWalkPhase=(u.assetWalkPhase||0)+step*(moving?10.5:6.5);
   const target=moving?1:0,blend=u.assetWalkBlend||0;u.assetWalkBlend=blend+(target-blend)*Math.min(1,step*10);
   const s=Math.sin(u.assetWalkPhase),offsets={
-    upperL:{x:s*.28,z:s*.035},lowerL:{x:s*.14,z:s*.015},handL:{x:s*.07,z:s*.025},
-    upperR:{x:-s*.28,z:-s*.035},lowerR:{x:-s*.14,z:-s*.015},handR:{x:-s*.07,z:-s*.025}
+    upperL:{y:s*.34,z:s*.025},lowerL:{y:s*.18,z:s*.012},handL:{y:s*.09,z:s*.018},
+    upperR:{y:s*.34,z:s*.025},lowerR:{y:s*.18,z:s*.012},handR:{y:s*.09,z:s*.018}
   };
   for(const [key,bone] of Object.entries(b)){if(!bone)continue;const base=u.assetArmBaseline?.[key]||{x:0,y:0,z:0},pose=offsets[key]||{x:0,y:0,z:0};bone.rotation.set(base.x+pose.x*blend,base.y+pose.y*blend,base.z+pose.z*blend);}
   u.assetArmOffsets=offsets;
