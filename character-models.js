@@ -9,13 +9,28 @@ function ellipsoid(parent,r,x,y,z,color,scale=[1,1,1],segments=20){const m=new T
 function capsule(parent,r,length,x,y,z,color){const pivot=new THREE.Group();pivot.position.set(x,y,z);const m=new THREE.Mesh(new THREE.CapsuleGeometry(r,Math.max(.01,length-r*2),6,12),typeof color==='number'?mat(color):color);m.castShadow=true;pivot.add(m);parent.add(pivot);return pivot}
 function cone(parent,r,h,x,y,z,color,rot=[0,0,0]){const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,10),typeof color==='number'?mat(color):color);m.position.set(x,y,z);m.rotation.set(...rot);m.castShadow=true;parent.add(m);return m}
 
-export function createCuteChildAvatar(style='girl',options={}){
-  const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};
-  const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');
-  const original=createAGOriginalCharacter(c,options);
-  if(original){original.userData={...original.userData,avatarStyle:c.gender,avatarRole:c.role,avatarCustomization:c,avatarVisualStyle:'ag-original-connected-v2',pose:'idle'};LIVE_AVATARS.add(original);globalThis.__AGCB_UPGRADE_AVATAR?.(original,c);globalThis.AGCBCharacterPose=pose=>setCuteCharacterPose(original,pose);return original;}
-  throw new Error('AG original character factory did not return a character');
+function createCleanChildAvatar(c){
+  const g=new THREE.Group(),v=new THREE.Group();g.add(v);
+  const girl=c.gender==='girl',skinMat=mat(girl?0xf2c5a5:0xc88963,.9),hairMat=mat(girl?0x6b4639:0x4b342d,.92),shirtMat=mat(girl?0xe9879c:0x4f9eb0,.86),bottomMat=mat(girl?0x6f789e:0x41657c,.9),shoeMat=mat(0x403c4a,.88),accentMat=mat(girl?0xf2bdc8:0xf0c56a,.82);
+  const head=new THREE.Group();head.position.y=1.58;v.add(head);
+  ellipsoid(head,.30,0,0,0,skinMat,[.98,1.04,.92],24);
+  ellipsoid(head,.30+0.01,0,.10,.02,hairMat,[1,.68,.94],24);
+  ellipsoid(head,.13,-.27,-.05,.02,hairMat,[.72,1.38,.72],18);ellipsoid(head,.13,.27,-.05,.02,hairMat,[.72,1.38,.72],18);
+  if(girl){ellipsoid(head,.16,0,.15,-.20,hairMat,[1.12,.46,.28],18)}else{for(let i=-2;i<=2;i++)ellipsoid(head,.085,i*.11,.23,-.12,hairMat,[.9,.7,.65],14)}
+  for(const x of[-.105,.105]){ellipsoid(head,.035,x,.02,-.302,mat(0x26323c,.65),[1,.95,.55],12);ellipsoid(head,.010,x+.01,.025,-.323,mat(0xffffff,.7),[1,1,.4],8)}
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(.055,.009,8,16,Math.PI),mat(0x9a5860,.8));smile.rotation.z=Math.PI;smile.position.set(0,-.09,-.31);head.add(smile);
+  const neck=ellipsoid(v,.10,0,1.22,0,skinMat,[.9,.7,.8],16);
+  const torso=new THREE.Group();torso.position.set(0,.96,0);v.add(torso);
+  ellipsoid(torso,.29,0,0,0,shirtMat,[1.02,1.12,.72],20);
+  if(girl){const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.27,.43,.27,20),bottomMat);skirt.position.y=-.25;skirt.castShadow=true;torso.add(skirt);ellipsoid(torso,.19,0,.18,-.23,accentMat,[1.1,.22,.18],16)}else{const belt=new THREE.Mesh(new THREE.BoxGeometry(.46,.055,.045),accentMat);belt.position.set(0,-.10,-.29);torso.add(belt)}
+  const leftArm=new THREE.Group(),rightArm=new THREE.Group();leftArm.position.set(-.33,1.10,0);rightArm.position.set(.33,1.10,0);v.add(leftArm,rightArm);
+  for(const [arm,x] of[[leftArm,-1],[rightArm,1]]){const upper=capsule(arm,.075,.34,0,-.15,0,shirtMat);const hand=ellipsoid(arm,.09,0,-.39,0,skinMat,[.9,1.05,.9],14);arm.rotation.z=x*.08}
+  const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();leftLeg.position.set(-.14,.62,0);rightLeg.position.set(.14,.62,0);v.add(leftLeg,rightLeg);
+  for(const [leg,x] of[[leftLeg,-1],[rightLeg,1]]){capsule(leg,.095,.43,0,-.20,0,bottomMat);const foot=ellipsoid(leg,.13,0,-.47,-.075,shoeMat,[1.2,.62,1.45],16);foot.rotation.y=x*.08}
+  g.userData={animatedParts:{leftArm,rightArm,leftLeg,rightLeg},visual:v,pose:'idle',avatarVisualStyle:'clean-child-v1',avatarCustomization:{...c}};
+  LIVE_AVATARS.add(g);return g;
 }
+export function createCuteChildAvatar(style='girl',options={}){const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');return createCleanChildAvatar(c);}
 
 function paw(parent,x,z,color,front=false){const p=ellipsoid(parent,.085,x,.075,z,color,[1.05,.48,front?1.42:1.32],12);ellipsoid(parent,.026,x-.032,.086,z-.080,color,[.62,.40,.72],8);ellipsoid(parent,.026,x+.032,.086,z-.080,color,[.62,.40,.72],8);return p}
 function createPetBase(type,colors){
