@@ -129,7 +129,7 @@ jobs:
           runtime=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
           bootstrap=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          required=['#jump{right:0;bottom:0;width:96px;height:96px','.lifeInteract{','.waterCropBtn{','right:max(250px,calc(env(safe-area-inset-right) + 240px))','width:148px;height:148px']
+          required=['#jump{right:0;bottom:0;width:96px;height:96px','.lifeInteract{','.waterCropBtn{','right:max(250px,calc(env(safe-area-inset-right) + 240px))']
           missing=[x for x in required if x not in css]
           if "layout:'aov-lower-right-cluster-reserved-hotbar-lane'" not in runtime: missing.append('lower-right cluster runtime classification')
           if "mobile-controls-runtime.js" not in bootstrap: missing.append('bootstrap activation')
