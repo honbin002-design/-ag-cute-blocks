@@ -24,7 +24,7 @@ jobs:
           done
       - name: Verify finite avatar animation and original GLB skinning
         run: node tests/asset-animation-regression.cjs
-      - name: Validate relative named imports
+      - name: Verify jump height and platform landing\n        run: node tests/jump-regression.cjs\n      - name: Validate relative named imports
         shell: python
         run: |
           import pathlib,re,sys

@@ -33,17 +33,17 @@ function check(group, moving, dt) {
 const first = avatar(); check(first,false,0);
 for (const key of Object.keys(names)) assert.deepEqual({...first.userData.assetWalkBones[key].rotation,set:undefined}, {...first.userData.assetArmBaseline[key],set:undefined});
 for (const fps of [30,60,120]) {
-  const group = avatar(), range = Object.fromEntries(Object.keys(names).map(k=>[k,[Infinity,-Infinity]]));
+  const group = avatar(), range = Object.fromEntries(Object.keys(names).map(k=>[k,[Infinity,-Infinity]])), zRange = Object.fromEntries(Object.keys(names).map(k=>[k,[Infinity,-Infinity]]));
   for (let cycle=0;cycle<3;cycle++) {
     for (const [moving,seconds] of [[false,2],[true,8],[false,3],[true,4],[false,3]]) {
       for (let frame=0;frame<seconds*fps;frame++) {
         check(group,moving,1/fps);
-        if (moving) for (const key of Object.keys(names)) {const y=group.userData.assetWalkBones[key].rotation.y;range[key][0]=Math.min(range[key][0],y);range[key][1]=Math.max(range[key][1],y);}
+        if (moving) for (const key of Object.keys(names)) {const {y,z}=group.userData.assetWalkBones[key].rotation;range[key][0]=Math.min(range[key][0],y);range[key][1]=Math.max(range[key][1],y);zRange[key][0]=Math.min(zRange[key][0],z);zRange[key][1]=Math.max(zRange[key][1],z);}
       }
       if (!moving) for (const key of Object.keys(names)) for(const axis of ['x','y','z']) assert.ok(Math.abs(group.userData.assetWalkBones[key].rotation[axis]-group.userData.assetArmBaseline[key][axis])<1e-7,'stopped arm must return to baseline');
     }
   }
-  for (const [key,[min,max]] of Object.entries(range)) assert.ok(max-min>.12, `${key} does not swing`);
+  for (const [key,[min,max]] of Object.entries(range)) { assert.ok(max-min>.12, `${key} does not swing in depth`); const [zMin,zMax]=zRange[key]; assert.ok(zMax-zMin>.12, `${key} does not swing visibly`); }
 }
 for (const dt of [undefined,null,NaN,Infinity,-Infinity,-1,0,1e-12,10,'bad']) {
   const group=avatar({x:NaN,y:Infinity});

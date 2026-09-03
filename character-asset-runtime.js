@@ -147,8 +147,9 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const target=moving?1:0,previousBlend=Math.min(1,Math.max(0,finite(u.assetWalkBlend)));
   const blend=previousBlend+(target-previousBlend)*Math.min(1,step*10);u.assetWalkBlend=blend;
   const s=Math.sin(u.assetWalkPhase),offsets={
-    upperL:{x:0,y:s*.34,z:s*.025},lowerL:{x:0,y:s*.18,z:s*.012},handL:{x:0,y:s*.09,z:s*.018},
-    upperR:{x:0,y:s*.34,z:s*.025},lowerR:{x:0,y:s*.18,z:s*.012},handR:{x:0,y:s*.09,z:s*.018}
+    // Z is the visible front-view swing axis for this rig; Y remains a subtle depth cue.
+    upperL:{x:0,y:s*.10,z:s*.42},lowerL:{x:0,y:s*.07,z:s*.25},handL:{x:0,y:s*.04,z:s*.14},
+    upperR:{x:0,y:s*.10,z:s*.42},lowerR:{x:0,y:s*.07,z:s*.25},handR:{x:0,y:s*.04,z:s*.14}
   };
   for(const [key,bone] of Object.entries(b)){
     if(!bone)continue;
