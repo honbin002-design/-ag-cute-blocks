@@ -11,23 +11,84 @@ function cone(parent,r,h,x,y,z,color,rot=[0,0,0]){const m=new THREE.Mesh(new THR
 
 function createCleanChildAvatar(c){
   const g=new THREE.Group(),v=new THREE.Group();g.add(v);
-  const girl=c.gender==='girl',skinMat=mat(girl?0xf2c5a5:0xc88963,.9),hairMat=mat(girl?0x6b4639:0x4b342d,.92),shirtMat=mat(girl?0xe9879c:0x4f9eb0,.86),bottomMat=mat(girl?0x6f789e:0x41657c,.9),shoeMat=mat(0x403c4a,.88),accentMat=mat(girl?0xf2bdc8:0xf0c56a,.82);
-  const head=new THREE.Group();head.position.y=1.58;v.add(head);
-  ellipsoid(head,.30,0,0,0,skinMat,[.98,1.04,.92],24);
-  ellipsoid(head,.30+0.01,0,.10,.02,hairMat,[1,.68,.94],24);
-  ellipsoid(head,.13,-.27,-.05,.02,hairMat,[.72,1.38,.72],18);ellipsoid(head,.13,.27,-.05,.02,hairMat,[.72,1.38,.72],18);
-  if(girl){ellipsoid(head,.16,0,.15,-.20,hairMat,[1.12,.46,.28],18)}else{for(let i=-2;i<=2;i++)ellipsoid(head,.085,i*.11,.23,-.12,hairMat,[.9,.7,.65],14)}
-  for(const x of[-.105,.105]){ellipsoid(head,.035,x,.02,-.302,mat(0x26323c,.65),[1,.95,.55],12);ellipsoid(head,.010,x+.01,.025,-.323,mat(0xffffff,.7),[1,1,.4],8)}
-  const smile=new THREE.Mesh(new THREE.TorusGeometry(.055,.009,8,16,Math.PI),mat(0x9a5860,.8));smile.rotation.z=Math.PI;smile.position.set(0,-.09,-.31);head.add(smile);
-  const neck=ellipsoid(v,.10,0,1.22,0,skinMat,[.9,.7,.8],16);
-  const torso=new THREE.Group();torso.position.set(0,.96,0);v.add(torso);
-  ellipsoid(torso,.29,0,0,0,shirtMat,[1.02,1.12,.72],20);
-  if(girl){const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.27,.43,.27,20),bottomMat);skirt.position.y=-.25;skirt.castShadow=true;torso.add(skirt);ellipsoid(torso,.19,0,.18,-.23,accentMat,[1.1,.22,.18],16)}else{const belt=new THREE.Mesh(new THREE.BoxGeometry(.46,.055,.045),accentMat);belt.position.set(0,-.10,-.29);torso.add(belt)}
-  const leftArm=new THREE.Group(),rightArm=new THREE.Group();leftArm.position.set(-.33,1.10,0);rightArm.position.set(.33,1.10,0);v.add(leftArm,rightArm);
-  for(const [arm,x] of[[leftArm,-1],[rightArm,1]]){const upper=capsule(arm,.075,.34,0,-.15,0,shirtMat);const hand=ellipsoid(arm,.09,0,-.39,0,skinMat,[.9,1.05,.9],14);arm.rotation.z=x*.08}
-  const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();leftLeg.position.set(-.14,.62,0);rightLeg.position.set(.14,.62,0);v.add(leftLeg,rightLeg);
-  for(const [leg,x] of[[leftLeg,-1],[rightLeg,1]]){capsule(leg,.095,.43,0,-.20,0,bottomMat);const foot=ellipsoid(leg,.13,0,-.47,-.075,shoeMat,[1.2,.62,1.45],16);foot.rotation.y=x*.08}
-  g.userData={animatedParts:{leftArm,rightArm,leftLeg,rightLeg},visual:v,pose:'idle',avatarVisualStyle:'clean-child-v1',avatarCustomization:{...c}};
+  const girl=c.gender==='girl';
+  const skinMat=mat(girl?0xf3c6aa:0xd39a82,.9),hairMat=mat(girl?0x6b4037:0x3f2d2a,.9);
+  const hairHi=mat(girl?0x9a6250:0x65423a,.88),shirtMat=mat(girl?0xe9819d:0x4c9cbd,.84);
+  const shirtHi=mat(girl?0xf4a9b9:0x6bbbd2,.82),bottomMat=mat(girl?0x6573a5:0x3f5d78,.9);
+  const shoeMat=mat(girl?0x493c4a:0x34404f,.88),soleMat=mat(girl?0xf6eee5:0xc9d2da,.9);
+  const irisMat=mat(girl?0x5a3c38:0x38566d,.62),blushMat=mat(girl?0xf59aa7:0xe99b83,.76);
+  const head=new THREE.Group();head.position.y=1.60;v.add(head);
+  ellipsoid(head,.305,0,0,0,skinMat,[.98,1.04,.94],28);
+  ellipsoid(head,.312,0,.105,.015,hairMat,[1,.70,.94],28);
+  ellipsoid(head,.075,-.305,.005,0,skinMat,[.70,1,.84],16);
+  ellipsoid(head,.075,.305,.005,0,skinMat,[.70,1,.84],16);
+  if(girl){
+    ellipsoid(head,.13,0,.18,.18,hairMat,[.95,1.30,.78],18);
+    ellipsoid(head,.105,-.22,.09,.06,hairHi,[.88,1.44,.70],18);
+    ellipsoid(head,.105,.22,.09,.06,hairHi,[.88,1.44,.70],18);
+    ellipsoid(head,.075,-.205,.25,-.245,hairMat,[.78,.66,.55],16);
+    ellipsoid(head,.075,-.07,.275,-.265,hairHi,[.82,.60,.50],16);
+    ellipsoid(head,.075,.07,.275,-.265,hairHi,[.82,.60,.50],16);
+    ellipsoid(head,.075,.205,.25,-.245,hairMat,[.78,.66,.55],16);
+  }else{
+    for(const [x,y,s] of[[-.22,.22,.90],[-.11,.275,1.02],[0,.30,1.08],[.11,.275,1.02],[.22,.22,.90]])
+      ellipsoid(head,.082,x,y,-.245,hairHi,[s,.70,.58],16);
+    ellipsoid(head,.12,-.255,.05,.02,hairMat,[.72,1.32,.68],18);
+    ellipsoid(head,.12,.255,.05,.02,hairMat,[.72,1.32,.68],18);
+  }
+  for(const x of[-.108,.108]){
+    ellipsoid(head,.070,x,.015,-.292,white,[1,.94,.56],20);
+    ellipsoid(head,.040,x,.010,-.338,irisMat,[1,.96,.58],16);
+    ellipsoid(head,.014,x-.012,.027,-.365,white,[1,1,.44],10);
+    ellipsoid(head,.045,x,.102,-.300,hairMat,[1.15,.18,.34],12);
+    ellipsoid(head,.040,x,.005,-.365,blushMat,[1.55,.52,.18],12);
+  }
+  const nose=ellipsoid(head,.024,0,-.045,-.322,skinMat,[.82,.72,.70],12);
+  nose.rotation.x=.12;
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(.058,.009,8,18,Math.PI),mat(0x914e5c,.78));
+  smile.rotation.z=Math.PI;smile.position.set(0,-.105,-.325);head.add(smile);
+  ellipsoid(head,.045,-.22,-.11,-.275,blushMat,[1.15,.62,.16],12);
+  ellipsoid(head,.045,.22,-.11,-.275,blushMat,[1.15,.62,.16],12);
+  ellipsoid(v,.10,0,1.23,0,skinMat,[.9,.75,.82],16);
+  const torso=new THREE.Group();torso.position.set(0,.98,0);v.add(torso);
+  ellipsoid(torso,.30,0,0,0,shirtMat,[1.04,1.12,.74],24);
+  const collar=new THREE.Mesh(new THREE.TorusGeometry(.145,.022,8,20),shirtHi);
+  collar.rotation.x=Math.PI/2;collar.position.set(0,.18,-.235);torso.add(collar);
+  if(girl){
+    const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.285,.445,.30,24),bottomMat);
+    skirt.position.y=-.255;skirt.castShadow=true;torso.add(skirt);
+    const waist=new THREE.Mesh(new THREE.TorusGeometry(.30,.022,8,20),shirtHi);
+    waist.rotation.x=Math.PI/2;waist.position.set(0,-.10,0);torso.add(waist);
+    ellipsoid(torso,.19,0,.13,-.245,shirtHi,[1.16,.24,.20],16);
+  }else{
+    const shorts=new THREE.Mesh(new THREE.BoxGeometry(.46,.24,.30),bottomMat);
+    shorts.position.set(0,-.24,0);shorts.castShadow=true;torso.add(shorts);
+    const belt=new THREE.Mesh(new THREE.BoxGeometry(.47,.045,.035),mat(0xe7b653,.76));
+    belt.position.set(0,-.095,-.275);belt.castShadow=true;torso.add(belt);
+    ellipsoid(torso,.14,0,.13,-.245,shirtHi,[1.18,.22,.18],16);
+  }
+  const leftArm=new THREE.Group(),rightArm=new THREE.Group();
+  leftArm.position.set(-.345,1.11,0);rightArm.position.set(.345,1.11,0);v.add(leftArm,rightArm);
+  for(const [arm,x] of[[leftArm,-1],[rightArm,1]]){
+    capsule(arm,.082,.235,0,-.105,0,shirtMat);
+    const cuff=new THREE.Mesh(new THREE.TorusGeometry(.082,.014,7,14),shirtHi);
+    cuff.rotation.x=Math.PI/2;cuff.position.set(0,-.205,0);arm.add(cuff);
+    capsule(arm,.060,.16,0,-.285,0,skinMat);
+    ellipsoid(arm,.085,0,-.405,-.005,skinMat,[.84,1.04,.88],16);
+    arm.rotation.z=x*.075;
+  }
+  const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();
+  leftLeg.position.set(-.14,.64,0);rightLeg.position.set(.14,.64,0);v.add(leftLeg,rightLeg);
+  for(const [leg,x] of[[leftLeg,-1],[rightLeg,1]]){
+    capsule(leg,.098,.35,0,-.17,0,bottomMat);
+    capsule(leg,.070,.11,0,-.385,0,soleMat);
+    ellipsoid(leg,.135,0,-.49,-.075,shoeMat,[1.24,.62,1.52],18);
+    ellipsoid(leg,.125,0,-.535,-.075,soleMat,[1.26,.20,1.48],16);
+    const strap=new THREE.Mesh(new THREE.BoxGeometry(.14,.025,.035),shirtHi);
+    strap.position.set(x*.018,-.49,-.18);leg.add(strap);
+    leg.rotation.z=x*.015;
+  }
+  g.userData={animatedParts:{leftArm,rightArm,leftLeg,rightLeg},visual:v,pose:'idle',avatarVisualStyle:'clean-child-v2-detail',avatarCustomization:{...c}};
   LIVE_AVATARS.add(g);globalThis.__AGCB_UPGRADE_AVATAR?.(g,c);return g;
 }
 export function createCuteChildAvatar(style='girl',options={}){const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');return createCleanChildAvatar(c);}

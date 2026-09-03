@@ -6,14 +6,14 @@ import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examp
 // continuous-skinned-mesh: complete GLB owns the visible body.
 // The old procedural character remains available as a data/compatibility layer,
 // but it must never be rendered beside the complete GLB.
-const RIGGED_AVATAR_SCHEMA=2;
+const RIGGED_AVATAR_SCHEMA=3;
 const MANUS5_SOURCE='./assets/characters/manus5/chibi_8_variants_rigged.glb';
 // GitHub's connected file writer cannot store this large GLB as one payload.
 // The runtime reassembles these exact binary parts before GLTFLoader.parse().
 const MANUS5_CHUNK_BASE='./assets/characters/manus5/chibi_8_variants_rigged.glb.part';
 const MANUS5_CHUNK_BYTES=4000000,MANUS5_TOTAL_BYTES=62191812,MANUS5_CHUNK_COUNT=16;
-const SPECIAL2_BASE='./assets/characters/special2/model.b64.',SPECIAL2_TOTAL_BYTES=48368084,SPECIAL2_PART_COUNT=9;
-const SPECIAL3_BASE='./assets/characters/special3/model.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=7;
+const SPECIAL2_BASE='./assets/characters/special2/model.v051.b64.',SPECIAL2_TOTAL_BYTES=48368084,SPECIAL2_PART_COUNT=17;
+const SPECIAL3_BASE='./assets/characters/special3/model.v051.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=13;
 const SOURCES={
   girl:MANUS5_SOURCE,
   boy:MANUS5_SOURCE,
@@ -25,6 +25,10 @@ function selectManus5Variant(root,requested=MANUS5_DEFAULT_VARIANT){
   const variants=[];
   root.traverse(o=>{if(/^CHARACTER_\d+_/.test(o.name))variants.push(o)});
   const selected=variants.find(o=>o.name===requested)||variants[0]||null;
+  if(!selected){
+    root.traverse(o=>{o.visible=true});
+    return root;
+  }
   variants.forEach(o=>{o.visible=o===selected;if(o===selected){o.position.set(0,0,0);o.traverse(child=>{if(child.isMesh)child.visible=true})}});
   const source=root.getObjectByName('Mesh_0');if(source)source.visible=false;
   return selected;
@@ -112,7 +116,7 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':'Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':'Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='user-supplied-exact-glb-v1';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
@@ -131,6 +135,6 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
 };
-globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,special2Source:'Meshy_AI_Chibi_Figure_0902142703_texture.glb',special3Source:'Meshy_AI_Meshy_Merged_Animations.glb',license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
+globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,special2ChunkBase:SPECIAL2_BASE,special2ChunkCount:SPECIAL2_PART_COUNT,special3ChunkBase:SPECIAL3_BASE,special3ChunkCount:SPECIAL3_PART_COUNT,special2Source:'Meshy_AI_Chibi_Figure_0902142703_texture.glb',special3Source:'Meshy_AI_Meshy_Merged_Animations.glb',license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
 globalThis.__AGCB_UPGRADE_AVATAR=(group,c)=>{upgrade(group,c);};
 for(const group of globalThis.__AGCB_LIVE_AVATARS||[])upgrade(group,group.userData.avatarCustomization||{gender:group.userData.avatarStyle||'girl'});
