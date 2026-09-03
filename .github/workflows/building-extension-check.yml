@@ -113,7 +113,7 @@ jobs:
           grep -q "THIRD_CAMERA_DISTANCE=3.8" app-v043.js
           grep -q "CAMERA_TUNING_REVISION=1" app-v043.js
           grep -q "aov-lower-right-cluster-reserved-hotbar-lane" mobile-controls-runtime.js
-          grep -q "grid-template-columns:repeat(2,84px)" mobile-controls.css
+          grep -q "#jump{right:0;bottom:0;width:96px;height:96px" mobile-controls.css
           grep -q "reserved-hotbar-lane" mobile-controls-runtime.js
           grep -q "agcb-hair-side-part" ag-original-character-runtime.js
           grep -q "agcb-hair-cap" ag-original-character-runtime.js
