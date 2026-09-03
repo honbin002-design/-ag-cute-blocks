@@ -56,7 +56,7 @@ function tuneRigForCustomization(root,c){
   root.traverse(o=>{if(!o.name)return;if(child&&/Cape|Hat/i.test(o.name))o.visible=false});
 }
 function setManus5AlphaMaterials(root){
-  root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;m.transparent=true;m.alphaTest=.08;m.depthTest=true;m.depthWrite=true;if(m.map)m.map.needsUpdate=true;}});
+  root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m||(!m.transparent&&!m.alphaMap))continue;m.alphaTest=Math.max(m.alphaTest||0,.08);m.depthTest=true;m.depthWrite=true;if(m.map)m.map.needsUpdate=true;}});
 }
 function setAssetMaterialPolish(root,c){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
