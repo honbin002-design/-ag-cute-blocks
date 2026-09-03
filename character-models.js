@@ -48,7 +48,7 @@ function petAnimationDue(u,time,moving){
   if(u._lastAnimAt&&time-u._lastAnimAt<gap)return false;u._lastAnimAt=time;return true;
 }
 export function animateCuteCharacter(group,time,moving=false,speed=1){
-  const u=group?.userData,p=u?.animatedParts;if(!p)return;if(u.assetMixer){const dt=u._assetLastTime?Math.min(.12,Math.max(0,(time-u._assetLastTime)/1000)):0;u._assetLastTime=time;if(dt)u.assetMixer.update(dt);if(!['sit','lie','sleep','swing','dine'].includes(u.pose))globalThis.__AGCB_ASSET_SET_MOTION?.(group,moving?'walk':'idle');return}if(['sit','lie','sleep','swing','dine'].includes(u.pose))return;
+  const u=group?.userData,p=u?.animatedParts;if(!p)return;if(u.assetMixer){const dt=u._assetLastTime?Math.min(.12,Math.max(0,(time-u._assetLastTime)/1000)):0;u._assetLastTime=time;if(dt)u.assetMixer.update(dt);globalThis.__AGCB_ASSET_TICK?.(group,moving,dt);if(!['sit','lie','sleep','swing','dine'].includes(u.pose))globalThis.__AGCB_ASSET_SET_MOTION?.(group,moving?'walk':'idle');return}if(['sit','lie','sleep','swing','dine'].includes(u.pose))return;
   if(!petAnimationDue(u,time,moving))return;
   if(u.petType){
     if(u.stateUntil&&time>u.stateUntil){u.petState='idle';u.stateUntil=0;u.holdPosition=null}
