@@ -110,12 +110,13 @@ function applyAsset(group,c,gltf){
   const u=group.userData;if(u.assetRoot)u.visual.remove(u.assetRoot);if(u.assetDetailLayer)u.visual.remove(u.assetDetailLayer);
   const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-manus5-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
   const selectedVariant=selectManus5Variant(root,c.manus5Variant||MANUS5_DEFAULT_VARIANT);
-  const assetWalkBones={upperL:root.getObjectByName('upperarm_L'),lowerL:root.getObjectByName('lowerarm_L'),handL:root.getObjectByName('hand_L'),upperR:root.getObjectByName('upperarm_R'),lowerR:root.getObjectByName('lowerarm_R'),handR:root.getObjectByName('hand_R')};
+  const findBone=(...names)=>names.map(name=>root.getObjectByName(name)).find(Boolean);
+  const assetWalkBones={upperL:findBone('upperarm_L','LeftUpperArm'),lowerL:findBone('lowerarm_L','LeftLowerArm'),handL:findBone('hand_L','LeftHand'),upperR:findBone('upperarm_R','RightUpperArm'),lowerR:findBone('lowerarm_R','RightLowerArm'),handR:findBone('hand_R','RightHand')};
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   setManus5AlphaMaterials(root);
   const rawBox=new THREE.Box3().setFromObject(selectedVariant||root),rawSize=rawBox.getSize(new THREE.Vector3());
-  const scale=2.18/Math.max(rawSize.y,.001)*bodyScale(c);root.scale.setScalar(scale);root.updateMatrixWorld(true);
-  tuneRigForCustomization(root,c);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(selectedVariant||root);root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
+  const requestedHeight=2.18*bodyScale(c),rawHeight=Number.isFinite(rawSize.y)&&rawSize.y>.1?rawSize.y:1,scale=Math.min(2.8,Math.max(.25,requestedHeight/rawHeight));root.scale.setScalar(scale);root.updateMatrixWorld(true);
+  tuneRigForCustomization(root,c);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(selectedVariant||root),center=box.getCenter(new THREE.Vector3());root.position.x-=center.x;root.position.z-=center.z;root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
   const mixer=new THREE.AnimationMixer(root),clips=gltf.animations||[],actions={
     idle:findClip(clips,/idle|stand|breath|rest/i),
     walk:findClip(clips,/walk|move/i),
@@ -141,8 +142,12 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
   if(u.assetAction)u.assetAction.fadeOut(.18);next.reset().fadeIn(.18).play();next.setEffectiveTimeScale(state==='walk'?1.35:1);u.assetAction=next;
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
-  // The special character intentionally keeps the original V0.4.46 hand pose.
-  const u=group?.userData;if(u)u.assetWalkPhase=(u.assetWalkPhase||0)+Math.min(.12,Math.max(0,dt||0))*(moving?10.5:6.5);
+  const u=group?.userData;if(!u)return;u.assetWalkPhase=(u.assetWalkPhase||0)+Math.min(.12,Math.max(0,dt||0))*(moving?10.5:6.5);
+  if(!['boy','girl'].includes(u.assetVariant)||!u.assetWalkBones)return;
+  const b=u.assetWalkBones,phase=u.assetWalkPhase,swing=moving?Math.sin(phase)*.34:Math.sin(phase)*.012;
+  const add=(bone,x,z=0)=>{if(!bone)return;bone.rotation.x+=x;bone.rotation.z+=z};
+  add(b.upperL,swing,swing*.10);add(b.lowerL,swing*.28,swing*.035);add(b.handL,swing*.08,swing*.02);
+  add(b.upperR,-swing,-swing*.10);add(b.lowerR,-swing*.28,-swing*.035);add(b.handR,-swing*.08,-swing*.02);
 };
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
