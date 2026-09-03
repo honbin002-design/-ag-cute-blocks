@@ -83,7 +83,7 @@ jobs:
           if 'for(const g of objects)' in solid_body: missing.append('solidAt still scans all objects')
           if 'const bucket=solidGrid.get' not in solid_body: missing.append('solidAt does not query spatial bucket')
           if 'GLTFLoader' not in asset or 'SkeletonUtils' not in asset or 'continuous-skinned-mesh' not in asset or 'primitiveChildren' not in asset or 'assetLoaded=true' not in asset or ('agOriginal-owned' not in asset and 'originalPreserved:true' not in asset): missing.append('rigged avatar asset loader/visibility/original ownership markers missing')
-          if "import './character-asset-runtime.js';" not in boot: missing.append('bootstrap rigged avatar asset import')
+          if "import './character-asset-runtime.js?v=0.4.46-walk-hands';" not in boot: missing.append('bootstrap rigged avatar asset import')
           if "import './ag-original-character-runtime.js';" not in boot: missing.append('bootstrap original connected character import')
           if "character-asset-runtime.js" not in sw: missing.append('service worker rigged avatar asset cache entry')
           if "ag-original-character-runtime.js" not in sw: missing.append('service worker original connected character cache entry')
