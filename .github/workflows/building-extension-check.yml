@@ -103,7 +103,7 @@ jobs:
       - name: Verify V0.4.42 character identity layer
         run: |
           test "$(grep -o "const VERSION='V0.4.42'" app-v043.js)" = "const VERSION='V0.4.42'"
-          grep -q "ag-cute-blocks-v045-runtime86" sw.js
+          grep -q "ag-cute-blocks-v045-runtime101" sw.js
           grep -q "featureSet:'gender-age-silhouette-face-hair-v9'" ag-original-character-runtime.js
           grep -q "detailSet:'four-hero-proportion-garment-v8'" ag-original-character-runtime.js
           ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
