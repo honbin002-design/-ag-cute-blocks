@@ -139,7 +139,7 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const u=group?.userData,b=u?.assetWalkBones;if(!u||!b)return;
-  // V0.4.54: every Euler component must be finite, even at zero blend.
+  // V0.4.55: every Euler component must be finite, even at zero blend.
   // undefined * 0 is NaN and corrupts the bone matrix (and skinned vertices).
   const finite=value=>Number.isFinite(value)?value:0;
   const step=Math.min(.12,Math.max(0,finite(dt)));
@@ -148,8 +148,8 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const blend=previousBlend+(target-previousBlend)*Math.min(1,step*10);u.assetWalkBlend=blend;
   const s=Math.sin(u.assetWalkPhase),offsets={
     // Z is the visible front-view swing axis for this rig; Y remains a subtle depth cue.
-    upperL:{x:0,y:s*.10,z:s*.42},lowerL:{x:0,y:s*.07,z:s*.25},handL:{x:0,y:s*.04,z:s*.14},
-    upperR:{x:0,y:s*.10,z:s*.42},lowerR:{x:0,y:s*.07,z:s*.25},handR:{x:0,y:s*.04,z:s*.14}
+    upperL:{x:0,y:s*.34,z:s*.42},lowerL:{x:0,y:s*.18,z:s*.25},handL:{x:0,y:s*.10,z:s*.18},
+    upperR:{x:0,y:s*.34,z:s*.42},lowerR:{x:0,y:s*.18,z:s*.25},handR:{x:0,y:s*.10,z:s*.18}
   };
   for(const [key,bone] of Object.entries(b)){
     if(!bone)continue;
