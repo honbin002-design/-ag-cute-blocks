@@ -28,7 +28,7 @@ function createCleanChildAvatar(c){
   const leftLeg=new THREE.Group(),rightLeg=new THREE.Group();leftLeg.position.set(-.14,.62,0);rightLeg.position.set(.14,.62,0);v.add(leftLeg,rightLeg);
   for(const [leg,x] of[[leftLeg,-1],[rightLeg,1]]){capsule(leg,.095,.43,0,-.20,0,bottomMat);const foot=ellipsoid(leg,.13,0,-.47,-.075,shoeMat,[1.2,.62,1.45],16);foot.rotation.y=x*.08}
   g.userData={animatedParts:{leftArm,rightArm,leftLeg,rightLeg},visual:v,pose:'idle',avatarVisualStyle:'clean-child-v1',avatarCustomization:{...c}};
-  LIVE_AVATARS.add(g);return g;
+  LIVE_AVATARS.add(g);globalThis.__AGCB_UPGRADE_AVATAR?.(g,c);return g;
 }
 export function createCuteChildAvatar(style='girl',options={}){const incoming=typeof style==='object'?style:{...options,gender:options.gender||style};const c=normalizeAvatarCustomization(incoming,typeof style==='string'?style:'girl');return createCleanChildAvatar(c);}
 
