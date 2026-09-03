@@ -22,6 +22,8 @@ jobs:
             echo "Checking $file"
             node --input-type=module --check < "$file"
           done
+      - name: Verify finite avatar animation and original GLB skinning
+        run: node tests/asset-animation-regression.cjs
       - name: Validate relative named imports
         shell: python
         run: |

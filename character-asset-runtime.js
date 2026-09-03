@@ -139,13 +139,22 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const u=group?.userData,b=u?.assetWalkBones;if(!u||!b)return;
-  const step=Math.min(.12,Math.max(0,dt||0));u.assetWalkPhase=(u.assetWalkPhase||0)+step*(moving?10.5:6.5);
-  const target=moving?1:0,blend=u.assetWalkBlend||0;u.assetWalkBlend=blend+(target-blend)*Math.min(1,step*10);
+  // V0.4.52: every Euler component must be finite, even at zero blend.
+  // undefined * 0 is NaN and corrupts the bone matrix (and skinned vertices).
+  const finite=value=>Number.isFinite(value)?value:0;
+  const step=Math.min(.12,Math.max(0,finite(dt)));
+  u.assetWalkPhase=(finite(u.assetWalkPhase)+step*(moving?10.5:6.5))%(Math.PI*2);
+  const target=moving?1:0,previousBlend=Math.min(1,Math.max(0,finite(u.assetWalkBlend)));
+  const blend=previousBlend+(target-previousBlend)*Math.min(1,step*10);u.assetWalkBlend=blend;
   const s=Math.sin(u.assetWalkPhase),offsets={
-    upperL:{y:s*.34,z:s*.025},lowerL:{y:s*.18,z:s*.012},handL:{y:s*.09,z:s*.018},
-    upperR:{y:s*.34,z:s*.025},lowerR:{y:s*.18,z:s*.012},handR:{y:s*.09,z:s*.018}
+    upperL:{x:0,y:s*.34,z:s*.025},lowerL:{x:0,y:s*.18,z:s*.012},handL:{x:0,y:s*.09,z:s*.018},
+    upperR:{x:0,y:s*.34,z:s*.025},lowerR:{x:0,y:s*.18,z:s*.012},handR:{x:0,y:s*.09,z:s*.018}
   };
-  for(const [key,bone] of Object.entries(b)){if(!bone)continue;const base=u.assetArmBaseline?.[key]||{x:0,y:0,z:0},pose=offsets[key]||{x:0,y:0,z:0};bone.rotation.set(base.x+pose.x*blend,base.y+pose.y*blend,base.z+pose.z*blend);}
+  for(const [key,bone] of Object.entries(b)){
+    if(!bone)continue;
+    const base=u.assetArmBaseline?.[key]||{},pose=offsets[key]||{};
+    bone.rotation.set(finite(base.x)+finite(pose.x)*blend,finite(base.y)+finite(pose.y)*blend,finite(base.z)+finite(pose.z)*blend);
+  }
   u.assetArmOffsets=offsets;
 };
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
