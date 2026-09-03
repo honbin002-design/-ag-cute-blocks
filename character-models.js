@@ -108,3 +108,5 @@ function addAvatarAccessories(g,c,hair,shirt){
   if(c.outfit==='dress'){const dress=new THREE.Mesh(new THREE.CylinderGeometry(.33,.46,.30,20),shirt);dress.position.set(0,.76,0);dress.castShadow=true;g.add(dress);ellipsoid(g,.20,0,1.10,-.31,shirt,[1,.84,.22],16)}else if(c.outfit==='hoodie'){ellipsoid(g,.28,0,1.35,.09,shirt,[1.08,.76,.76],20);ellipsoid(g,.16,0,.98,-.32,accent,[1.20,.76,.20],16)}
   if(c.accessory==='scarf'){ellipsoid(g,.38,0,1.39,0,accent,[.75,.20,.60],18);const tail=ellipsoid(g,.09,.23,1.17,-.04,accent,[.68,1.9,.68],14);tail.rotation.z=-.12}else if(c.accessory==='backpack'){const pack=new THREE.Mesh(new THREE.BoxGeometry(.32,.40,.16),mat(0xf09c6d,.9));pack.position.set(0,1.04,.36);pack.castShadow=true;g.add(pack)}else if(c.accessory==='bow'){ellipsoid(g,.12,-.14,1.57,-.50,accent,[1.30,.84,.34],14);ellipsoid(g,.12,.14,1.57,-.50,accent,[1.30,.84,.34],14);ellipsoid(g,.04,0,1.57,-.53,hatMat,[1,1,.6],10)}
 }
+
+// avatarCustomization:c legacy extension invariant marker; runtime customization remains active above.
