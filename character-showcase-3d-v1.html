@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>AG 3D 角色實機驗收 V1.0.0</title>
+<style>
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bdcff;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;touch-action:none}canvas{display:block;position:fixed;inset:0}.hud{position:fixed;inset:0;z-index:5;pointer-events:none}.badge,.hint,.status,.legend{position:absolute;background:#fffde9e8;color:#38545e;border-radius:16px;box-shadow:0 3px 12px #0002;font-weight:900}.badge{left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));padding:9px 13px;font-size:14px}.hint{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));padding:9px 12px;font-size:12px}.status{left:50%;top:max(64px,calc(env(safe-area-inset-top) + 52px));transform:translateX(-50%);padding:7px 12px;font-size:12px;white-space:nowrap;background:#17323dcc;color:#fff}.joy{position:absolute;left:max(20px,env(safe-area-inset-left));bottom:max(24px,env(safe-area-inset-bottom));width:140px;height:140px;border:4px solid #ffffffaa;border-radius:50%;background:#ffffff35;pointer-events:auto}.knob{position:absolute;left:42px;top:42px;width:50px;height:50px;border-radius:50%;background:#fffffff0;box-shadow:0 3px 10px #0003}.jump{position:absolute;right:max(20px,env(safe-area-inset-right));bottom:max(25px,env(safe-area-inset-bottom));width:88px;height:88px;border:4px solid #fff;border-radius:50%;background:#fff4b8;color:#50706a;font-size:32px;font-weight:900;box-shadow:0 4px 14px #0003;pointer-events:auto}.jump:active{transform:scale(.93)}.legend{left:50%;bottom:max(15px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:7px 12px;font-size:12px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="hud"><div class="badge">🌈 AG 3D 角色實機驗收 <small>V1.0.0</small></div><div class="hint">真正 3D・雙手動畫・平台跳躍</div><div id="status" class="status">拖曳左下搖桿移動</div><div id="joy" class="joy"><div id="knob" class="knob"></div></div><button id="jump" class="jump" aria-label="跳躍">⬆</button><div class="legend">拖曳搖桿：移動　⬆：跳躍</div></div>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9bdcff);scene.fog=new THREE.Fog(0x9bdcff,18,42);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);camera.position.set(0,4.2,8);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.prepend(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xfff5df,0x5b8b73,2.4));const sun=new THREE.DirectionalLight(0xfff1d1,3.2);sun.position.set(-6,10,7);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+const mat=(c,r=.7)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:0});
+const grass=mat(0x7fbe63),wood=mat(0xa9673e),woodTop=mat(0xd28b4f),pink=mat(0xe58c8d),cream=mat(0xffe7c4),skin=mat(0xffc6a5),hair=mat(0x794632),hair2=mat(0xb86b48),green=mat(0x3f5c45),boot=mat(0x704634),gold=mat(0xe7b34b),dark=mat(0x3b2c31),white=mat(0xfffaf0);
+const box=(x,y,z,m)=>{const q=new THREE.Mesh(new THREE.BoxGeometry(x,y,z),m);q.castShadow=q.receiveShadow=true;return q};
+const cyl=(r1,r2,h,m,seg=16)=>{const q=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),m);q.castShadow=q.receiveShadow=true;return q};
+const sph=(x,y,z,m)=>{const q=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),m);q.scale.set(x,y,z);q.castShadow=q.receiveShadow=true;return q};
+const floor=box(30,.35,30,grass);floor.position.y=-.18;scene.add(floor);
+function platform(x,y,z,w,d){const g=new THREE.Group();const top=box(w,.34,d,woodTop);top.position.y=y;g.add(top);const body=box(w,.55,d,wood);body.position.y=y-.38;g.add(body);g.position.set(x,0,z);scene.add(g);return {x,z,y:y+.18,w,d}};
+const plats=[platform(-2.6,.9,-2.4,2.7,1.4),platform(2.6,1.7,-.2,2.2,1.3),platform(-.8,2.6,-4.2,2.2,1.2)];
+for(let i=0;i<18;i++){const f=sph(.08,.28,.08, i%3?pink:gold);f.position.set((Math.random()-.5)*14,.18,(Math.random()-.5)*13);scene.add(f)}
+const player=new THREE.Group();player.position.set(0,0,2);scene.add(player);
+const body=new THREE.Group();body.position.y=1.75;player.add(body);
+const torso=cyl(.43,.52,1.05,pink);torso.position.y=0;body.add(torso);
+const collar=torso.clone();collar.material=cream;collar.scale.set(.63,.22,.63);collar.position.y=.43;body.add(collar);
+const shorts=cyl(.54,.48,.55,green);shorts.position.y=-.78;body.add(shorts);
+const head=new THREE.Group();head.position.y=1.04;body.add(head);head.add(sph(.78,.84,.72,skin));
+const hairCap=sph(.82,.58,.76,hair);hairCap.position.set(0,.36,-.01);head.add(hairCap);
+const fringe=new THREE.Group();fringe.position.set(0,.45,.65);head.add(fringe);for(let i=-2;i<=2;i++){const q=sph(.25,.42,.18,hair2);q.position.set(i*.19,Math.abs(i)*.025,0);q.rotation.z=i*.12;fringe.add(q)}
+const pony=new THREE.Group();pony.position.set(-.63,.3,-.15);head.add(pony);for(let i=0;i<4;i++){const q=sph(.35-i*.045,.48-i*.05,.3,hair2);q.position.set(-i*.05,-i*.28,-i*.05);q.rotation.z=-.3;pony.add(q)}
+function eye(x){const e=new THREE.Group();e.position.set(x,.08,.68);e.add(sph(.12,.18,.07,dark));const gl=sph(.035,.055,.025,white);gl.position.set(-.03,.055,.07);e.add(gl);head.add(e)}
+eye(-.27);eye(.27);const mouth=new THREE.Mesh(new THREE.TorusGeometry(.13,.025,8,20,Math.PI),pink);mouth.position.set(0,-.23,.7);mouth.rotation.x=Math.PI;head.add(mouth);
+function limb(x,z,side){const arm=new THREE.Group();arm.position.set(x,2.02,z);player.add(arm);const upper=cyl(.13,.16,.58,pink);upper.position.y=-.29;arm.add(upper);const elbow=new THREE.Group();elbow.position.y=-.59;arm.add(elbow);const lower=cyl(.11,.14,.52,skin);lower.position.y=-.25;elbow.add(lower);const hand=sph(.15,.17,.15,skin);hand.position.y=-.54;elbow.add(hand);return {arm,elbow,side}}
+const L=limb(-.53,0,-1),R=limb(.53,0,1);
+const legs=[];for(const x of [-.25,.25]){const leg=new THREE.Group();leg.position.set(x,1.02,0);player.add(leg);const a=cyl(.2,.24,.72,green);a.position.y=-.36;leg.add(a);const foot=box(.38,.22,.7,boot);foot.position.set(0,-.78,.16);leg.add(foot);legs.push(leg)}
+const belt=box(1.02,.12,.16,gold);belt.position.set(0,1.1,.46);player.add(belt);
+const scarf=box(.76,.12,.16,gold);scarf.position.set(0,2.23,.24);player.add(scarf);
+let vx=0,vz=0,vy=0,drag=false,last=performance.now(),jumpReady=0;let inputX=0,inputZ=0;
+const joy=document.querySelector("#joy"),knob=document.querySelector("#knob"),status=document.querySelector("#status"),jump=document.querySelector("#jump");
+function joyMove(e){const r=joy.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=Math.min(48,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);knob.style.transform=`translate(${Math.cos(a)*m}px,${Math.sin(a)*m}px)`;inputX=Math.cos(a)*m/48;inputZ=Math.sin(a)*m/48}
+function stop(){drag=false;inputX=inputZ=0;knob.style.transform=""}
+joy.onpointerdown=e=>{drag=true;joy.setPointerCapture(e.pointerId);joyMove(e)};joy.onpointermove=e=>{if(drag)joyMove(e)};joy.onpointerup=joy.onpointercancel=stop;
+function jumpNow(){if(player.position.y<=.03&&performance.now()>jumpReady){vy=.24;jumpReady=performance.now()+260;status.textContent="3D 跳躍中・可登上木平台"}}
+jump.onpointerdown=e=>{e.preventDefault();jumpNow()};
+function support(){let y=0;for(const p of plats){const dx=player.position.x-p.x,dz=player.position.z-p.z;if(Math.abs(dx)<p.w/2+.18&&Math.abs(dz)<p.d/2+.18&&player.position.y>=p.y-.2)y=Math.max(y,p.y)}return y}
+function animate(t){const dt=Math.min(32,t-last);last=t;const moving=Math.hypot(inputX,inputZ)>.08;vx=inputX*.006*dt;vz=inputZ*.006*dt;player.position.x+=vx;player.position.z+=vz;player.position.x=Math.max(-7,Math.min(7,player.position.x));player.position.z=Math.max(-7,Math.min(7,player.position.z));vy-=.0009*dt;player.position.y+=vy*dt;const s=support();if(player.position.y<=s){player.position.y=s;vy=0}if(moving){player.rotation.y=Math.atan2(inputX,inputZ);const phase=t*.012;L.arm.rotation.z=Math.sin(phase)*.42;R.arm.rotation.z=-Math.sin(phase)*.42;L.elbow.rotation.z=-.16+Math.max(0,Math.sin(phase))*.16;R.elbow.rotation.z=-.16+Math.max(0,-Math.sin(phase))*.16;legs[0].rotation.x=Math.sin(phase)*.35;legs[1].rotation.x=-Math.sin(phase)*.35;player.position.y+=Math.abs(Math.sin(phase))*.018;status.textContent="移動中・雙臂自然交替擺動"}else{L.arm.rotation.z*=.85;R.arm.rotation.z*=.85;L.elbow.rotation.z*=.85;R.elbow.rotation.z*=.85;legs[0].rotation.x*=.85;legs[1].rotation.x*=.85}
+const target=new THREE.Vector3(player.position.x,player.position.y+2.1,player.position.z);const camTarget=new THREE.Vector3(player.position.x,player.position.y+2.4,player.position.z+5.8);camera.position.lerp(camTarget,.09);camera.lookAt(target);renderer.render(scene,camera);requestAnimationFrame(animate)}
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});requestAnimationFrame(animate);
+</script>
+</body>
+</html>
