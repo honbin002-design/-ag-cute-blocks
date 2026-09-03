@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-import {createCuteChildAvatar,createCuteDog,createCuteCat,animateCuteCharacter,setCuteCharacterPose,normalizeAvatarCustomization} from './character-models.js';
+import {createCuteChildAvatar,createCuteDog,createCuteCat,animateCuteCharacter,setCuteCharacterPose,normalizeAvatarCustomization} from './character-models.js?v=0.4.46-walk-hands';
 import {createCow,createSheep,createChicken,animateAnimal} from './animal-models.js';
 import {createCropModel,createFruitTreeModel} from './crop-models.js';
 import {createEconomyState,addInventory,shipAllSellable,settleShipping,buyShopItem,SHOP_ITEMS,ITEM_NAMES,pendingShippingValue,ownedCount} from './economy-system.js';
