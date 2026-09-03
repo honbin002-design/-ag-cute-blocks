@@ -87,7 +87,7 @@ const BOTTOM_PALETTE={denim:0x6685a3,navy:0x4e5c88,cream:0xe8c78b,rose:0xc87891}
 export function normalizeAvatarCustomization(input={},legacyStyle='girl'){
   const src=input&&typeof input==='object'?input:{};
   const pick=(v,allowed,fallback)=>allowed.includes(v)?v:fallback;
-  const role=src.role==='special'?'special':'standard';const gender=src.gender==='boy'||src.gender==='girl'?src.gender:legacyStyle==='boy'?'boy':'girl';
+  const role=['special','special2','special3'].includes(src.role)?src.role:'standard';const gender=src.gender==='boy'||src.gender==='girl'?src.gender:legacyStyle==='boy'?'boy':'girl';
   const age=pick(src.age,['child','adult'],'child');
   const defaultHair=gender==='boy'?'short':age==='adult'?'long':'ponytail';
   const defaultOutfit=gender==='boy'?(age==='adult'?'formal':'hoodie'):'overall';
