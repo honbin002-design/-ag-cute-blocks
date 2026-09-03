@@ -30,15 +30,18 @@ function selectManus5Variant(root,requested=MANUS5_DEFAULT_VARIANT){
   return selected;
 }
 async function loadBase64Gltf(base,count,total){
-  let encoded='';
-  for(let i=0;i<count;i++){
-    const response=await fetch(base+String(i).padStart(3,'0'),{cache:'force-cache'});
+  const parts=await Promise.all(Array.from({length:count},(_,i)=>fetch(base+String(i).padStart(3,'0'),{cache:'force-cache'}).then(async response=>{
     if(!response.ok)throw new Error(`Avatar model part ${i+1}/${count} failed: ${response.status}`);
-    encoded+=await response.text();
+    return await response.text();
+  })));
+  const bytes=new Uint8Array(total);let offset=0;
+  for(const encoded of parts){
+    const raw=atob(encoded);
+    if(offset+raw.length>total)throw new Error('Avatar model part size mismatch');
+    for(let i=0;i<raw.length;i++)bytes[offset+i]=raw.charCodeAt(i);
+    offset+=raw.length;
   }
-  const raw=atob(encoded),bytes=new Uint8Array(raw.length);
-  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
-  if(bytes.byteLength!==total)throw new Error(`Avatar model size mismatch: ${bytes.byteLength}/${total}`);
+  if(offset!==total)throw new Error(`Avatar model size mismatch: ${offset}/${total}`);
   return await new Promise((resolve,reject)=>loader.parse(bytes.buffer,'',resolve,reject));
 }
 async function loadManus5Gltf(){
