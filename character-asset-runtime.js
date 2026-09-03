@@ -139,7 +139,7 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const u=group?.userData,b=u?.assetWalkBones;if(!u||!b)return;
-  // V0.4.52: every Euler component must be finite, even at zero blend.
+  // V0.4.54: every Euler component must be finite, even at zero blend.
   // undefined * 0 is NaN and corrupts the bone matrix (and skinned vertices).
   const finite=value=>Number.isFinite(value)?value:0;
   const step=Math.min(.12,Math.max(0,finite(dt)));
