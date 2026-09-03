@@ -77,6 +77,7 @@ function applyAsset(group,c,gltf){
   const root=SkeletonUtils.clone(gltf.scene);root.name='agcb-manus5-rigged-avatar';root.rotation.y=Math.PI;root.userData.forwardCorrection='pi';
   const selectedVariant=selectManus5Variant(root,c.manus5Variant||MANUS5_DEFAULT_VARIANT);
   const assetWalkBones={upperL:root.getObjectByName('upperarm_L'),lowerL:root.getObjectByName('lowerarm_L'),handL:root.getObjectByName('hand_L'),upperR:root.getObjectByName('upperarm_R'),lowerR:root.getObjectByName('lowerarm_R'),handR:root.getObjectByName('hand_R')};
+  const assetArmBaseline={};for(const [key,bone] of Object.entries(assetWalkBones))if(bone)assetArmBaseline[key]={x:bone.rotation.x,y:bone.rotation.y,z:bone.rotation.z};
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(Array.isArray(o.material))o.material=o.material.map(m=>m.clone());else if(o.material)o.material=o.material.clone()}});
   setManus5AlphaMaterials(root);
   const rawBox=new THREE.Box3().setFromObject(selectedVariant||root),rawSize=rawBox.getSize(new THREE.Vector3());
@@ -94,7 +95,7 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmBaseline=assetArmBaseline;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource='Manus5 chibi_8_variants_rigged.glb';u.assetAge=c.age||'child';u.assetShapeRevision='manus5-variant01-runtime-test';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
@@ -110,8 +111,11 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const u=group?.userData,b=u?.assetWalkBones;if(!u||!b)return;
   const step=Math.min(.12,Math.max(0,dt||0));u.assetWalkPhase=(u.assetWalkPhase||0)+step*(moving?10.5:6.5);
   const target=moving?1:0,blend=u.assetWalkBlend||0;u.assetWalkBlend=blend+(target-blend)*Math.min(1,step*10);
-  const s=Math.sin(u.assetWalkPhase),offsets={upperL:s*.28*u.assetWalkBlend,lowerL:-s*.14*u.assetWalkBlend,handL:-s*.10*u.assetWalkBlend,upperR:-s*.28*u.assetWalkBlend,lowerR:s*.14*u.assetWalkBlend,handR:s*.10*u.assetWalkBlend};
-  for(const [key,bone] of Object.entries(b)){if(!bone)continue;const prev=u.assetArmOffsets?.[key]||0;bone.rotation.x-=prev;bone.rotation.x+=offsets[key]||0;}
+  const s=Math.sin(u.assetWalkPhase),offsets={
+    upperL:{x:s*.42,z:s*.12},lowerL:{x:-s*.22,z:s*.045},handL:{x:-s*.10,z:s*.16},
+    upperR:{x:-s*.42,z:-s*.12},lowerR:{x:s*.22,z:-s*.045},handR:{x:s*.10,z:-s*.16}
+  };
+  for(const [key,bone] of Object.entries(b)){if(!bone)continue;const base=u.assetArmBaseline?.[key]||{x:0,y:0,z:0},pose=offsets[key]||{x:0,y:0,z:0};bone.rotation.set(base.x+pose.x*blend,base.y+pose.y*blend,base.z+pose.z*blend);}
   u.assetArmOffsets=offsets;
 };
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
