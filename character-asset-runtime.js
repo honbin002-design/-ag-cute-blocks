@@ -112,8 +112,8 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
   const step=Math.min(.12,Math.max(0,dt||0));u.assetWalkPhase=(u.assetWalkPhase||0)+step*(moving?10.5:6.5);
   const target=moving?1:0,blend=u.assetWalkBlend||0;u.assetWalkBlend=blend+(target-blend)*Math.min(1,step*10);
   const s=Math.sin(u.assetWalkPhase),offsets={
-    upperL:{x:s*.42,z:s*.12},lowerL:{x:-s*.22,z:s*.045},handL:{x:-s*.10,z:s*.16},
-    upperR:{x:-s*.42,z:-s*.12},lowerR:{x:s*.22,z:-s*.045},handR:{x:s*.10,z:-s*.16}
+    upperL:{x:s*.30,z:s*.06},lowerL:{x:s*.18,z:s*.02},handL:{x:s*.09,z:s*.04},
+    upperR:{x:-s*.30,z:-s*.06},lowerR:{x:-s*.18,z:-s*.02},handR:{x:-s*.09,z:-s*.04}
   };
   for(const [key,bone] of Object.entries(b)){if(!bone)continue;const base=u.assetArmBaseline?.[key]||{x:0,y:0,z:0},pose=offsets[key]||{x:0,y:0,z:0};bone.rotation.set(base.x+pose.x*blend,base.y+pose.y*blend,base.z+pose.z*blend);}
   u.assetArmOffsets=offsets;
