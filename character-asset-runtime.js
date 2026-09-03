@@ -107,15 +107,7 @@ globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const next=u.assetActions[state]||u.assetActions.idle;if(!next||u.assetAction===next)return;
   if(u.assetAction)u.assetAction.fadeOut(.18);next.reset().fadeIn(.18).play();next.setEffectiveTimeScale(state==='walk'?1.35:1);u.assetAction=next;
 };
-globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
-  const u=group?.userData,b=u?.assetWalkBones;if(!u||!b)return;
-  const step=Math.min(.12,Math.max(0,dt||0));u.assetWalkPhase=(u.assetWalkPhase||0)+step*(moving?10.5:6.5);
-  const target=moving?1:0,blend=u.assetWalkBlend||0;u.assetWalkBlend=blend+(target-blend)*Math.min(1,step*10);
-  const s=Math.sin(u.assetWalkPhase),offsets={upperL:s*.28*u.assetWalkBlend,lowerL:-s*.14*u.assetWalkBlend,handL:-s*.10*u.assetWalkBlend,upperR:-s*.28*u.assetWalkBlend,lowerR:s*.14*u.assetWalkBlend,handR:s*.10*u.assetWalkBlend};
-  for(const [key,bone] of Object.entries(b)){if(!bone)continue;const prev=u.assetArmOffsets?.[key]||0;bone.rotation.x-=prev;bone.rotation.x+=offsets[key]||0;}
-  u.assetArmOffsets=offsets;
-};
-globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
+globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{\n  // The special character intentionally keeps the original V0.4.46 hand pose.\n  const u=group?.userData;if(u)u.assetWalkPhase=(u.assetWalkPhase||0)+Math.min(.12,Math.max(0,dt||0))*(moving?10.5:6.5);\n};\nglobalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
 };
 globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,variant:MANUS5_DEFAULT_VARIANT,license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
