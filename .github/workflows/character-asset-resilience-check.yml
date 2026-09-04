@@ -1,0 +1,39 @@
+name: Character asset resilience check
+
+on:
+  push:
+    branches: [main, dev-v0.1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  asset-resilience:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse resilience runtime
+        shell: bash
+        run: node --input-type=module --check < asset-fetch-resilience-runtime.js
+      - name: Verify character loading resilience invariants
+        shell: python
+        run: |
+          import pathlib,re,sys
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          guard=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
+          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
+          failures=[]
+          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
+          if not m: failures.append('bootstrap version missing')
+          else:
+            v=m.group(1)
+            if f"asset-fetch-resilience-runtime.js?v={v}" not in boot: failures.append('resilience runtime query version mismatch')
+          if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime.js'): failures.append('resilience runtime must load before character asset runtime')
+          for token in ["/assets/characters/","RETRY_DELAYS=[220,650]","cache:'reload'","characterOnly:true","retryCount:RETRY_DELAYS.length"]:
+            if token not in guard: failures.append(f'resilience runtime missing {token}')
+          if "asset-fetch-resilience-runtime.js" not in sw: failures.append('service worker does not cache resilience runtime')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Character asset resilience invariants passed.')
