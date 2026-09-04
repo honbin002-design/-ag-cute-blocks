@@ -31,6 +31,27 @@ jobs:
           index=re.sub(r'bootstrap-v045\.js\?v=0\.4\.\d+',f'bootstrap-v045.js?v={v}',index)
           index_path.write_text(index,encoding='utf-8')
           print(f'index synchronized to {vv}')
+      - name: Validate synchronized release chain
+        shell: python
+        run: |
+          import pathlib,re,sys
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
+          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
+          if not m: sys.exit('bootstrap version missing')
+          v=m.group(1); vv='V'+v
+          failures=[]
+          if f'<meta name="ag-runtime-version" content="{vv}">' not in index: failures.append('index meta mismatch')
+          if f'<small>{vv}</small>' not in index: failures.append('index visible version mismatch')
+          if f'bootstrap-v045.js?v={v}' not in index: failures.append('index bootstrap query mismatch')
+          for target,qv in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
+            if qv!=v: failures.append(f'bootstrap query mismatch: {target}?v={qv} != {v}')
+          css=re.search(r'mobile-controls\.css\?v=([0-9.]+)',mobile)
+          if not css or css.group(1)!=v: failures.append('mobile controls CSS query mismatch')
+          if failures:
+            print('\n'.join(failures)); sys.exit(1)
+          print(f'release chain validated for {vv}')
       - name: Commit synchronized index
         shell: bash
         run: |
