@@ -1,7 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-// Incremental V0.4.5 building extensions. The legacy core still owns save/remove placement;
-// this runtime upgrades the just-created block and persisted shape/material IDs stay in the normal snapshot.
+// Incremental building extensions. The core owns save/remove placement.
+// V0.4.80 keeps legacy `stairs` saves compatible, but no longer exposes a
+// duplicate stair button because the core 建築 → 樓梯 (`stair`) is authoritative.
 const STATE={shape:null,material:null,lastCategory:null};
 const liveAvatars=()=>[...(globalThis.__AGCB_LIVE_AVATARS||[])].filter(a=>a?.parent);
 function world(){const a=liveAvatars();return a.length?a[a.length-1].parent:null}
@@ -20,15 +21,15 @@ function upgradeStairs(mesh){
 }
 function selectionButton(value,icon,label){const b=document.createElement('button');b.className='item agcbExtensionItem';b.dataset.agcbBuildValue=value;b.innerHTML=`${icon}<small>${label}</small>`;return b}
 function categoryName(){return document.querySelector('#cats .cat.on')?.textContent?.trim()||''}
-function activeExtension(){return STATE.shape||STATE.material}
+function activeExtension(){return STATE.material}
 function syncSelectionStyles(){const active=activeExtension();if(active)document.querySelectorAll('#items .item:not(.agcbExtensionItem)').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.agcbExtensionItem').forEach(b=>b.classList.toggle('on',b.dataset.agcbBuildValue===active))}
-function choose(kind,value){if(kind==='shape'){STATE.shape=value;STATE.material=null}else{STATE.material=value;STATE.shape=null}syncSelectionStyles()}
+function chooseMaterial(value){STATE.shape=null;STATE.material=value;syncSelectionStyles()}
 function inject(){
   const items=document.querySelector('#items');if(!items)return;const cat=categoryName();STATE.lastCategory=cat;
-  if(cat==='形狀'&&!items.querySelector('[data-agcb-build-value="stairs"]')){const b=selectionButton('stairs','🪜','樓梯');b.onclick=e=>{e.stopPropagation();choose('shape','stairs')};items.appendChild(b)}
+  // No extension stair injection here. Core 建築 → 樓梯 is the only visible stair tool.
   if(cat==='建材'){
-    if(!items.querySelector('[data-agcb-build-value="tile"]')){const b=selectionButton('tile','▦','磁磚');b.onclick=e=>{e.stopPropagation();choose('material','tile')};items.appendChild(b)}
-    if(!items.querySelector('[data-agcb-build-value="ceramic"]')){const b=selectionButton('ceramic','◫','陶瓷');b.onclick=e=>{e.stopPropagation();choose('material','ceramic')};items.appendChild(b)}
+    if(!items.querySelector('[data-agcb-build-value="tile"]')){const b=selectionButton('tile','▦','磁磚');b.onclick=e=>{e.stopPropagation();chooseMaterial('tile')};items.appendChild(b)}
+    if(!items.querySelector('[data-agcb-build-value="ceramic"]')){const b=selectionButton('ceramic','◫','陶瓷');b.onclick=e=>{e.stopPropagation();chooseMaterial('ceramic')};items.appendChild(b)}
   }
   syncSelectionStyles();
 }
@@ -36,18 +37,37 @@ function resetIfCoreSelection(e){if(e.target.closest('.agcbExtensionItem'))retur
 document.addEventListener('click',resetIfCoreSelection,true);
 const mo=new MutationObserver(()=>queueMicrotask(inject));mo.observe(document.body,{subtree:true,childList:true});inject();
 
+function applyExtensionToCreated(before){
+  if(!STATE.material)return false;
+  const created=blocks().find(b=>!before.has(b));if(!created)return false;
+  created.userData.mat=STATE.material;created.userData.proceduralMaterialKind=null;
+  globalThis.__AGCB_PROCEDURAL_MATERIALS?.scan?.();
+  document.querySelector('#saveNow')?.click();
+  return true;
+}
+
+// Browser/mouse click path: core placement runs first, then we apply extension material.
 const add=document.querySelector('#add');
 if(add)add.addEventListener('click',()=>{
-  if(!STATE.shape&&!STATE.material)return;const before=new Set(blocks());
-  queueMicrotask(()=>{
-    const created=blocks().find(b=>!before.has(b));if(!created)return;
-    if(STATE.shape==='stairs'){created.userData.shape='stairs';created.userData.stairsGeometry=false;upgradeStairs(created)}
-    if(STATE.material){created.userData.mat=STATE.material;created.userData.proceduralMaterialKind=null;globalThis.__AGCB_PROCEDURAL_MATERIALS?.scan?.()}
-    document.querySelector('#saveNow')?.click();
-  });
+  if(!STATE.material)return;const before=new Set(blocks());
+  queueMicrotask(()=>applyExtensionToCreated(before));
 });
+
+// iPhone multi-touch uses __AGCB_GAME_ACTIONS.invoke('add') directly and bypasses
+// the physical click event. Wrap that bridge so 磁磚／陶瓷 are not fake mobile tools.
+const bridge=globalThis.__AGCB_GAME_ACTIONS;
+if(bridge?.invoke&&!bridge.__agcbBuildExtensionV480){
+  const priorInvoke=bridge.invoke.bind(bridge);
+  bridge.invoke=name=>{
+    const before=name==='add'&&STATE.material?new Set(blocks()):null;
+    const ok=priorInvoke(name);
+    if(before)applyExtensionToCreated(before);
+    return ok;
+  };
+  bridge.__agcbBuildExtensionV480=true;
+}
 
 function restore(){let n=0;for(const b of blocks())if(upgradeStairs(b))n++;return n}
 let scans=0;function loop(){requestAnimationFrame(loop);if(++scans%90===0)restore()}
 restore();requestAnimationFrame(loop);
-globalThis.__AGCB_BUILD_EXTENSIONS={schema:4,state:STATE,inject,restore,stairsGeometry,observer:mo};
+globalThis.__AGCB_BUILD_EXTENSIONS={schema:5,state:STATE,inject,restore,stairsGeometry,observer:mo,duplicateStairRemoved:true,directMobileMaterialFix:true};
