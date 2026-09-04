@@ -143,7 +143,7 @@ jobs:
           grep -q "const VERSION='V0.4.75'" app-v043.js
           grep -q "function stairSurfaceY" app-v043.js
           grep -q "selected==='stair'" app-v043.js
-          grep -q "cameraMode==='first'?'block'" app-v043.js
+          grep -q "ui.cross.style.display='block'" app-v043.js
           grep -q "color:#ffffffb8" mobile-controls.css
           grep -q "top:max(80px" mobile-controls.css
           grep -q "ag-cute-blocks-v045-runtime137" sw.js
