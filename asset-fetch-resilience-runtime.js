@@ -1,7 +1,8 @@
-// AG Cute Blocks V0.4.90 — resilient character asset fetch layer.
+// AG Cute Blocks V0.4.91 — resilient character asset fetch layer.
 // Applies only to same-origin character asset GET requests; gameplay/network requests are untouched.
 const nativeFetch=globalThis.fetch.bind(globalThis);
 const RETRY_DELAYS=[220,650];
+const CHARACTER_CACHE='ag-cute-blocks-character-assets-v1';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const OFFLINE_GROUPS={
   special2:{base:'./assets/characters/special2/model.v051.b64.',count:17},
@@ -12,6 +13,7 @@ const OFFLINE_GROUPS={
 };
 const offlineReady={},verifyTimers=new Map();
 const resolvedBase=g=>new URL(g.base,location.href);
+function assetUrl(input){try{return new URL(input instanceof Request?input.url:String(input),location.href).href}catch{return null}}
 function isCharacterAsset(input){
   try{
     const request=input instanceof Request?input:null;
@@ -27,11 +29,19 @@ function groupFor(input){
     return Object.entries(OFFLINE_GROUPS).find(([,g])=>url.origin===location.origin&&url.pathname.startsWith(resolvedBase(g).pathname))?.[0]||null;
   }catch{return null}
 }
+async function persistCharacterAsset(input,response){
+  const url=assetUrl(input);if(!url||!response?.ok||!('caches'in globalThis))return false;
+  try{const cache=await caches.open(CHARACTER_CACHE);await cache.put(url,response);return true}catch{return false}
+}
+async function cachedCharacterAsset(input){
+  const url=assetUrl(input);if(!url||!('caches'in globalThis))return null;
+  try{const cache=await caches.open(CHARACTER_CACHE);return await cache.match(url,{ignoreSearch:true})||null}catch{return null}
+}
 async function verifyOfflineGroup(key){
   const group=OFFLINE_GROUPS[key];if(!group||!('caches'in globalThis))return false;
   const checks=await Promise.all(Array.from({length:group.count},(_,i)=>caches.match(new URL(group.base+String(i).padStart(3,'0'),location.href).href,{ignoreSearch:true})));
   const ready=checks.every(Boolean);offlineReady[key]=ready;
-  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.90',groups:{...offlineReady},verifiedAt:Date.now()};
+  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.91',groups:{...offlineReady},verifiedAt:Date.now()};
   return ready;
 }
 function scheduleOfflineVerify(input){
@@ -47,7 +57,10 @@ async function resilientFetch(input,init){
       const retryInit=attempt===0?init:{...(init||{}),cache:'reload'};
       const response=await nativeFetch(input,retryInit);
       lastResponse=response;
-      if(response.ok){scheduleOfflineVerify(input);return response}
+      if(response.ok){
+        persistCharacterAsset(input,response.clone()).finally(()=>scheduleOfflineVerify(input));
+        return response;
+      }
       if(response.status<500&&response.status!==408&&response.status!==429)return response;
     }catch(error){
       lastError=error;
@@ -56,6 +69,7 @@ async function resilientFetch(input,init){
     }
     if(attempt<RETRY_DELAYS.length)await sleep(RETRY_DELAYS[attempt]);
   }
+  const cached=await cachedCharacterAsset(input);if(cached)return cached;
   if(lastResponse)return lastResponse;
   throw lastError||new Error('Character asset fetch failed after retries');
 }
@@ -64,4 +78,4 @@ if(!globalThis.__AGCB_NATIVE_FETCH){
   globalThis.fetch=resilientFetch;
 }
 globalThis.__AGCB_VERIFY_CHARACTER_OFFLINE=verifyOfflineGroup;
-globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.90',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true};
+globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.91',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true,directPersistentCache:true,offlineCacheFallback:true};
