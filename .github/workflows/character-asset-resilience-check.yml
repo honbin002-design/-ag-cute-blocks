@@ -19,12 +19,15 @@ jobs:
         run: |
           node --input-type=module --check < asset-fetch-resilience-runtime.js
           node --input-type=module --check < character-asset-runtime.js
+          node --check service-worker-register.js
           node --check sw.js
       - name: Verify character loading resilience invariants
         shell: python
         run: |
           import pathlib,re,sys
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          register=pathlib.Path('service-worker-register.js').read_text(encoding='utf-8')
           guard=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
           asset=pathlib.Path('character-asset-runtime.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
@@ -35,8 +38,13 @@ jobs:
             v=m.group(1)
             if f"asset-fetch-resilience-runtime.js?v={v}" not in boot: failures.append('resilience runtime query version mismatch')
             if f"version:'V{v}'" not in guard: failures.append('resilience visible version mismatch')
+            reg_tag=f'<script src="./service-worker-register.js?v={v}"></script>'
+            boot_tag=f'<script type="module" src="./bootstrap-v045.js?v={v}"></script>'
+            if index.count(reg_tag)!=1: failures.append('service worker registration script missing or version mismatch')
+            if index.count(boot_tag)!=1: failures.append('bootstrap index tag missing or version mismatch')
+            if reg_tag in index and boot_tag in index and index.find(reg_tag)>index.find(boot_tag): failures.append('service worker registration must appear before bootstrap')
           if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime.js'): failures.append('resilience runtime must load before character asset runtime')
-          for token in ["/assets/characters/","RETRY_DELAYS=[220,650]","cache:'reload'","characterOnly:true","retryCount:RETRY_DELAYS.length","offlineIntegrity:true","scopeAwareUrls:true","__AGCB_VERIFY_CHARACTER_OFFLINE","const resolvedBase=g=>new URL(g.base,location.href)","new URL(group.base+String(i).padStart(3,'0'),location.href).href"]:
+          for token in ["/assets/characters/","RETRY_DELAYS=[220,650]","cache:'reload'","characterOnly:true","retryCount:RETRY_DELAYS.length","offlineIntegrity:true","scopeAwareUrls:true","directPersistentCache:true","offlineCacheFallback:true","__AGCB_VERIFY_CHARACTER_OFFLINE","const CHARACTER_CACHE='ag-cute-blocks-character-assets-v1'","persistCharacterAsset(input,response.clone())","const cached=await cachedCharacterAsset(input);if(cached)return cached","const resolvedBase=g=>new URL(g.base,location.href)","new URL(group.base+String(i).padStart(3,'0'),location.href).href"]:
             if token not in guard: failures.append(f'resilience runtime missing {token}')
           expected_groups={
             'special2':("./assets/characters/special2/model.v051.b64.",17),
@@ -49,9 +57,10 @@ jobs:
             if f"{key}:{{base:'{base}',count:{count}}}" not in guard: failures.append(f'offline group mismatch for {key}')
           pending_cleanup="p.then(()=>{if(pending.get(key)===p)pending.delete(key)},()=>{if(pending.get(key)===p)pending.delete(key)})"
           if asset.count(pending_cleanup)!=1: failures.append('settled character pending promise cleanup missing or duplicated')
-          for token in ["CHARACTER_CACHE='ag-cute-blocks-character-assets-v1'","targetCache=character?CHARACTER_CACHE:CACHE","if(key===CACHE||key===CHARACTER_CACHE)continue","if(isCharacterRequest(request))","await characterCache.put(request,response)"]:
+          for token in ["navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})","controllerchange","__AGCB_SERVICE_WORKER"]:
+            if token not in register: failures.append(f'SW registration runtime missing {token}')
+          for token in ["CHARACTER_CACHE='ag-cute-blocks-character-assets-v1'","targetCache=character?CHARACTER_CACHE:CACHE","if(key===CACHE||key===CHARACTER_CACHE)continue","if(isCharacterRequest(request))","await characterCache.put(request,response)","'./service-worker-register.js'"]:
             if token not in sw: failures.append(f'persistent character cache invariant missing: {token}')
-          if "asset-fetch-resilience-runtime.js" not in sw: failures.append('service worker does not cache resilience runtime')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Character asset resilience, scoped offline URLs, persistent cache and pending recovery invariants passed.')
+          print('Service Worker registration, first-load cache fallback, scoped offline URLs and pending recovery invariants passed.')
