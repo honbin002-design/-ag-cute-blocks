@@ -3,8 +3,15 @@
 // Fire gameplay actions on pointer-down instead, while preserving the app's existing click pipeline.
 
 const ACTION_SELECTORS=['#jump','#add','#del','#rot','#lifeInteract','#cam','#lifeBtn'];
+const DIRECT_ACTION_IDS=new Set(['jump','add','del','rot']);
 const bound=new WeakSet();
 let movementPointer=null;
+
+function invokeImmediateAction(el){
+  const bridge=globalThis.__AGCB_GAME_ACTIONS;
+  if(DIRECT_ACTION_IDS.has(el.id)&&bridge?.invoke?.(el.id))return;
+  el.click();
+}
 
 function bindImmediatePress(el){
   if(!el||bound.has(el))return;
@@ -17,11 +24,11 @@ function bindImmediatePress(el){
     event.stopPropagation();
     suppressUntil=performance.now()+650;
     // Programmatic click keeps capture/bubble click listeners (crop/orchard guards, etc.) working.
-    el.click();
+    invokeImmediateAction(el);
   },{passive:false});
   el.addEventListener('click',event=>{
     // Programmatic .click() has detail 0; suppress only the delayed physical compatibility click.
-    if(event.detail>0&&performance.now()<suppressUntil){
+    if(event.isTrusted&&performance.now()<suppressUntil){
       event.preventDefault();
       event.stopImmediatePropagation();
     }
@@ -61,4 +68,4 @@ addEventListener('blur',cancelMovementPointer);
 addEventListener('pagehide',cancelMovementPointer);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelMovementPointer()});
 
-globalThis.__AGCB_MOBILE_INPUT={mode:'pointerdown-multitouch-v2',actions:ACTION_SELECTORS,cancelMovementPointer};
+globalThis.__AGCB_MOBILE_INPUT={mode:'direct-game-actions-v3',actions:ACTION_SELECTORS,directActions:[...DIRECT_ACTION_IDS],cancelMovementPointer};

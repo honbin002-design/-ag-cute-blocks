@@ -6,7 +6,9 @@
   width:172px;
   height:214px;
   display:block;
-  pointer-events:none;
+  pointer-events:auto;
+  z-index:80;
+  isolation:isolate;
 }
 .btn{
   position:absolute;
