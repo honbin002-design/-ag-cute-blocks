@@ -61,6 +61,7 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
           viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
           inputjs=pathlib.Path('mobile-input-runtime.js').read_text(encoding='utf-8')
           controls=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
@@ -69,13 +70,16 @@ jobs:
           failures=[]
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','CONTROL_SELECTOR','controlAwareTouchGuard:true','multitouchGameplayPreserved:true']:
             if token not in viewport: failures.append(f'viewport runtime missing {token}')
+          legacy="document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()" in app
+          if legacy and 'legacyBlanketTouchBlockerSuppressed' not in viewport:
+            failures.append('legacy blanket two-touch blocker exists without suppression guard')
           if 'direct-game-actions-v3' not in inputjs or 'bridge?.invoke?.(el.id)' not in inputjs: failures.append('direct mobile action bridge missing')
           if 'crosshairVisualOnly:true' not in controls: failures.append('crosshair visual-only runtime marker missing')
           if 'pointer-events:none!important' not in css: failures.append('crosshair CSS still captures input')
           if 'right:max(18px' not in sleep: failures.append('sleep-to-morning button is not kept on right side')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('iPhone interaction and viewport checks passed.')
+          print('iPhone interaction, two-thumb safety and viewport checks passed.')
 
       - name: Verify release chain is not pinned to legacy V0.4.76
         shell: python
