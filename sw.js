@@ -1,12 +1,24 @@
-const CACHE='ag-cute-blocks-v045-runtime148';
+const CACHE='ag-cute-blocks-v045-runtime149';
+const CHARACTER_CACHE='ag-cute-blocks-character-assets-v1';
 const CORE=['./','./index.html','./bootstrap-v045.js','./app-v043.js','./character-models.js','./asset-fetch-resilience-runtime.js','./character-asset-runtime.js','./character-motion-fix-runtime.js','./character-polish-runtime.js','./pet-grounding-runtime.js','./animal-models.js','./crop-models.js','./economy-system.js','./farming-system.js','./daily-progression-system.js','./procedural-material-runtime.js','./building-extension-runtime.js','./mobile-controls-runtime.js','./mobile-controls.css','./mobile-viewport-lock-runtime.js','./aim-reticle-runtime.js','./movement-mode-persistence-runtime.js','./wildlife-models.js','./wildlife-runtime-system.js','./wildlife-live-runtime.js','./mobile-performance-system.js','./render-performance-runtime.js','./mobile-input-runtime.js','./collision-cache-runtime.js','./raycast-budget-runtime.js','./ag-original-character-runtime.js','./assets/characters/general/boy.v052.glb.part000','./assets/characters/general/boy.v052.glb.part001','./assets/characters/general/girl.v052.glb.part000','./assets/characters/general/girl.v052.glb.part001','./ag-original-animal-runtime.js','./heading-runtime.js','./weather-visual-runtime.js','./crop-care-system.js','./crop-care-runtime.js','./orchard-runtime.js','./animal-state-system.js','./animal-life-runtime.js','./furniture-interaction.js','./furniture-safety-runtime.js','./furniture-life-details.js','./sleep-routine.js','./manifest.webmanifest','https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js','https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js'];
+const isCharacterRequest=request=>{try{return new URL(request.url).origin===self.location.origin&&new URL(request.url).pathname.includes('/assets/characters/')}catch{return false}};
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(CORE.map(url=>cache.add(url)))));self.skipWaiting()});
-self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
+self.addEventListener('activate',event=>{event.waitUntil((async()=>{
+  const keys=await caches.keys(),characterCache=await caches.open(CHARACTER_CACHE);
+  for(const key of keys){
+    if(key===CACHE||key===CHARACTER_CACHE)continue;
+    const old=await caches.open(key),requests=await old.keys();
+    for(const request of requests){if(isCharacterRequest(request)){const response=await old.match(request);if(response)await characterCache.put(request,response)}}
+    if(key.startsWith('ag-cute-blocks-v045-runtime'))await caches.delete(key);
+  }
+})());self.clients.claim()});
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const local=new URL(event.request.url).origin===self.location.origin;
-  const cached=caches.match(event.request,local?{ignoreSearch:true}:undefined);
+  const character=isCharacterRequest(event.request);
+  const targetCache=character?CHARACTER_CACHE:CACHE;
+  const cached=caches.open(targetCache).then(cache=>cache.match(event.request,local?{ignoreSearch:true}:undefined));
   event.respondWith(cached.then(hit=>hit||fetch(event.request).then(response=>{
-    const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy)).catch(()=>{});return response;
+    const copy=response.clone();caches.open(targetCache).then(cache=>cache.put(event.request,copy)).catch(()=>{});return response;
   }).catch(()=>event.request.mode==='navigate'?caches.match('./index.html'):Promise.reject(new Error('offline asset unavailable')))));
 });
