@@ -1,6 +1,6 @@
-// AG Cute Blocks V0.4.82 — iPhone viewport/gesture lock.
+// AG Cute Blocks V0.4.83 — iPhone viewport/gesture lock.
 // Keeps the game canvas + HUD at a fixed visual scale while preserving real two-thumb gameplay.
-const VERSION='V0.4.82';
+const VERSION='V0.4.83';
 
 function normalizeViewport(){
   const meta=document.querySelector('meta[name="viewport"]');
@@ -28,8 +28,26 @@ document.addEventListener('touchmove',e=>{
   prevent(e);
 },{passive:false,capture:true});
 
+// The legacy core still tries to register an anonymous touchmove listener that
+// cancels every 2-finger move. Suppress only that exact legacy pattern while
+// app-v043.js initializes, then restore the native addEventListener method.
+const nativeDocumentAdd=document.addEventListener.bind(document);
+const inheritedDocumentAdd=document.addEventListener;
+let legacyBlanketTouchBlockerSuppressed=false;
+document.addEventListener=function(type,listener,options){
+  if(type==='touchmove'&&typeof listener==='function'){
+    const src=Function.prototype.toString.call(listener).replace(/\s+/g,'');
+    if(src.includes('e.touches.length>1')&&src.includes('e.preventDefault()')){
+      legacyBlanketTouchBlockerSuppressed=true;
+      return;
+    }
+  }
+  return nativeDocumentAdd(type,listener,options);
+};
+setTimeout(()=>{document.addEventListener=inheritedDocumentAdd},0);
+
 // Double taps are gameplay taps, never browser zoom gestures.
-document.addEventListener('dblclick',prevent,{passive:false,capture:true});
+nativeDocumentAdd('dblclick',prevent,{passive:false,capture:true});
 
 // Reinforce fixed-layout behavior after orientation / standalone transitions.
 const root=document.documentElement;
@@ -38,4 +56,4 @@ root.style.textSizeAdjust='100%';
 addEventListener('orientationchange',()=>setTimeout(normalizeViewport,0),{passive:true});
 addEventListener('pageshow',normalizeViewport,{passive:true});
 
-globalThis.__AGCB_VIEWPORT_LOCK={version:VERSION,gestureLock:true,pinchLock:true,doubleTapZoomLock:true,multitouchGameplayPreserved:true,controlAwareTouchGuard:true};
+globalThis.__AGCB_VIEWPORT_LOCK={version:VERSION,gestureLock:true,pinchLock:true,doubleTapZoomLock:true,multitouchGameplayPreserved:true,controlAwareTouchGuard:true,legacyBlanketTouchBlockerSuppressed:()=>legacyBlanketTouchBlockerSuppressed};
