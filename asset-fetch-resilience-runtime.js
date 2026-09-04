@@ -1,16 +1,17 @@
-// AG Cute Blocks V0.4.89 — resilient character asset fetch layer.
+// AG Cute Blocks V0.4.90 — resilient character asset fetch layer.
 // Applies only to same-origin character asset GET requests; gameplay/network requests are untouched.
 const nativeFetch=globalThis.fetch.bind(globalThis);
 const RETRY_DELAYS=[220,650];
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const OFFLINE_GROUPS={
-  special2:{base:'/assets/characters/special2/model.v051.b64.',count:17},
-  special3:{base:'/assets/characters/special3/model.v051.b64.',count:13},
-  manus5:{base:'/assets/characters/manus5/chibi_8_variants_rigged.glb.part',count:16},
-  boy:{base:'/assets/characters/general/boy.v052.glb.part',count:2},
-  girl:{base:'/assets/characters/general/girl.v052.glb.part',count:2}
+  special2:{base:'./assets/characters/special2/model.v051.b64.',count:17},
+  special3:{base:'./assets/characters/special3/model.v051.b64.',count:13},
+  manus5:{base:'./assets/characters/manus5/chibi_8_variants_rigged.glb.part',count:16},
+  boy:{base:'./assets/characters/general/boy.v052.glb.part',count:2},
+  girl:{base:'./assets/characters/general/girl.v052.glb.part',count:2}
 };
 const offlineReady={},verifyTimers=new Map();
+const resolvedBase=g=>new URL(g.base,location.href);
 function isCharacterAsset(input){
   try{
     const request=input instanceof Request?input:null;
@@ -23,14 +24,14 @@ function isCharacterAsset(input){
 function groupFor(input){
   try{
     const url=new URL(input instanceof Request?input.url:String(input),location.href);
-    return Object.entries(OFFLINE_GROUPS).find(([,g])=>url.pathname.startsWith(g.base))?.[0]||null;
+    return Object.entries(OFFLINE_GROUPS).find(([,g])=>url.origin===location.origin&&url.pathname.startsWith(resolvedBase(g).pathname))?.[0]||null;
   }catch{return null}
 }
 async function verifyOfflineGroup(key){
   const group=OFFLINE_GROUPS[key];if(!group||!('caches'in globalThis))return false;
-  const checks=await Promise.all(Array.from({length:group.count},(_,i)=>caches.match(group.base+String(i).padStart(3,'0'),{ignoreSearch:true})));
+  const checks=await Promise.all(Array.from({length:group.count},(_,i)=>caches.match(new URL(group.base+String(i).padStart(3,'0'),location.href).href,{ignoreSearch:true})));
   const ready=checks.every(Boolean);offlineReady[key]=ready;
-  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.89',groups:{...offlineReady},verifiedAt:Date.now()};
+  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.90',groups:{...offlineReady},verifiedAt:Date.now()};
   return ready;
 }
 function scheduleOfflineVerify(input){
@@ -63,4 +64,4 @@ if(!globalThis.__AGCB_NATIVE_FETCH){
   globalThis.fetch=resilientFetch;
 }
 globalThis.__AGCB_VERIFY_CHARACTER_OFFLINE=verifyOfflineGroup;
-globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.89',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true};
+globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.90',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true};
