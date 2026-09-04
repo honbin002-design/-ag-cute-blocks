@@ -33,7 +33,7 @@ jobs:
           import_re=re.compile(r'import\s*\{([^}]+)\}\s*from\s*[\'\"](\./[^\'\"]+)[\'\"]')
           for source_name,source in files.items():
             for names,target in import_re.findall(source):
-              target_name=pathlib.Path(target).name
+              target_name=pathlib.Path(target.split('?')[0]).name
               if target_name not in files:
                 failures.append(f'{source_name}: missing relative module {target}')
                 continue
