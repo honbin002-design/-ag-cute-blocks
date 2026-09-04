@@ -36,35 +36,23 @@ jobs:
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
           failures=[]
-
-          required_app=[
-            "['stair','🪜','樓梯']","function stairSurfaceY","function standSurfaceY",
-            "'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'",
-            "registerSolid","unregisterSolid","reindexSolid","SOLID_CELL=4","solidGrid=new Map()",
-            "buildAimTargets","registerBuildAimTarget","unregisterBuildAimTarget",
-            "globalThis.__AGCB_GAME_ACTIONS"
-          ]
+          required_app=["['stair','🪜','樓梯']","function stairSurfaceY","function standSurfaceY","'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","registerSolid","unregisterSolid","reindexSolid","SOLID_CELL=4","solidGrid=new Map()","buildAimTargets","registerBuildAimTarget","unregisterBuildAimTarget","globalThis.__AGCB_GAME_ACTIONS"]
           for token in required_app:
             if token not in app: failures.append(f'app missing {token}')
-
           required_ext=['duplicateStairRemoved:true','directMobileMaterialFix:true','created.userData.mat=STATE.material','stairsGeometry','upgradeStairs','schema:5']
           for token in required_ext:
             if token not in ext: failures.append(f'extension missing {token}')
           if 'data-agcb-build-value="stairs"' in ext: failures.append('duplicate stairs UI still present')
           if "mesh.userData.shape!=='stairs'" not in ext: failures.append('legacy stairs-save compatibility missing')
-
           for token in ["kind==='tile'","kind==='ceramic'",'MeshStandardMaterial']:
             if token not in mat: failures.append(f'procedural material missing {token}')
           for token in ['invalidateGeometry','geometryInvalidations','explicitInvalidations']:
             if token not in collision: failures.append(f'collision cache missing {token}')
           for token in ['const nearby=[]','bufferReuses']:
             if token not in ray: failures.append(f'raycast budget missing {token}')
-
           for token in ['building-extension-runtime.js','procedural-material-runtime.js','collision-cache-runtime.js','raycast-budget-runtime.js']:
-            if token not in boot and token in ('building-extension-runtime.js','procedural-material-runtime.js','collision-cache-runtime.js','raycast-budget-runtime.js'):
-              failures.append(f'bootstrap missing {token}')
+            if token not in boot: failures.append(f'bootstrap missing {token}')
             if token not in sw: failures.append(f'service worker missing {token}')
-
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('Current building, stair compatibility, material and collision checks passed.')
@@ -79,7 +67,7 @@ jobs:
           css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
           sleep=pathlib.Path('sleep-routine.js').read_text(encoding='utf-8')
           failures=[]
-          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','gameControlTouch','multitouchGameplayPreserved:true']:
+          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','CONTROL_SELECTOR','controlAwareTouchGuard:true','multitouchGameplayPreserved:true']:
             if token not in viewport: failures.append(f'viewport runtime missing {token}')
           if 'direct-game-actions-v3' not in inputjs or 'bridge?.invoke?.(el.id)' not in inputjs: failures.append('direct mobile action bridge missing')
           if 'crosshairVisualOnly:true' not in controls: failures.append('crosshair visual-only runtime marker missing')
