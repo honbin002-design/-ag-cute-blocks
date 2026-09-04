@@ -29,6 +29,7 @@
 #del{right:70px;bottom:86px}
 #rot{right:0;top:0}
 #jump{right:0;bottom:0;width:96px;height:96px;font-size:35px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
+#add,#del,#rot,#jump{transform:none}
 .btn:active{filter:brightness(.94)}
 #add:active,#del:active,#jump:active,#rot:active{transform:scale(.90)}
 
@@ -97,6 +98,7 @@
   #del{right:62px;bottom:80px}
   #rot{right:0;top:0}
   #jump{right:0;bottom:0;width:80px;height:80px;font-size:32px}
+  #add,#del,#rot,#jump{transform:none}
   .lifeInteract{right:max(188px,calc(env(safe-area-inset-right) + 180px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:74px!important;height:74px!important;font-size:28px!important}
   .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
   .joy{width:128px;height:128px;bottom:max(130px,calc(env(safe-area-inset-bottom) + 120px))}
