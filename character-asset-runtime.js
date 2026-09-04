@@ -91,6 +91,10 @@ function tuneRigForCustomization(root,c){
 function setManus5AlphaMaterials(root){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m||(!m.transparent&&!m.alphaMap))continue;m.alphaTest=Math.max(m.alphaTest||0,.08);m.depthTest=true;m.depthWrite=true;if(m.map)m.map.needsUpdate=true;}});
 }
+function setSpecial3GoldMaterials(root){
+  const gold=0xd5a338;
+  root.traverse(o=>{if(!o.isMesh)return;const label=(o.name+' '+(Array.isArray(o.material)?o.material.map(m=>m?.name||'').join(' '):o.material?.name||'')).toLowerCase();if(/eye|iris|pupil|mouth|teeth|tongue/.test(label))return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if(m.color)m.color.setHex(gold);if('metalness'in m)m.metalness=Math.max(.18,m.metalness||0);if('roughness'in m)m.roughness=.46;m.needsUpdate=true}});
+}
 function setAssetMaterialPolish(root,c){
   root.traverse(o=>{if(!o.isMesh)return;const list=Array.isArray(o.material)?o.material:[o.material];for(const m of list){if(!m)continue;if('roughness'in m)m.roughness=Math.max(.68,Math.min(.86,m.roughness??.76));if('metalness'in m)m.metalness=Math.min(.08,m.metalness??0);m.flatShading=false;m.needsUpdate=true}});
 }
@@ -116,7 +120,7 @@ function applyAsset(group,c,gltf){
   setManus5AlphaMaterials(root);
   const rawBox=new THREE.Box3().setFromObject(selectedVariant||root),rawSize=rawBox.getSize(new THREE.Vector3());
   const requestedHeight=2.18*bodyScale(c),rawHeight=Number.isFinite(rawSize.y)&&rawSize.y>.1?rawSize.y:1,scale=Math.min(2.8,Math.max(.25,requestedHeight/rawHeight));root.scale.setScalar(scale);root.updateMatrixWorld(true);
-  tuneRigForCustomization(root,c);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(selectedVariant||root),center=box.getCenter(new THREE.Vector3());root.position.x-=center.x;root.position.z-=center.z;root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);
+  tuneRigForCustomization(root,c);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(selectedVariant||root),center=box.getCenter(new THREE.Vector3());root.position.x-=center.x;root.position.z-=center.z;root.position.y-=box.min.y;root.updateMatrixWorld(true);setAssetMaterialPolish(root,c);if(c.role==='special3')setSpecial3GoldMaterials(root);
   const mixer=new THREE.AnimationMixer(root),clips=gltf.animations||[],actions={
     idle:findClip(clips,/idle|stand|breath|rest/i),
     walk:findClip(clips,/walk|move/i),
