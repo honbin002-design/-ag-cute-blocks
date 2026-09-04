@@ -1,4 +1,5 @@
 name: Patch character switch atomicity
+# one-shot guarded live patch; remove after successful deployment
 on:
   push:
     branches: [main]
