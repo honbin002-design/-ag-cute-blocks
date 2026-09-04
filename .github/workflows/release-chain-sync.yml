@@ -11,11 +11,17 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: agcb-release-chain-main
+  cancel-in-progress: false
+
 jobs:
   sync-release-chain:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Sync index to bootstrap version
         shell: python
         run: |
@@ -55,6 +61,7 @@ jobs:
       - name: Commit synchronized index
         shell: bash
         run: |
+          set -euo pipefail
           if git diff --quiet -- index.html; then
             echo 'index already synchronized'
             exit 0
@@ -63,4 +70,25 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git commit -m 'chore: sync index release chain to bootstrap'
-          git push
+          if git push; then
+            exit 0
+          fi
+          echo 'push raced with another main update; verifying remote main before deciding failure'
+          git fetch origin main
+          python - <<'PY'
+          import re,subprocess,sys
+          boot=subprocess.check_output(['git','show','origin/main:bootstrap-v045.js'],text=True)
+          index=subprocess.check_output(['git','show','origin/main:index.html'],text=True)
+          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
+          if not m: sys.exit('remote bootstrap version missing')
+          v=m.group(1); vv='V'+v
+          checks=[
+            f'<meta name="ag-runtime-version" content="{vv}">' in index,
+            f'<small>{vv}</small>' in index,
+            f'bootstrap-v045.js?v={v}' in index,
+          ]
+          if all(checks):
+            print(f'remote main is already synchronized to {vv}; concurrent push is safe')
+            sys.exit(0)
+          sys.exit(f'remote main is not synchronized to {vv}; refusing to hide push race')
+          PY
