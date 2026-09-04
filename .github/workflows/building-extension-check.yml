@@ -104,8 +104,8 @@ jobs:
         run: |
           test "$(grep -o "const VERSION='V0.4.72'" app-v043.js)" = "const VERSION='V0.4.72'"
           grep -q "ag-cute-blocks-v045-runtime134" sw.js
-          grep -q "bootstrap-v045.js?v=0.4.71" index.html
-          grep -q "mobile-controls.css?v=0.4.71" mobile-controls-runtime.js
+          grep -q "bootstrap-v045.js?v=0.4.72" index.html
+          grep -q "mobile-controls.css?v=0.4.72" mobile-controls-runtime.js
           grep -q "featureSet:'gender-age-silhouette-face-hair-v9'" ag-original-character-runtime.js
           grep -q "detailSet:'four-hero-proportion-garment-v8'" ag-original-character-runtime.js
           ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
@@ -128,6 +128,6 @@ jobs:
           grep -q "globalThis.__AGCB_GAME_ACTIONS" app-v043.js
           grep -q "bridge?.invoke?.(el.id)" mobile-input-runtime.js
           grep -q "direct-game-actions-v3" mobile-input-runtime.js
-          grep -q "mobile-input-runtime.js?v=0.4.71" bootstrap-v045.js
+          grep -q "mobile-input-runtime.js?v=0.4.72" bootstrap-v045.js
           grep -q "agcb-hair-side-part" ag-original-character-runtime.js
           grep -q "agcb-hair-cap" ag-original-character-runtime.js
