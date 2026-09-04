@@ -26,7 +26,7 @@
 /* Main action at bottom-right; the other three form a readable fan around it. */
 /* Three outer buttons fan toward the main button; the extra top button shares its right edge. */
 #add{right:104px;bottom:10px}
-#del{right:70px;bottom:86px}
+#del{right:70px;bottom:96px}
 #rot{right:0;top:0}
 #jump{right:0;bottom:0;width:96px;height:96px;font-size:35px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
 #add,#del,#rot,#jump{transform:none}
@@ -95,7 +95,7 @@
   }
   .btn{width:56px;height:56px;font-size:27px}
   #add{right:94px;bottom:10px}
-  #del{right:62px;bottom:80px}
+  #del{right:62px;bottom:90px}
   #rot{right:0;top:0}
   #jump{right:0;bottom:0;width:80px;height:80px;font-size:32px}
   #add,#del,#rot,#jump{transform:none}
