@@ -1,10 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-// V0.4.81: external-rig locomotion correction retained from V0.4.78.
-// The legacy asset tick runs before AnimationMixer.update(), so mixer tracks can
-// overwrite the extra arm swing. Patch AnimationMixer.update() and re-apply the
-// additive arm motion afterwards, immediately before the scene is rendered.
-const VERSION='V0.4.81';
+// V0.4.82: external-rig locomotion correction retained from V0.4.78.
+const VERSION='V0.4.82';
 const originalUpdate=THREE.AnimationMixer.prototype.update;
 if(!THREE.AnimationMixer.prototype.__agcbMotionFixV478){
   THREE.AnimationMixer.prototype.update=function(delta){
@@ -26,8 +23,6 @@ if(!THREE.AnimationMixer.prototype.__agcbMotionFixV478){
   THREE.AnimationMixer.prototype.__agcbMotionFixV478=true;
 }
 
-// The core character loop historically requested only "walk" for every moving
-// external asset. Route that request to the real run clip when Run mode is on.
 const priorSetMotion=globalThis.__AGCB_ASSET_SET_MOTION;
 if(priorSetMotion&&!priorSetMotion.__agcbMotionFixV478){
   const fixed=(group,state='idle')=>{
@@ -44,7 +39,6 @@ if(priorSetMotion&&!priorSetMotion.__agcbMotionFixV478){
   globalThis.__AGCB_ASSET_SET_MOTION=fixed;
 }
 
-// Keep the visible release marker trustworthy for additive runtime releases.
 const badge=document.querySelector('.title small');if(badge)badge.textContent=VERSION;
 const meta=document.querySelector('meta[name="ag-runtime-version"]');if(meta)meta.content=VERSION;
 const note=document.querySelector('.note');if(note)note.textContent=note.textContent.replace(/^V0\.4\.\d+：/,`${VERSION}：`);
