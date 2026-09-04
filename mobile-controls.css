@@ -1,6 +1,6 @@
-.cross{pointer-events:auto!important;touch-action:none!important;z-index:70}
+.cross{pointer-events:auto!important;touch-action:none!important;z-index:70;color:#ffffffb8!important;opacity:.58;text-shadow:0 1px 4px #314b55aa!important}
 /* AG Cute Blocks — ergonomic mobile game HUD v7 */
-/* V0.4.74: AoV-style lower-right fan with fine spacing; jump remains fixed. */
+/* V0.4.75: AoV-style lower-right fan with fine spacing; jump remains fixed. */
 .actions{
   right:max(20px,calc(env(safe-area-inset-right) + 14px));
   bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px));
@@ -37,7 +37,7 @@
 #add:active,#del:active,#jump:active,#rot:active{transform:scale(.90)}
 
 /* Compact movement mode toggle stays in the upper-right safe lane. */
-.runToggle{top:max(92px,calc(env(safe-area-inset-top) + 84px))!important;right:max(14px,calc(env(safe-area-inset-right) + 10px))!important;width:58px!important;height:34px!important;font-size:11px!important;z-index:85!important}
+.runToggle{top:max(80px,calc(env(safe-area-inset-top) + 72px))!important;right:max(10px,env(safe-area-inset-right))!important;width:58px!important;height:34px!important;font-size:11px!important;z-index:85!important}
 /* Context interaction sits above and left of the action cluster. */
 .lifeInteract{
   right:max(20px,calc(env(safe-area-inset-right) + 14px))!important;
@@ -105,7 +105,7 @@
   #rot{right:0;top:32px}
   #jump{right:0;bottom:0;width:80px;height:80px;font-size:32px}
   #add,#del,#rot,#jump{transform:none}
-  .runToggle{top:max(88px,calc(env(safe-area-inset-top) + 80px))!important;width:54px!important;height:32px!important;font-size:10px!important}
+  .runToggle{top:max(76px,calc(env(safe-area-inset-top) + 68px))!important;width:54px!important;height:32px!important;font-size:10px!important}
   .lifeInteract{right:max(14px,calc(env(safe-area-inset-right) + 10px))!important;bottom:max(188px,calc(env(safe-area-inset-bottom) + 178px))!important;width:56px!important;height:56px!important;font-size:25px!important}
   .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
   .joy{width:128px;height:128px;bottom:max(130px,calc(env(safe-area-inset-bottom) + 120px))}
