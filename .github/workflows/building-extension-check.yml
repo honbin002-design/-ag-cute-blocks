@@ -104,8 +104,8 @@ jobs:
         run: |
           test "$(grep -o "const VERSION='V0.4.70'" app-v043.js)" = "const VERSION='V0.4.70'"
           grep -q "ag-cute-blocks-v045-runtime132" sw.js
-          grep -q "bootstrap-v045.js?v=0.4.69" index.html
-          grep -q "mobile-controls.css?v=0.4.69" mobile-controls-runtime.js
+          grep -q "bootstrap-v045.js?v=0.4.70" index.html
+          grep -q "mobile-controls.css?v=0.4.70" mobile-controls-runtime.js
           grep -q "featureSet:'gender-age-silhouette-face-hair-v9'" ag-original-character-runtime.js
           grep -q "detailSet:'four-hero-proportion-garment-v8'" ag-original-character-runtime.js
           ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
@@ -120,14 +120,14 @@ jobs:
           grep -q "bottom:max(160px" mobile-controls.css
           grep -q "pointer-events:auto" mobile-controls.css
           grep -q "#add,#del,#rot,#jump{transform:none}" mobile-controls.css
-          grep -q "#add{right:104px;bottom:10px}" mobile-controls.css
-          grep -q "#del{right:70px;bottom:96px}" mobile-controls.css
-          grep -q "#rot{right:0;top:0}" mobile-controls.css
+          grep -q "#add{right:104px;bottom:4px}" mobile-controls.css
+          grep -q "#del{right:78px;bottom:88px}" mobile-controls.css
+          grep -q "#rot{right:0;top:8px}" mobile-controls.css
           grep -q "#jump{right:0;bottom:0;width:96px;height:96px" mobile-controls.css
           grep -q "reserved-hotbar-lane" mobile-controls-runtime.js
           grep -q "globalThis.__AGCB_GAME_ACTIONS" app-v043.js
           grep -q "bridge?.invoke?.(el.id)" mobile-input-runtime.js
           grep -q "direct-game-actions-v3" mobile-input-runtime.js
-          grep -q "mobile-input-runtime.js?v=0.4.69" bootstrap-v045.js
+          grep -q "mobile-input-runtime.js?v=0.4.70" bootstrap-v045.js
           grep -q "agcb-hair-side-part" ag-original-character-runtime.js
           grep -q "agcb-hair-cap" ag-original-character-runtime.js
