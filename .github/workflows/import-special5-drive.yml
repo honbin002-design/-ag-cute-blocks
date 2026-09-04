@@ -20,8 +20,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/ag-special5 assets/characters/special5
-          URL='https://drive.usercontent.google.com/download?id=1JDVzeocJfHibjfKh0K__3yuTza3RK9H9&export=download&confirm=t'
-          curl -L --fail --retry 4 --retry-delay 2 "$URL" -o /tmp/ag-special5/model.glb
+          python -m pip install --quiet gdown
+          gdown --fuzzy 'https://drive.google.com/file/d/1JDVzeocJfHibjfKh0K__3yuTza3RK9H9/view?usp=drivesdk' -O /tmp/ag-special5/model.glb
           test "$(stat -c%s /tmp/ag-special5/model.glb)" = "39650000"
           python - <<'PY'
           from pathlib import Path
