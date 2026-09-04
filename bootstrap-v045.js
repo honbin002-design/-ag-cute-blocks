@@ -8,7 +8,7 @@ import './ag-original-animal-runtime.js';
 
 // Main world establishes the live scene/player/object registries used by extension runtimes.
 // Midnight progression now calls daily-progression-system.js directly inside the core app.
-import './app-v043.js?v=0.4.73';
+import './app-v043.js?v=0.4.74';
 
 // Core corrections and visual/building surface upgrades attach after base initialization.
 import './heading-runtime.js';
@@ -20,10 +20,10 @@ import './character-asset-runtime.js';
 import './pet-grounding-runtime.js';
 
 // Mobile control presentation attaches after the HUD exists, before input handlers.
-import './mobile-controls-runtime.js?v=0.4.73';
+import './mobile-controls-runtime.js?v=0.4.74';
 
 // Input and life extensions attach after the main HUD/world handlers exist.
-import './mobile-input-runtime.js?v=0.4.73';
+import './mobile-input-runtime.js?v=0.4.74';
 import './animal-life-runtime.js';
 import './crop-care-runtime.js';
 import './orchard-runtime.js';

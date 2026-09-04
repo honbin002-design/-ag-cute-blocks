@@ -4,7 +4,7 @@ if(!document.querySelector('link[data-agcb-mobile-controls="1"]')){
   const link=document.createElement('link');
   link.rel='stylesheet';link.href=href;link.dataset.agcbMobileControls='1';document.head.appendChild(link);
 }
-const roles={jump:'primary-action',lifeInteract:'context-action',add:'build-action',del:'build-action',rot:'build-action',joy:'movement',lifeBtn:'menu'};
+const roles={jump:'primary-action',lifeInteract:'context-action',add:'build-action',del:'build-action',rot:'build-action',joy:'movement',lifeBtn:'menu',runToggle:'movement-mode'};
 function annotate(){
   for(const [id,role] of Object.entries(roles)){const el=document.getElementById(id);if(el)el.dataset.controlRole=role}
   const interact=document.getElementById('lifeInteract');if(interact&&!interact.getAttribute('aria-label'))interact.setAttribute('aria-label','互動');
