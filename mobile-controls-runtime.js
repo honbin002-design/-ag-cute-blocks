@@ -1,5 +1,5 @@
 // AG Cute Blocks — activate and classify the dedicated mobile-game HUD v3.
-const href='./mobile-controls.css?v=0.4.80';
+const href='./mobile-controls.css?v=0.4.81';
 if(!document.querySelector('link[data-agcb-mobile-controls="1"]')){
   const link=document.createElement('link');
   link.rel='stylesheet';link.href=href;link.dataset.agcbMobileControls='1';document.head.appendChild(link);
@@ -12,4 +12,4 @@ function annotate(){
 }
 annotate();
 const observer=new MutationObserver(annotate);observer.observe(document.body,{childList:true,subtree:true});
-globalThis.__AGCB_MOBILE_CONTROLS={version:'3.4',layout:'aov-lower-right-cluster-reserved-hotbar-lane',stylesheet:href,roles,observer};
+globalThis.__AGCB_MOBILE_CONTROLS={version:'3.5',layout:'aov-lower-right-cluster-reserved-hotbar-lane',stylesheet:href,roles,observer,crosshairVisualOnly:true};
