@@ -76,7 +76,7 @@ function loadVariant(key){
   if(loaded.has(key))return Promise.resolve(loaded.get(key));
   if(pending.has(key))return pending.get(key);
   const p=(key==='boy'?loadBinaryGltf(GENERAL_BOY_BASE,GENERAL_BOY_PART_COUNT,GENERAL_BOY_TOTAL_BYTES):key==='girl'?loadBinaryGltf(GENERAL_GIRL_BASE,GENERAL_GIRL_PART_COUNT,GENERAL_GIRL_TOTAL_BYTES):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});
-  pending.set(key,p);return p;
+  pending.set(key,p);p.then(()=>{if(pending.get(key)===p)pending.delete(key)},()=>{if(pending.get(key)===p)pending.delete(key)});return p;
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
 function bodyScale(c){const age=c.age==='child'?.84:1;const body=c.body==='tall'?1.04:c.body==='petite'?.93:1;return age*body}
