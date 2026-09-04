@@ -36,14 +36,14 @@ jobs:
             if f"asset-fetch-resilience-runtime.js?v={v}" not in boot: failures.append('resilience runtime query version mismatch')
             if f"version:'V{v}'" not in guard: failures.append('resilience visible version mismatch')
           if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime.js'): failures.append('resilience runtime must load before character asset runtime')
-          for token in ["/assets/characters/","RETRY_DELAYS=[220,650]","cache:'reload'","characterOnly:true","retryCount:RETRY_DELAYS.length","offlineIntegrity:true","__AGCB_VERIFY_CHARACTER_OFFLINE"]:
+          for token in ["/assets/characters/","RETRY_DELAYS=[220,650]","cache:'reload'","characterOnly:true","retryCount:RETRY_DELAYS.length","offlineIntegrity:true","scopeAwareUrls:true","__AGCB_VERIFY_CHARACTER_OFFLINE","const resolvedBase=g=>new URL(g.base,location.href)","new URL(group.base+String(i).padStart(3,'0'),location.href).href"]:
             if token not in guard: failures.append(f'resilience runtime missing {token}')
           expected_groups={
-            'special2':("/assets/characters/special2/model.v051.b64.",17),
-            'special3':("/assets/characters/special3/model.v051.b64.",13),
-            'manus5':("/assets/characters/manus5/chibi_8_variants_rigged.glb.part",16),
-            'boy':("/assets/characters/general/boy.v052.glb.part",2),
-            'girl':("/assets/characters/general/girl.v052.glb.part",2),
+            'special2':("./assets/characters/special2/model.v051.b64.",17),
+            'special3':("./assets/characters/special3/model.v051.b64.",13),
+            'manus5':("./assets/characters/manus5/chibi_8_variants_rigged.glb.part",16),
+            'boy':("./assets/characters/general/boy.v052.glb.part",2),
+            'girl':("./assets/characters/general/girl.v052.glb.part",2),
           }
           for key,(base,count) in expected_groups.items():
             if f"{key}:{{base:'{base}',count:{count}}}" not in guard: failures.append(f'offline group mismatch for {key}')
@@ -54,4 +54,4 @@ jobs:
           if "asset-fetch-resilience-runtime.js" not in sw: failures.append('service worker does not cache resilience runtime')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Character asset resilience, persistent cache, offline integrity and pending recovery invariants passed.')
+          print('Character asset resilience, scoped offline URLs, persistent cache and pending recovery invariants passed.')
