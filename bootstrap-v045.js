@@ -16,7 +16,7 @@ import './furniture-safety-runtime.js';
 import './procedural-material-runtime.js';
 import './building-extension-runtime.js?v=0.4.87';
 import './character-polish-runtime.js';
-// Asset network resilience must be active before the GLB loader starts fetching character parts.
+// V0.4.87 asset resilience is intentionally active before any GLB character-part fetch begins.
 import './asset-fetch-resilience-runtime.js?v=0.4.87';
 import './character-asset-runtime.js?v=0.4.87';
 import './character-motion-fix-runtime.js?v=0.4.87';
