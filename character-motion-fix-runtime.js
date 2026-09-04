@@ -1,10 +1,10 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-// V0.4.79: external-rig locomotion correction retained from V0.4.78.
+// V0.4.80: external-rig locomotion correction retained from V0.4.78.
 // The legacy asset tick runs before AnimationMixer.update(), so mixer tracks can
 // overwrite the extra arm swing. Patch AnimationMixer.update() and re-apply the
 // additive arm motion afterwards, immediately before the scene is rendered.
-const VERSION='V0.4.79';
+const VERSION='V0.4.80';
 const originalUpdate=THREE.AnimationMixer.prototype.update;
 if(!THREE.AnimationMixer.prototype.__agcbMotionFixV478){
   THREE.AnimationMixer.prototype.update=function(delta){
