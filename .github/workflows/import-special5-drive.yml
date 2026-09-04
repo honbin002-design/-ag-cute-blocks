@@ -1,0 +1,92 @@
+name: Import Special Character 5
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/import-special5-drive.yml'
+permissions:
+  contents: write
+jobs:
+  import-special5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Download GLB from Google Drive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ag-special5 assets/characters/special5
+          URL='https://drive.usercontent.google.com/download?id=1JDVzeocJfHibjfKh0K__3yuTza3RK9H9&export=download&confirm=t'
+          curl -L --fail --retry 4 --retry-delay 2 "$URL" -o /tmp/ag-special5/model.glb
+          test "$(stat -c%s /tmp/ag-special5/model.glb)" = "39650000"
+          python - <<'PY'
+          from pathlib import Path
+          src=Path('/tmp/ag-special5/model.glb').read_bytes()
+          out=Path('assets/characters/special5'); out.mkdir(parents=True,exist_ok=True)
+          chunk=3_000_000
+          for old in out.glob('model.v094.glb.part*'): old.unlink()
+          for i in range(0,len(src),chunk):
+              (out/f'model.v094.glb.part{i//chunk:03d}').write_bytes(src[i:i+chunk])
+          print('special5 bytes',len(src),'parts',(len(src)+chunk-1)//chunk)
+          PY
+      - name: Patch runtime and UI to V0.4.94
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('character-asset-runtime.js')
+          s=p.read_text()
+          if "SPECIAL5_BASE=" not in s:
+              s=s.replace("const SPECIAL3_BASE='./assets/characters/special3/model.v051.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=13;", "const SPECIAL3_BASE='./assets/characters/special3/model.v051.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=13;\nconst SPECIAL5_BASE='./assets/characters/special5/model.v094.glb.part',SPECIAL5_TOTAL_BYTES=39650000,SPECIAL5_PART_COUNT=14;")
+          old="const p=(key==='boy'?loadBinaryGltf(GENERAL_BOY_BASE,GENERAL_BOY_PART_COUNT,GENERAL_BOY_TOTAL_BYTES):key==='girl'?loadBinaryGltf(GENERAL_GIRL_BASE,GENERAL_GIRL_PART_COUNT,GENERAL_GIRL_TOTAL_BYTES):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});"
+          new="const p=(key==='boy'?loadBinaryGltf(GENERAL_BOY_BASE,GENERAL_BOY_PART_COUNT,GENERAL_BOY_TOTAL_BYTES):key==='girl'?loadBinaryGltf(GENERAL_GIRL_BASE,GENERAL_GIRL_PART_COUNT,GENERAL_GIRL_TOTAL_BYTES):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):key==='special5'?loadBinaryGltf(SPECIAL5_BASE,SPECIAL5_PART_COUNT,SPECIAL5_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});"
+          if old not in s and "key==='special5'?loadBinaryGltf" not in s: raise SystemExit('loadVariant anchor missing')
+          s=s.replace(old,new)
+          s=s.replace("['special','special2','special3'].includes(c.role)","['special','special2','special3','special5'].includes(c.role)")
+          s=s.replace("u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special'||c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb'", "u.assetSource=c.role==='special5'?'Meshy_AI_Sweet_Cloud_Hug_0904105730_texture.glb':c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special'||c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb'")
+          if "special5Source:" not in s:
+              s=s.replace("special3Source:'Meshy_AI_Meshy_Merged_Animations.glb'", "special3Source:'Meshy_AI_Meshy_Merged_Animations.glb',special5ChunkBase:SPECIAL5_BASE,special5ChunkCount:SPECIAL5_PART_COUNT,special5Source:'Meshy_AI_Sweet_Cloud_Hug_0904105730_texture.glb'")
+          p.write_text(s)
+
+          p=Path('main.js'); s=p.read_text()
+          s=s.replace("const VERSION='V0.4.93'", "const VERSION='V0.4.94'")
+          s=s.replace("['special','special2','special3'].includes(value)", "['special','special2','special3','special5'].includes(value)")
+          p.write_text(s)
+
+          p=Path('index.html'); s=p.read_text()
+          s=s.replace('content="V0.4.93"','content="V0.4.94"')
+          # Insert a selectable role without disturbing existing options.
+          if 'value="special5"' not in s:
+              m=re.search(r'(<select[^>]*id="avatar"[^>]*>)(.*?)(</select>)',s,re.S)
+              if not m: raise SystemExit('avatar select missing')
+              body=m.group(2)
+              body += '<option value="special5">☁️ 特殊角色 5</option>'
+              s=s[:m.start(2)]+body+s[m.end(2):]
+          p.write_text(s)
+          PY
+      - name: Validate special5 integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find assets/characters/special5 -name 'model.v094.glb.part*' | wc -l)" = "14"
+          grep -q "SPECIAL5_TOTAL_BYTES=39650000" character-asset-runtime.js
+          grep -q "Meshy_AI_Sweet_Cloud_Hug_0904105730_texture.glb" character-asset-runtime.js
+          grep -q "special5" main.js
+          grep -q 'value="special5"' index.html
+          grep -q "V0.4.94" main.js
+      - name: Commit V0.4.94
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/characters/special5 character-asset-runtime.js main.js index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'release: V0.4.94 add special character 5'
+          git push origin HEAD:dev-v0.1
