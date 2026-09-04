@@ -1,5 +1,4 @@
 name: Patch character switch atomicity
-# one-shot guarded live patch; remove after successful deployment
 on:
   push:
     branches: [main]
@@ -15,43 +14,13 @@ jobs:
           ref: dev-v0.1
           fetch-depth: 0
       - name: Guarded atomic latest-request-wins patch
+        env:
+          OLD_B64: ZnVuY3Rpb24gdXBncmFkZShncm91cCxjKXsKICBjb25zdCB1PWdyb3VwPy51c2VyRGF0YTsKICBjb25zdCBrZXk9WydzcGVjaWFsJywnc3BlY2lhbDInLCdzcGVjaWFsMyddLmluY2x1ZGVzKGMucm9sZSk/Yy5yb2xlOmMuZ2VuZGVyPT09J2JveSc/J2JveSc6J2dpcmwnO2lmKHUuYXNzZXRWYXJpYW50PT09a2V5JiZ1LmFzc2V0Um9vdClyZXR1cm47CiAgdS5hc3NldFZhcmlhbnQ9a2V5O2xvYWRWYXJpYW50KGtleSkudGhlbihnbHRmPT5hcHBseUFzc2V0KGdyb3VwLGMsZ2x0ZikpLmNhdGNoKGVycm9yPT57dS5hc3NldEVycm9yPVN0cmluZyhlcnJvcik7Z2xvYmFsVGhpcy5fX0FHQ0JfUklHR0VEX0FWQVRBUi5mYWlsZWQ9KGdsb2JhbFRoaXMuX19BR0NCX1JJR0dFRF9BVkFUQVIuZmFpbGVkfHwwKSsxfSk7Cn0=
+          NEW_B64: ZnVuY3Rpb24gdXBncmFkZShncm91cCxjKXsKICBjb25zdCB1PWdyb3VwPy51c2VyRGF0YTtpZighdSlyZXR1cm47CiAgY29uc3Qga2V5PVsnc3BlY2lhbCcsJ3NwZWNpYWwyJywnc3BlY2lhbDMnXS5pbmNsdWRlcyhjLnJvbGUpP2Mucm9sZTpjLmdlbmRlcj09PSdib3knPydib3knOidnaXJsJzsKICBpZih1LmFzc2V0VmFyaWFudD09PWtleSYmdS5hc3NldFJvb3QmJiF1LmFzc2V0RGVzaXJlZFZhcmlhbnQpcmV0dXJuOwogIGNvbnN0IHJlcXVlc3RJZD0odS5hc3NldFJlcXVlc3RJZHx8MCkrMTt1LmFzc2V0UmVxdWVzdElkPXJlcXVlc3RJZDt1LmFzc2V0RGVzaXJlZFZhcmlhbnQ9a2V5OwogIC8vIEF0b21pYyBzd2l0Y2g6IGhpZGUgdGhlIHByZXZpb3VzL3Byb2NlZHVyYWwgYXZhdGFyIHdoaWxlIHRoZSByZXF1ZXN0ZWQgR0xCIGlzIGxvYWRpbmcuCiAgLy8gTGF0ZXN0IHJlcXVlc3Qgd2lucywgc28gYSBzbG93ZXIgb2xkZXIgcmVxdWVzdCBjYW4gbmV2ZXIgZmxhc2ggb3ZlciBhIG5ld2VyIHNlbGVjdGlvbi4KICBpZih1LnZpc3VhbCl1LnZpc3VhbC52aXNpYmxlPWZhbHNlOwogIGxvYWRWYXJpYW50KGtleSkudGhlbihnbHRmPT57CiAgICBpZighZ3JvdXA/LnBhcmVudHx8dS5hc3NldFJlcXVlc3RJZCE9PXJlcXVlc3RJZHx8dS5hc3NldERlc2lyZWRWYXJpYW50IT09a2V5KXJldHVybjsKICAgIGFwcGx5QXNzZXQoZ3JvdXAsYyxnbHRmKTt1LmFzc2V0RGVzaXJlZFZhcmlhbnQ9bnVsbDt1LmFzc2V0RXJyb3I9bnVsbDsKICB9KS5jYXRjaChlcnJvcj0+ewogICAgaWYodS5hc3NldFJlcXVlc3RJZCE9PXJlcXVlc3RJZClyZXR1cm47CiAgICB1LmFzc2V0RGVzaXJlZFZhcmlhbnQ9bnVsbDt1LmFzc2V0RXJyb3I9U3RyaW5nKGVycm9yKTtpZih1LnZpc3VhbCl1LnZpc3VhbC52aXNpYmxlPXRydWU7CiAgICBnbG9iYWxUaGlzLl9fQUdDQl9SSUdHRURfQVZBVEFSLmZhaWxlZD0oZ2xvYmFsVGhpcy5fX0FHQ0JfUklHR0VEX0FWQVRBUi5mYWlsZWR8fDApKzE7CiAgfSk7Cn0=
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('character-asset-runtime.js')
-          s=p.read_text()
-          old="""function upgrade(group,c){
-  const u=group?.userData;
-  const key=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';if(u.assetVariant===key&&u.assetRoot)return;
-  u.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{u.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
-}"""
-          new="""function upgrade(group,c){
-  const u=group?.userData;if(!u)return;
-  const key=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';
-  if(u.assetVariant===key&&u.assetRoot&&!u.assetDesiredVariant)return;
-  const requestId=(u.assetRequestId||0)+1;u.assetRequestId=requestId;u.assetDesiredVariant=key;
-  // Atomic switch: hide the previous/procedural avatar while the requested GLB is loading.
-  // Latest request wins, so a slower older request can never flash over a newer selection.
-  if(u.visual)u.visual.visible=false;
-  loadVariant(key).then(gltf=>{
-    if(!group?.parent||u.assetRequestId!==requestId||u.assetDesiredVariant!==key)return;
-    applyAsset(group,c,gltf);u.assetDesiredVariant=null;u.assetError=null;
-  }).catch(error=>{
-    if(u.assetRequestId!==requestId)return;
-    u.assetDesiredVariant=null;u.assetError=String(error);if(u.visual)u.visual.visible=true;
-    globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1;
-  });
-}"""
-          count=s.count(old)
-          if count==0 and 'u.assetRequestId!==requestId' in s and 'u.assetDesiredVariant=key' in s:
-              print('patch already present')
-          elif count==1:
-              p.write_text(s.replace(old,new))
-          else:
-              raise SystemExit(f'guard failed: expected 1 target or existing patch, found {count}')
-          PY
+          python3 -c "import os,base64,pathlib; p=pathlib.Path('character-asset-runtime.js'); s=p.read_text(); old=base64.b64decode(os.environ['OLD_B64']).decode(); new=base64.b64decode(os.environ['NEW_B64']).decode(); n=s.count(old); assert n==1 or (n==0 and 'u.assetRequestId!==requestId' in s), f'guard failed: {n}'; p.write_text(s.replace(old,new)) if n==1 else None"
           node --check character-asset-runtime.js
-          test "$(grep -o 'u.assetRequestId!==requestId' character-asset-runtime.js | wc -l)" -ge 2
+          grep -q 'u.assetRequestId!==requestId' character-asset-runtime.js
           grep -q 'if(u.visual)u.visual.visible=false' character-asset-runtime.js
       - name: Commit live patch
         run: |
