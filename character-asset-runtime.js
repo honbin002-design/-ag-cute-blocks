@@ -137,9 +137,21 @@ function applyAsset(group,c,gltf){
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
-  const u=group?.userData;
-  const key=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';if(u.assetVariant===key&&u.assetRoot)return;
-  u.assetVariant=key;loadVariant(key).then(gltf=>applyAsset(group,c,gltf)).catch(error=>{u.assetError=String(error);globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1});
+  const u=group?.userData;if(!u)return;
+  const key=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';
+  if(u.assetVariant===key&&u.assetRoot&&!u.assetDesiredVariant)return;
+  const requestId=(u.assetRequestId||0)+1;u.assetRequestId=requestId;u.assetDesiredVariant=key;
+  // Atomic switch: hide the previous/procedural avatar while the requested GLB is loading.
+  // Latest request wins, so a slower older request can never flash over a newer selection.
+  if(u.visual)u.visual.visible=false;
+  loadVariant(key).then(gltf=>{
+    if(!group?.parent||u.assetRequestId!==requestId||u.assetDesiredVariant!==key)return;
+    applyAsset(group,c,gltf);u.assetDesiredVariant=null;u.assetError=null;
+  }).catch(error=>{
+    if(u.assetRequestId!==requestId)return;
+    u.assetDesiredVariant=null;u.assetError=String(error);if(u.visual)u.visual.visible=true;
+    globalThis.__AGCB_RIGGED_AVATAR.failed=(globalThis.__AGCB_RIGGED_AVATAR.failed||0)+1;
+  });
 }
 globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const next=u.assetActions[state]||u.assetActions.idle;
