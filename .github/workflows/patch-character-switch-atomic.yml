@@ -13,20 +13,20 @@ jobs:
         with:
           ref: dev-v0.1
           fetch-depth: 0
-      - name: Guarded atomic latest-request-wins patch
-        env:
-          OLD_B64: ZnVuY3Rpb24gdXBncmFkZShncm91cCxjKXsKICBjb25zdCB1PWdyb3VwPy51c2VyRGF0YTsKICBjb25zdCBrZXk9WydzcGVjaWFsJywnc3BlY2lhbDInLCdzcGVjaWFsMyddLmluY2x1ZGVzKGMucm9sZSk/Yy5yb2xlOmMuZ2VuZGVyPT09J2JveSc/J2JveSc6J2dpcmwnO2lmKHUuYXNzZXRWYXJpYW50PT09a2V5JiZ1LmFzc2V0Um9vdClyZXR1cm47CiAgdS5hc3NldFZhcmlhbnQ9a2V5O2xvYWRWYXJpYW50KGtleSkudGhlbihnbHRmPT5hcHBseUFzc2V0KGdyb3VwLGMsZ2x0ZikpLmNhdGNoKGVycm9yPT57dS5hc3NldEVycm9yPVN0cmluZyhlcnJvcik7Z2xvYmFsVGhpcy5fX0FHQ0JfUklHR0VEX0FWQVRBUi5mYWlsZWQ9KGdsb2JhbFRoaXMuX19BR0NCX1JJR0dFRF9BVkFUQVIuZmFpbGVkfHwwKSsxfSk7Cn0=
-          NEW_B64: ZnVuY3Rpb24gdXBncmFkZShncm91cCxjKXsKICBjb25zdCB1PWdyb3VwPy51c2VyRGF0YTtpZighdSlyZXR1cm47CiAgY29uc3Qga2V5PVsnc3BlY2lhbCcsJ3NwZWNpYWwyJywnc3BlY2lhbDMnXS5pbmNsdWRlcyhjLnJvbGUpP2Mucm9sZTpjLmdlbmRlcj09PSdib3knPydib3knOidnaXJsJzsKICBpZih1LmFzc2V0VmFyaWFudD09PWtleSYmdS5hc3NldFJvb3QmJiF1LmFzc2V0RGVzaXJlZFZhcmlhbnQpcmV0dXJuOwogIGNvbnN0IHJlcXVlc3RJZD0odS5hc3NldFJlcXVlc3RJZHx8MCkrMTt1LmFzc2V0UmVxdWVzdElkPXJlcXVlc3RJZDt1LmFzc2V0RGVzaXJlZFZhcmlhbnQ9a2V5OwogIC8vIEF0b21pYyBzd2l0Y2g6IGhpZGUgdGhlIHByZXZpb3VzL3Byb2NlZHVyYWwgYXZhdGFyIHdoaWxlIHRoZSByZXF1ZXN0ZWQgR0xCIGlzIGxvYWRpbmcuCiAgLy8gTGF0ZXN0IHJlcXVlc3Qgd2lucywgc28gYSBzbG93ZXIgb2xkZXIgcmVxdWVzdCBjYW4gbmV2ZXIgZmxhc2ggb3ZlciBhIG5ld2VyIHNlbGVjdGlvbi4KICBpZih1LnZpc3VhbCl1LnZpc3VhbC52aXNpYmxlPWZhbHNlOwogIGxvYWRWYXJpYW50KGtleSkudGhlbihnbHRmPT57CiAgICBpZighZ3JvdXA/LnBhcmVudHx8dS5hc3NldFJlcXVlc3RJZCE9PXJlcXVlc3RJZHx8dS5hc3NldERlc2lyZWRWYXJpYW50IT09a2V5KXJldHVybjsKICAgIGFwcGx5QXNzZXQoZ3JvdXAsYyxnbHRmKTt1LmFzc2V0RGVzaXJlZFZhcmlhbnQ9bnVsbDt1LmFzc2V0RXJyb3I9bnVsbDsKICB9KS5jYXRjaChlcnJvcj0+ewogICAgaWYodS5hc3NldFJlcXVlc3RJZCE9PXJlcXVlc3RJZClyZXR1cm47CiAgICB1LmFzc2V0RGVzaXJlZFZhcmlhbnQ9bnVsbDt1LmFzc2V0RXJyb3I9U3RyaW5nKGVycm9yKTtpZih1LnZpc3VhbCl1LnZpc3VhbC52aXNpYmxlPXRydWU7CiAgICBnbG9iYWxUaGlzLl9fQUdDQl9SSUdHRURfQVZBVEFSLmZhaWxlZD0oZ2xvYmFsVGhpcy5fX0FHQ0JfUklHR0VEX0FWQVRBUi5mYWlsZWR8fDApKzE7CiAgfSk7Cn0=
+      - name: Verify atomic switch and synchronize V0.4.92 entry
         run: |
-          python3 -c "import os,base64,pathlib; p=pathlib.Path('character-asset-runtime.js'); s=p.read_text(); old=base64.b64decode(os.environ['OLD_B64']).decode(); new=base64.b64decode(os.environ['NEW_B64']).decode(); n=s.count(old); assert n==1 or (n==0 and 'u.assetRequestId!==requestId' in s), f'guard failed: {n}'; p.write_text(s.replace(old,new)) if n==1 else None"
           node --check character-asset-runtime.js
           grep -q 'u.assetRequestId!==requestId' character-asset-runtime.js
           grep -q 'if(u.visual)u.visual.visible=false' character-asset-runtime.js
-      - name: Commit live patch
+          python3 -c "from pathlib import Path; p=Path('index.html'); s=p.read_text(); pairs=[('content=\"V0.4.91\"','content=\"V0.4.92\"'),('<small>V0.4.91</small>','<small>V0.4.92</small>'),('service-worker-register.js?v=0.4.91','service-worker-register.js?v=0.4.92'),('bootstrap-v045.js?v=0.4.91','bootstrap-v045.js?v=0.4.92')]; [(None if a in s or b in s else (_ for _ in ()).throw(AssertionError(a))) for a,b in pairs]; [None for a,b in pairs if not (s:=s.replace(a,b))]; p.write_text(s)"
+          grep -q 'content="V0.4.92"' index.html
+          grep -q '<small>V0.4.92</small>' index.html
+          grep -q 'bootstrap-v045.js?v=0.4.92' index.html
+      - name: Commit live entry sync
         run: |
           if git diff --quiet; then exit 0; fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add character-asset-runtime.js
-          git commit -m 'fix: make character switching atomic and latest-request-wins'
+          git add index.html
+          git commit -m 'release: synchronize live entry to V0.4.92'
           git push origin HEAD:dev-v0.1
