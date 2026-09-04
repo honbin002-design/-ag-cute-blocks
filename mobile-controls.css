@@ -1,6 +1,6 @@
-.cross{pointer-events:auto!important;touch-action:none!important;z-index:70;color:#ffffffb8!important;opacity:.58;text-shadow:0 1px 4px #314b55aa!important}
-/* AG Cute Blocks — ergonomic mobile game HUD v7 */
-/* V0.4.76: AoV-style lower-right fan with fine spacing; jump remains fixed. */
+.cross{pointer-events:none!important;touch-action:none!important;z-index:70;color:#ffffffb8!important;opacity:.58;text-shadow:0 1px 4px #314b55aa!important}
+/* AG Cute Blocks — ergonomic mobile game HUD v8 */
+/* V0.4.81: crosshair is visual-only; it must never consume center-screen touches. */
 .actions{
   right:max(20px,calc(env(safe-area-inset-right) + 14px));
   bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px));
@@ -26,8 +26,6 @@
   -webkit-tap-highlight-color:transparent;
   transition:filter .08s ease,box-shadow .08s ease;
 }
-/* Main action at bottom-right; the other three form a readable fan around it. */
-/* Three outer buttons fan toward the main button; the extra top button shares its right edge. */
 #add{right:104px;bottom:4px}
 #del{right:78px;bottom:88px}
 #rot{right:0;top:40px}
@@ -35,10 +33,7 @@
 #add,#del,#rot,#jump{transform:none}
 .btn:active{filter:brightness(.94)}
 #add:active,#del:active,#jump:active,#rot:active{transform:scale(.90)}
-
-/* Compact movement mode toggle stays in the upper-right safe lane. */
 .runToggle{top:max(80px,calc(env(safe-area-inset-top) + 72px))!important;right:max(10px,env(safe-area-inset-right))!important;width:58px!important;height:34px!important;font-size:11px!important;z-index:85!important}
-/* Context interaction sits above and left of the action cluster. */
 .lifeInteract{
   right:max(20px,calc(env(safe-area-inset-right) + 14px))!important;
   bottom:max(214px,calc(env(safe-area-inset-bottom) + 204px))!important;
@@ -53,8 +48,6 @@
 .lifeInteract small{font-size:11px!important;line-height:12px;font-weight:900}
 .runToggle.on{background:#ffe98b!important}
 .lifeInteract:active{transform:scale(.90)}
-
-/* Context watering control remains readable without entering the thumb cluster. */
 .waterCropBtn{
   left:auto!important;
   right:max(218px,calc(env(safe-area-inset-right) + 210px))!important;
@@ -67,8 +60,6 @@
   font-size:14px!important;
   box-shadow:0 5px 16px #0003!important;
 }
-
-/* Enlarged movement zone; app logic derives its active radius from this geometry. */
 .joy{
   left:max(24px,calc(env(safe-area-inset-left) + 14px));
   bottom:max(160px,calc(env(safe-area-inset-bottom) + 150px));
@@ -77,8 +68,6 @@
   border-width:4px;
 }
 .knob{left:43px;top:43px;width:58px;height:58px}
-
-/* The build bar owns the center lane and stays clear of both thumb zones. */
 .catalog{
   left:24px!important;
   right:max(250px,calc(env(safe-area-inset-right) + 240px))!important;
@@ -91,14 +80,8 @@
 .cats,.items{gap:10px!important}
 .cat{padding:9px 13px!important;font-size:15px!important}
 .item{min-width:72px!important;height:64px!important;font-size:26px!important}
-
 @media(max-height:430px){
-  .actions{
-    right:max(14px,calc(env(safe-area-inset-right) + 10px));
-    bottom:max(20px,calc(env(safe-area-inset-bottom) + 14px));
-    width:154px;
-    height:184px;
-  }
+  .actions{right:max(14px,calc(env(safe-area-inset-right) + 10px));bottom:max(20px,calc(env(safe-area-inset-bottom) + 14px));width:154px;height:184px}
   .btn{width:56px;height:56px;font-size:27px}
   #add{right:94px;bottom:4px}
   #del{right:70px;bottom:82px}
