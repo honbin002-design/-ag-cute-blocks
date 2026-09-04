@@ -63,6 +63,7 @@ jobs:
           motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8')
           mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
           viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
+          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
           m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
           if not m: sys.exit('bootstrap version missing')
           v=m.group(1)
@@ -70,13 +71,15 @@ jobs:
           failures=[]
           if expected not in motion: failures.append('visible runtime version does not match bootstrap')
           if f'bootstrap-v045.js?v={v}' not in index and expected not in index: failures.append('index is not aligned with current runtime version')
-          for name in ['app-v043.js','building-extension-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
+          for name in ['app-v043.js','building-extension-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
             if name not in boot: failures.append(f'bootstrap missing {name}')
-          for name in ['mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','character-motion-fix-runtime.js']:
+          for name in ['mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','aim-reticle-runtime.js','character-motion-fix-runtime.js']:
             if name not in sw: failures.append(f'service worker missing {name}')
-          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove']:
+          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
             if token not in viewport: failures.append(f'viewport lock missing {token}')
-          if "crosshairVisualOnly:true" not in mobile: failures.append('mobile crosshair visual-only marker missing')
+          if "crosshairVisualOnly:true" not in mobile: failures.append('mobile crosshair visual-only base marker missing')
+          for token in ['firstPersonCentered:true','thirdFarmDraggable:true',"setProperty('pointer-events','auto','important')","cross.style.left='50%'","cross.style.top='50%'"]:
+            if token not in aim: failures.append(f'aim reticle missing {token}')
           if 'postMixerArmSwing:true' not in motion or 'runClipRouting:true' not in motion: failures.append('walk/run correction markers missing')
           if failures:
             print('\n'.join(failures)); sys.exit(1)
@@ -104,6 +107,7 @@ jobs:
           app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
           css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
+          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
           failures=[]
           for token in ["'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","function standSurfaceY","function stairSurfaceY","globalThis.__AGCB_GAME_ACTIONS"]:
             if token not in app: failures.append(f'app missing {token}')
@@ -111,9 +115,10 @@ jobs:
           if 'duplicateStairRemoved:true' not in ext: failures.append('duplicate stair cleanup marker missing')
           if 'directMobileMaterialFix:true' not in ext: failures.append('mobile tile/ceramic fix marker missing')
           if 'data-agcb-build-value="stairs"' in ext: failures.append('duplicate stairs UI still exposed')
-          if 'pointer-events:none!important' not in css: failures.append('crosshair still intercepts touch')
+          if 'pointer-events:none!important' not in css: failures.append('first-person crosshair base safety missing')
+          if 'thirdFarmDraggable:true' not in aim: failures.append('third/farm draggable reticle marker missing')
           for token in ['#add{right:104px;bottom:4px}','#del{right:78px;bottom:88px}','#rot{right:0;top:40px}','#jump{right:0;bottom:0;width:96px;height:96px']:
             if token not in css: failures.append(f'HUD layout missing {token}')
           if failures:
             print('\n'.join(failures)); sys.exit(1)
-          print('Mobile HUD and tool invariants passed.')
+          print('Mobile HUD, reticle and tool invariants passed.')
