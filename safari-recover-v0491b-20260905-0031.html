@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>AG Cute Blocks 修復更新</title><style>html,body{margin:0;width:100%;height:100%;background:#9ed9ff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#36515d}body{display:grid;place-items:center;text-align:center}.card{background:#fffde8ee;border-radius:22px;padding:24px 28px;box-shadow:0 8px 30px #0002;font-weight:800;max-width:78vw}.small{font-size:13px;margin-top:8px;opacity:.78;line-height:1.5}</style></head><body><div class="card">AG Cute Blocks 更新中…<div class="small" id="state">正在重建 V0.4.91 離線核心…</div></div><script>
+(async()=>{
+ const state=document.getElementById('state');
+ const TARGET='ag-cute-blocks-v045-runtime152';
+ const stamp=Date.now();
+ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ try{
+   if(!('serviceWorker' in navigator)||!('caches' in window))throw new Error('unsupported');
+   const regs=await navigator.serviceWorker.getRegistrations();
+   for(const reg of regs.filter(r=>r.scope.includes('/-ag-cute-blocks/'))){try{await reg.unregister()}catch{}}
+   const keys=await caches.keys();
+   await Promise.all(keys.filter(k=>k.startsWith('ag-cute-blocks-v045-runtime')).map(k=>caches.delete(k)));
+   state.textContent='舊版快取已移除，正在直接取得 V0.4.91…';
+   const response=await fetch('./index.html?ag-recover='+stamp,{cache:'no-store'});
+   if(!response.ok)throw new Error('index network '+response.status);
+   const text=await response.clone().text();
+   if(!text.includes('V0.4.91'))throw new Error('wrong index version');
+   const cache=await caches.open(TARGET);
+   await cache.put('./index.html',response.clone());
+   state.textContent='V0.4.91 已取得，正在重建離線核心…';
+   const reg=await navigator.serviceWorker.register('./sw.js?ag-recover=0491b-'+stamp,{scope:'./',updateViaCache:'none'});
+   try{await reg.update()}catch{}
+   for(let i=0;i<40;i++){
+     const hit=await (await caches.open(TARGET)).match('./index.html',{ignoreSearch:true});
+     if(hit){const t=await hit.clone().text();if(t.includes('V0.4.91'))break}
+     await sleep(250);
+   }
+   state.textContent='V0.4.91 已完成，正在開啟遊戲…';
+   await sleep(450);
+   location.replace('./index.html?ag-v=0491b-'+stamp);
+ }catch(e){
+   console.error('[AG recovery]',e);
+   state.textContent='更新遇到阻礙，正在改用直接啟動…';
+   await sleep(700);
+   location.replace('./index.html?ag-direct=0491b-'+Date.now());
+ }
+})();
+</script></body></html>
