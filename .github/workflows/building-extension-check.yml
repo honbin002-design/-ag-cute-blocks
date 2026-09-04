@@ -104,8 +104,8 @@ jobs:
         run: |
           test "$(grep -o "const VERSION='V0.4.69'" app-v043.js)" = "const VERSION='V0.4.69'"
           grep -q "ag-cute-blocks-v045-runtime131" sw.js
-          grep -q "bootstrap-v045.js?v=0.4.68" index.html
-          grep -q "mobile-controls.css?v=0.4.68" mobile-controls-runtime.js
+          grep -q "bootstrap-v045.js?v=0.4.69" index.html
+          grep -q "mobile-controls.css?v=0.4.69" mobile-controls-runtime.js
           grep -q "featureSet:'gender-age-silhouette-face-hair-v9'" ag-original-character-runtime.js
           grep -q "detailSet:'four-hero-proportion-garment-v8'" ag-original-character-runtime.js
           ! grep -Eq 'SphereGeometry|CylinderGeometry|CapsuleGeometry' ag-original-character-runtime.js
