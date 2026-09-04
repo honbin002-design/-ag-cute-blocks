@@ -1,7 +1,7 @@
 import {advanceDailySnapshot} from './daily-progression-system.js';
 
 const WORLD_KEY='ag_cute_blocks_world_v04';
-const SETTINGS_KEY='ag_cute_blocks_settings_v03';
+const SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2';
 const CARE_KEY='ag_cute_blocks_crop_care_v1';
 const $=s=>document.querySelector(s);
 const read=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??fallback}catch{return fallback}};
@@ -39,3 +39,5 @@ btn.onclick=()=>{
     setTimeout(()=>location.reload(),650);
   },260);
 };
+
+globalThis.__AGCB_SLEEP_ROUTINE={version:'V0.4.85',settingsKey:SETTINGS_KEY,sameActiveSettingsKey:true};
