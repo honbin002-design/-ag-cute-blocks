@@ -1,5 +1,5 @@
 // AG Cute Blocks — activate and classify the dedicated mobile-game HUD v3.
-const href='./mobile-controls.css?v=0.4.71';
+const href='./mobile-controls.css?v=0.4.72';
 if(!document.querySelector('link[data-agcb-mobile-controls="1"]')){
   const link=document.createElement('link');
   link.rel='stylesheet';link.href=href;link.dataset.agcbMobileControls='1';document.head.appendChild(link);

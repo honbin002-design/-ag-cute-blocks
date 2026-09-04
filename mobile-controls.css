@@ -1,5 +1,5 @@
-/* AG Cute Blocks — ergonomic mobile game HUD v6 */
-/* V0.4.71: AoV-style lower-right fan with fine spacing; jump remains fixed. */
+/* AG Cute Blocks — ergonomic mobile game HUD v7 */
+/* V0.4.72: AoV-style lower-right fan with fine spacing; jump remains fixed. */
 .actions{
   right:max(20px,calc(env(safe-area-inset-right) + 14px));
   bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px));
@@ -29,7 +29,7 @@
 /* Three outer buttons fan toward the main button; the extra top button shares its right edge. */
 #add{right:104px;bottom:4px}
 #del{right:78px;bottom:88px}
-#rot{right:0;top:8px}
+#rot{right:0;top:40px}
 #jump{right:0;bottom:0;width:96px;height:96px;font-size:35px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
 #add,#del,#rot,#jump{transform:none}
 .btn:active{filter:brightness(.94)}
@@ -38,7 +38,7 @@
 /* Context interaction sits above and left of the action cluster. */
 .lifeInteract{
   right:max(20px,calc(env(safe-area-inset-right) + 14px))!important;
-  bottom:max(246px,calc(env(safe-area-inset-bottom) + 236px))!important;
+  bottom:max(214px,calc(env(safe-area-inset-bottom) + 204px))!important;
   width:72px!important;
   height:72px!important;
   border:3px solid #ffffffde!important;
@@ -98,10 +98,10 @@
   .btn{width:56px;height:56px;font-size:27px}
   #add{right:94px;bottom:4px}
   #del{right:70px;bottom:82px}
-  #rot{right:0;top:8px}
+  #rot{right:0;top:32px}
   #jump{right:0;bottom:0;width:80px;height:80px;font-size:32px}
   #add,#del,#rot,#jump{transform:none}
-  .lifeInteract{right:max(14px,calc(env(safe-area-inset-right) + 10px))!important;bottom:max(212px,calc(env(safe-area-inset-bottom) + 202px))!important;width:64px!important;height:64px!important;font-size:25px!important}
+  .lifeInteract{right:max(14px,calc(env(safe-area-inset-right) + 10px))!important;bottom:max(188px,calc(env(safe-area-inset-bottom) + 178px))!important;width:64px!important;height:64px!important;font-size:25px!important}
   .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
   .joy{width:128px;height:128px;bottom:max(130px,calc(env(safe-area-inset-bottom) + 120px))}
   .knob{left:39px;top:39px;width:50px;height:50px}
