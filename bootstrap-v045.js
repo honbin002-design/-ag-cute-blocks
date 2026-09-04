@@ -17,12 +17,13 @@ import './procedural-material-runtime.js';
 import './building-extension-runtime.js?v=0.4.84';
 import './character-polish-runtime.js';
 import './character-asset-runtime.js?v=0.4.84';
-import './character-motion-fix-runtime.js?v=0.4.84';
+import './character-motion-fix-runtime.js?v=0.4.85';
 import './pet-grounding-runtime.js';
 
 // Mobile control presentation attaches after the HUD exists, before input handlers.
 import './mobile-controls-runtime.js?v=0.4.84';
 import './aim-reticle-runtime.js?v=0.4.84';
+import './movement-mode-persistence-runtime.js?v=0.4.85';
 
 // Input and life extensions attach after the main HUD/world handlers exist.
 import './mobile-input-runtime.js?v=0.4.84';
@@ -30,8 +31,8 @@ import './animal-life-runtime.js';
 import './crop-care-runtime.js';
 import './orchard-runtime.js';
 import './furniture-life-details.js';
-import './sleep-routine.js?v=0.4.84';
+import './sleep-routine.js?v=0.4.85';
 import './wildlife-live-runtime.js';
 import './weather-visual-runtime.js';
 
-globalThis.__AGCB_BOOTSTRAP={version:'0.4.84',loaded:true};
+globalThis.__AGCB_BOOTSTRAP={version:'0.4.85',loaded:true};
