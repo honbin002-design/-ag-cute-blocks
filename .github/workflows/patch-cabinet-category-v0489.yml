@@ -1,0 +1,47 @@
+name: Patch cabinet category V0.4.89
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-cabinet-category-v0489.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply guarded cabinet category patch
+        shell: python
+        run: |
+          import pathlib,sys
+          path=pathlib.Path('app-v043.js')
+          src=path.read_text(encoding='utf-8')
+          old="'家具':[['chair','🪑','椅子'],['table','🍽️','桌子'],['sofa','🛋️','沙發'],['bed','🛏️','床'],['lamp','💡','燈']],'家電':[['fridge','🧊','冰箱'],['stove','🍳','爐具'],['washer','🧺','洗衣機'],['tv','📺','電視'],['cabinet','🗄️','櫃子']]"
+          new="'家具':[['chair','🪑','椅子'],['table','🍽️','桌子'],['sofa','🛋️','沙發'],['bed','🛏️','床'],['lamp','💡','燈'],['cabinet','🗄️','櫃子']],'家電':[['fridge','🧊','冰箱'],['stove','🍳','爐具'],['washer','🧺','洗衣機'],['tv','📺','電視']]"
+          count=src.count(old)
+          if count!=1: sys.exit(f'guard failed: expected exactly 1 catalog target, found {count}')
+          path.write_text(src.replace(old,new,1),encoding='utf-8')
+          print('cabinet moved from appliance to furniture exactly once')
+      - name: Verify patched source
+        shell: bash
+        run: |
+          node --input-type=module --check < app-v043.js
+          python - <<'PY'
+          import pathlib,sys
+          s=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          if "['lamp','💡','燈'],['cabinet','🗄️','櫃子']],'家電'" not in s: sys.exit('cabinet furniture marker missing')
+          if "['tv','📺','電視'],['cabinet','🗄️','櫃子']" in s: sys.exit('cabinet still exposed as appliance')
+          print('catalog category verification passed')
+          PY
+      - name: Commit patched catalog
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v043.js
+          git commit -m 'fix: classify cabinet under furniture'
+          git push
