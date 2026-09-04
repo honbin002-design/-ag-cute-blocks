@@ -1,5 +1,6 @@
 name: Import Special Character 5
 on:
+  workflow_dispatch:
   push:
     branches: [dev-v0.1]
     paths:
@@ -61,7 +62,6 @@ jobs:
 
           p=Path('index.html'); s=p.read_text()
           s=s.replace('content="V0.4.93"','content="V0.4.94"')
-          # Insert a selectable role without disturbing existing options.
           if 'value="special5"' not in s:
               m=re.search(r'(<select[^>]*id="avatar"[^>]*>)(.*?)(</select>)',s,re.S)
               if not m: raise SystemExit('avatar select missing')
