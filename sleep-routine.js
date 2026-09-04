@@ -9,9 +9,9 @@ const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 
 const style=document.createElement('style');
 style.textContent=`
-.sleepMorning{position:fixed;z-index:88;left:50%;top:58%;transform:translate(-50%,-50%);border:0;border-radius:18px;padding:12px 17px;background:#304766e8;color:white;font-size:14px;font-weight:900;box-shadow:0 5px 22px #0004;display:none;pointer-events:auto}.sleepMorning.show{display:block}.sleepFade{position:fixed;z-index:180;inset:0;background:#263858;opacity:0;pointer-events:none;transition:opacity .42s ease;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:900}.sleepFade.on{opacity:1}.sleepFade small{display:block;font-size:12px;text-align:center;margin-top:8px;opacity:.75}`;
+ .sleepMorning{position:fixed;z-index:88;left:auto;right:max(18px,calc(env(safe-area-inset-right) + 12px));top:50%;transform:translateY(-50%);border:0;border-radius:18px;padding:12px 17px;background:#304766e8;color:white;font-size:14px;font-weight:900;box-shadow:0 5px 22px #0004;display:none;pointer-events:auto}.sleepMorning.show{display:block}.sleepFade{position:fixed;z-index:180;inset:0;background:#263858;opacity:0;pointer-events:none;transition:opacity .42s ease;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:900}.sleepFade.on{opacity:1}.sleepFade small{display:block;font-size:12px;text-align:center;margin-top:8px;opacity:.75}`;
 document.head.appendChild(style);
-const btn=document.createElement('button');btn.className='sleepMorning';btn.textContent='😴 睡到早上';document.body.appendChild(btn);
+const btn=document.createElement('button');btn.className='sleepMorning';btn.textContent='😴 睡到早上';btn.setAttribute('aria-label','睡到早上');document.body.appendChild(btn);
 const fade=document.createElement('div');fade.className='sleepFade';fade.innerHTML='<div>🌙 晚安…<small>世界會安全存檔，明早再繼續</small></div>';document.body.appendChild(fade);
 
 function isLying(){return ($('#status')?.textContent||'').includes('躺下休息')||($('#lifeInteract')?.textContent||'').includes('起身')&&($('#status')?.textContent||'').includes('躺下')}

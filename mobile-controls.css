@@ -1,6 +1,6 @@
 .cross{pointer-events:auto!important;touch-action:none!important;z-index:70;color:#ffffffb8!important;opacity:.58;text-shadow:0 1px 4px #314b55aa!important}
 /* AG Cute Blocks — ergonomic mobile game HUD v7 */
-/* V0.4.75: AoV-style lower-right fan with fine spacing; jump remains fixed. */
+/* V0.4.76: AoV-style lower-right fan with fine spacing; jump remains fixed. */
 .actions{
   right:max(20px,calc(env(safe-area-inset-right) + 14px));
   bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px));
