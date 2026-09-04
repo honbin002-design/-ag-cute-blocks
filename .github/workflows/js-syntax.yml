@@ -58,7 +58,6 @@ jobs:
         run: |
           import pathlib,re,sys
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
-          index=pathlib.Path('index.html').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
           motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8')
           mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
@@ -66,22 +65,21 @@ jobs:
           aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
           persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8')
           sleep=pathlib.Path('sleep-routine.js').read_text(encoding='utf-8')
+          resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
           m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
           if not m: sys.exit('bootstrap version missing')
           v=m.group(1)
           expected=f'V{v}'
           failures=[]
           if expected not in motion: failures.append('visible runtime version does not match bootstrap')
-          if f'<meta name="ag-runtime-version" content="{expected}">' not in index: failures.append('index meta version does not match bootstrap')
-          if f'<small>{expected}</small>' not in index: failures.append('index visible version does not match bootstrap')
-          if f'bootstrap-v045.js?v={v}' not in index: failures.append('index bootstrap query does not match bootstrap version')
           for target,query_version in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
             if query_version!=v: failures.append(f'bootstrap query mismatch: {target}?v={query_version} != {v}')
           css_match=re.search(r"mobile-controls\.css\?v=([0-9.]+)",mobile)
           if not css_match or css_match.group(1)!=v: failures.append('mobile controls CSS query does not match bootstrap version')
-          for name in ['app-v043.js','building-extension-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
+          for name in ['app-v043.js','building-extension-runtime.js','asset-fetch-resilience-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
             if name not in boot: failures.append(f'bootstrap missing {name}')
-          for name in ['mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','character-motion-fix-runtime.js','sleep-routine.js']:
+          if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime.js'): failures.append('asset resilience must load before character asset runtime')
+          for name in ['asset-fetch-resilience-runtime.js','mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','character-motion-fix-runtime.js','sleep-routine.js']:
             if name not in sw: failures.append(f'service worker missing {name}')
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
             if token not in viewport: failures.append(f'viewport lock missing {token}')
@@ -94,9 +92,11 @@ jobs:
           if 'ignoreSearch:true' not in sw: failures.append('service worker does not match local versioned URLs to precache')
           if "event.request.mode==='navigate'" not in sw: failures.append('service worker navigation-only offline fallback missing')
           if 'postMixerArmSwing:true' not in motion or 'runClipRouting:true' not in motion: failures.append('walk/run correction markers missing')
+          for token in ["/assets/characters/","cache:'reload'","characterOnly:true"]:
+            if token not in resilience: failures.append(f'asset resilience missing {token}')
           if failures:
             print('\n'.join(failures)); sys.exit(1)
-          print(f'Exact runtime chain, settings and offline checks passed for {expected}.')
+          print(f'Runtime chain, settings, resilience and offline checks passed for {expected}. Index release alignment is validated by Release chain sync.')
 
       - name: Verify centralized daily progression rules
         shell: bash
