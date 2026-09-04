@@ -1,0 +1,45 @@
+name: Release chain sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bootstrap-v045.js'
+      - 'index.html'
+      - '.github/workflows/release-chain-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-release-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync index to bootstrap version
+        shell: python
+        run: |
+          import pathlib,re,sys
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          index_path=pathlib.Path('index.html')
+          index=index_path.read_text(encoding='utf-8')
+          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
+          if not m: sys.exit('bootstrap version missing')
+          v=m.group(1); vv='V'+v
+          index=re.sub(r'(<meta name="ag-runtime-version" content=")V0\.4\.\d+("[^>]*>)',rf'\g<1>{vv}\2',index,count=1)
+          index=re.sub(r'(<div class="pill title">🌈 AG Cute Blocks <small>)V0\.4\.\d+(</small>)',rf'\g<1>{vv}\2',index,count=1)
+          index=re.sub(r'bootstrap-v045\.js\?v=0\.4\.\d+',f'bootstrap-v045.js?v={v}',index)
+          index_path.write_text(index,encoding='utf-8')
+          print(f'index synchronized to {vv}')
+      - name: Commit synchronized index
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo 'index already synchronized'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'chore: sync index release chain to bootstrap'
+          git push
