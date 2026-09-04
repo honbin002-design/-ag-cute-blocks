@@ -72,7 +72,13 @@ jobs:
           expected=f'V{v}'
           failures=[]
           if expected not in motion: failures.append('visible runtime version does not match bootstrap')
-          if 'bootstrap-v045.js' not in index: failures.append('index is missing bootstrap entrypoint')
+          if f'<meta name="ag-runtime-version" content="{expected}">' not in index: failures.append('index meta version does not match bootstrap')
+          if f'<small>{expected}</small>' not in index: failures.append('index visible version does not match bootstrap')
+          if f'bootstrap-v045.js?v={v}' not in index: failures.append('index bootstrap query does not match bootstrap version')
+          for target,query_version in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
+            if query_version!=v: failures.append(f'bootstrap query mismatch: {target}?v={query_version} != {v}')
+          css_match=re.search(r"mobile-controls\.css\?v=([0-9.]+)",mobile)
+          if not css_match or css_match.group(1)!=v: failures.append('mobile controls CSS query does not match bootstrap version')
           for name in ['app-v043.js','building-extension-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
             if name not in boot: failures.append(f'bootstrap missing {name}')
           for name in ['mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','character-motion-fix-runtime.js','sleep-routine.js']:
@@ -90,7 +96,7 @@ jobs:
           if 'postMixerArmSwing:true' not in motion or 'runClipRouting:true' not in motion: failures.append('walk/run correction markers missing')
           if failures:
             print('\n'.join(failures)); sys.exit(1)
-          print(f'Runtime chain and settings/offline checks passed for {expected}.')
+          print(f'Exact runtime chain, settings and offline checks passed for {expected}.')
 
       - name: Verify centralized daily progression rules
         shell: bash
