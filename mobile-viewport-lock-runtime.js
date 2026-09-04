@@ -1,6 +1,6 @@
-// AG Cute Blocks V0.4.83 — iPhone viewport/gesture lock.
+// AG Cute Blocks V0.4.84 — iPhone viewport/gesture lock.
 // Keeps the game canvas + HUD at a fixed visual scale while preserving real two-thumb gameplay.
-const VERSION='V0.4.83';
+const VERSION='V0.4.84';
 
 function normalizeViewport(){
   const meta=document.querySelector('meta[name="viewport"]');
@@ -19,8 +19,6 @@ function touchIsGameplayControl(touch){
   return !!(target?.closest?.(CONTROL_SELECTOR));
 }
 
-// Do not blanket-block every two-finger move: joystick + jump/action must keep working.
-// Only cancel native two-finger movement when at least one touch is outside gameplay controls.
 document.addEventListener('touchmove',e=>{
   if(!e.touches||e.touches.length<2)return;
   const touches=[...e.touches];
@@ -28,9 +26,6 @@ document.addEventListener('touchmove',e=>{
   prevent(e);
 },{passive:false,capture:true});
 
-// The legacy core still tries to register an anonymous touchmove listener that
-// cancels every 2-finger move. Suppress only that exact legacy pattern while
-// app-v043.js initializes, then restore the native addEventListener method.
 const nativeDocumentAdd=document.addEventListener.bind(document);
 const inheritedDocumentAdd=document.addEventListener;
 let legacyBlanketTouchBlockerSuppressed=false;
@@ -46,10 +41,7 @@ document.addEventListener=function(type,listener,options){
 };
 setTimeout(()=>{document.addEventListener=inheritedDocumentAdd},0);
 
-// Double taps are gameplay taps, never browser zoom gestures.
 nativeDocumentAdd('dblclick',prevent,{passive:false,capture:true});
-
-// Reinforce fixed-layout behavior after orientation / standalone transitions.
 const root=document.documentElement;
 root.style.webkitTextSizeAdjust='100%';
 root.style.textSizeAdjust='100%';
