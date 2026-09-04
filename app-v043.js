@@ -6,7 +6,7 @@ import {createEconomyState,addInventory,shipAllSellable,settleShipping,buyShopIt
 import {getFurnitureInteraction,furnitureAnchorWorld,furnitureExitWorld,furnitureYaw,isFurnitureInteractable} from './furniture-interaction.js';
 import {advanceDailyRecord} from './daily-progression-system.js';
 
-const VERSION='V0.4.62' /* const VERSION='V0.4.42' legacy extension invariant */,WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72,FARM_DISTANCE_MIN=3.8,FARM_DISTANCE_DEFAULT=6.8,THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;
+const VERSION='V0.4.63' /* const VERSION='V0.4.42' legacy extension invariant */,WORLD_SIZE=180,HALF=WORLD_SIZE/2,FARM_YAW=-.72,FARM_DISTANCE_MIN=3.8,FARM_DISTANCE_DEFAULT=6.8,THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;
 const versionBadge=document.querySelector('.title small');if(versionBadge)versionBadge.textContent=VERSION;const versionNote=document.querySelector('.note');if(versionNote)versionNote.textContent=versionNote.textContent.replace(/^V0\.4\.\d+：/,`${VERSION}：`);
 const SAVE_KEY='ag_cute_blocks_world_v04',OLD_SAVE_KEY='ag_cute_blocks_world_v03',SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2',CARE_KEY='ag_cute_blocks_crop_care_v1';
 const $=s=>document.querySelector(s);

@@ -3,15 +3,15 @@
 .actions{
   right:max(20px,calc(env(safe-area-inset-right) + 14px));
   bottom:max(24px,calc(env(safe-area-inset-bottom) + 18px));
-  width:230px;
-  height:220px;
+  width:172px;
+  height:214px;
   display:block;
   pointer-events:none;
 }
 .btn{
   position:absolute;
-  width:70px;
-  height:70px;
+  width:64px;
+  height:64px;
   border-radius:50%;
   font-size:31px;
   font-weight:900;
@@ -22,9 +22,9 @@
   transition:filter .08s ease,box-shadow .08s ease;
 }
 /* Main action at bottom-right; the other three form a readable fan around it. */
-#add{left:18px;top:92px}
-#del{left:88px;top:18px}
-#rot{right:18px;top:22px}
+#add{left:0;bottom:10px}
+#del{left:78px;bottom:96px}
+#rot{left:0;top:0}
 #jump{right:0;bottom:0;width:96px;height:96px;font-size:35px;background:#fff4baf5;box-shadow:0 7px 20px #0004,inset 0 1px 0 #fff}
 .btn:active{filter:brightness(.94)}
 #add:active,#del:active,#jump:active,#rot:active{transform:scale(.90)}
@@ -61,7 +61,7 @@
 /* Enlarged movement zone; app logic derives its active radius from this geometry. */
 .joy{
   left:max(24px,calc(env(safe-area-inset-left) + 14px));
-  bottom:max(104px,calc(env(safe-area-inset-bottom) + 94px));
+  bottom:max(160px,calc(env(safe-area-inset-bottom) + 150px));
   width:148px;
   height:148px;
   border-width:4px;
@@ -86,17 +86,17 @@
   .actions{
     right:max(14px,calc(env(safe-area-inset-right) + 10px));
     bottom:max(20px,calc(env(safe-area-inset-bottom) + 14px));
-    width:194px;
+    width:154px;
     height:184px;
   }
-  .btn{width:58px;height:58px;font-size:27px}
-  #add{left:4px;top:76px}
-  #del{left:62px;top:8px}
-  #rot{right:4px;top:12px}
+  .btn{width:56px;height:56px;font-size:27px}
+  #add{left:0;bottom:10px}
+  #del{left:70px;bottom:80px}
+  #rot{left:0;top:0}
   #jump{right:0;bottom:0;width:80px;height:80px;font-size:32px}
   .lifeInteract{right:max(188px,calc(env(safe-area-inset-right) + 180px))!important;bottom:max(132px,calc(env(safe-area-inset-bottom) + 122px))!important;width:74px!important;height:74px!important;font-size:28px!important}
   .waterCropBtn{right:max(182px,calc(env(safe-area-inset-right) + 174px))!important;bottom:max(230px,calc(env(safe-area-inset-bottom) + 218px))!important;min-height:46px!important;padding:9px 12px!important;font-size:12px!important}
-  .joy{width:128px;height:128px;bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px))}
+  .joy{width:128px;height:128px;bottom:max(130px,calc(env(safe-area-inset-bottom) + 120px))}
   .knob{left:39px;top:39px;width:50px;height:50px}
   .catalog{left:18px!important;right:max(212px,calc(env(safe-area-inset-right) + 202px))!important;transform:none!important;width:auto!important;min-width:240px}
   .cat{padding:7px 10px!important;font-size:13px!important}
