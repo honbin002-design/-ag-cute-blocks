@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-// V0.4.91: external-rig locomotion correction retained from V0.4.78.
-const VERSION='V0.4.91';
+// V0.4.92: atomic/latest-request-wins character switching plus locomotion correction retained from V0.4.78.
+const VERSION='V0.4.92';
 const originalUpdate=THREE.AnimationMixer.prototype.update;
 if(!THREE.AnimationMixer.prototype.__agcbMotionFixV478){
   THREE.AnimationMixer.prototype.update=function(delta){
