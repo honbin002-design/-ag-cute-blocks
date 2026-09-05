@@ -11,12 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve current core app
+        shell: python
+        run: |
+          import pathlib,re,sys
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=',index)
+          if not m: sys.exit('current bootstrap missing')
+          boot=pathlib.Path(m.group(1)).read_text(encoding='utf-8')
+          a=re.search(r"import ['\"]\./(app-v\d+\.js)",boot)
+          if not a: sys.exit('current app missing')
+          wrapper=a.group(1);src=pathlib.Path(wrapper).read_text(encoding='utf-8');core=wrapper
+          if '__AGCB_RELEASE_OVERLAY' in src:
+            b=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",src)
+            if not b: sys.exit('additive wrapper base missing')
+            core=b.group(1)
+          pathlib.Path('/tmp/agcb-core').write_text(core,encoding='utf-8')
+          print(f'catalog core: {core}')
       - name: Verify catalog classifications and supported models
         shell: python
         run: |
           import pathlib,sys
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
-          failures=[]
+          core=pathlib.Path('/tmp/agcb-core').read_text().strip();app=pathlib.Path(core).read_text(encoding='utf-8');failures=[]
           furniture="'家具':[['chair','🪑','椅子'],['table','🍽️','桌子'],['sofa','🛋️','沙發'],['bed','🛏️','床'],['lamp','💡','燈'],['cabinet','🗄️','櫃子']]"
           appliances="'家電':[['fridge','🧊','冰箱'],['stove','🍳','爐具'],['washer','🧺','洗衣機'],['tv','📺','電視']]"
           if furniture not in app: failures.append('cabinet must be classified under furniture')
@@ -26,6 +42,7 @@ jobs:
             if token not in app: failures.append(f'catalog-backed model implementation missing: {token}')
           if "['roof','⌂','屋頂塊']" not in app or "['roof','🏠','屋瓦']" not in app: failures.append('roof shape/material dual semantics missing')
           if "const shape=category==='形狀'||(category==='建築'&&selected==='stair')?selected:'cube',mat=category==='建材'?selected:selectedMat" not in app: failures.append('shape/material placement semantics changed unexpectedly')
+          if "['fishingRod','🎣','釣魚竿']" not in app: failures.append('fishing rod must remain in farm tools')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Catalog classification, model coverage and roof dual-semantics checks passed.')
+          print(f'Catalog classification, model coverage, roof semantics and fishing tool checks passed for {core}.')
