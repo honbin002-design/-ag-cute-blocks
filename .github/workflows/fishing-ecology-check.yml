@@ -21,7 +21,7 @@ jobs:
           node --input-type=module --check < fishing-ecology-system.js
           node --input-type=module --check < fishing-ecology-runtime-v0505.js
           node --input-type=module --check < fishing-forecast-runtime-v0506.js
-          node --input-type=module --check < fishing-journal-runtime-v0509.js
+          node --input-type=module --check < fishing-journal-runtime-v0510.js
       - name: Verify ecology math and legacy bridge
         shell: bash
         run: |
@@ -65,48 +65,43 @@ jobs:
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('Fish forecast remains contextual, right-side, non-blocking and hides numeric probabilities.')
-      - name: Verify V0.5.09 journal guide and isolation
+      - name: Verify V0.5.10 current-condition match and isolation
         shell: python
         run: |
           import pathlib,re,sys
-          journal=pathlib.Path('fishing-journal-runtime-v0509.js').read_text(encoding='utf-8')
+          journal=pathlib.Path('fishing-journal-runtime-v0510.js').read_text(encoding='utf-8')
           failures=[]
           required=[
             "import {getFishingWeights} from './fishing-ecology-system.js'",
-            "const KEY='ag_cute_blocks_fishing_journal_v1'",
-            "localStorage.getItem(KEY)","localStorage.setItem(KEY",
-            "text.includes('釣到')","text.includes(name)","const first=journal[id]===0","journal[id]++",
-            "if(first)showFirstDiscovery(name,icon)","首次發現！","pointer-events:none",
-            "selectedFishingRod()","btn.classList.toggle('on',selectedFishingRod())",
-            "function guideFor(id)","getFishingWeights({season:v,weather:'sunny',minute:720})[id]",
-            "getFishingWeights({season:'spring',weather:v,minute:720})[id]",
-            "getFishingWeights({season:'spring',weather:'sunny',minute})[id]",
-            "較容易：${guideFor(id)}","捕獲後解鎖出現條件提示","ecologyGuide:true"
+            "const KEY='ag_cute_blocks_fishing_journal_v1'","function guideFor(id)","function currentContext()","function conditionLabel(id)",
+            "const season=$('#season')?.value||'spring'","weather=$('#weather')?.value||'sunny'","$('#clock')?.textContent||'08:00'",
+            "const ctx=currentContext(),weights=getFishingWeights(ctx),values=Object.values(weights),top=Math.max(...values)",
+            "weights[id]>=top-1e-9?'🔥 現在很適合':'・目前普通'",
+            "較容易：${guideFor(id)}","${conditionLabel(id)}","currentConditionMatch:true",
+            "text.includes('釣到')","const first=journal[id]===0","journal[id]++","if(first)showFirstDiscovery(name,icon)",
+            "selectedFishingRod()","btn.classList.toggle('on',selectedFishingRod())"
           ]
           for token in required:
-            if token not in journal: failures.append(f'journal/guide behavior missing: {token}')
-          forbidden=['addInventory(','economy.','settleShipping(','Math.random(']
-          for token in forbidden:
-            if token in journal: failures.append(f'journal must not mutate fishing/economy state: {token}')
-          if re.search(r'較容易：[^`\n]*\d+(?:\.\d+)?%',journal):
-            failures.append('journal guide must not expose numeric probabilities')
-          if journal.count("if(first)showFirstDiscovery(name,icon)") != 1:
-            failures.append('first-discovery notification must have exactly one first-catch guarded call')
+            if token not in journal: failures.append(f'V0.5.10 journal behavior missing: {token}')
+          for token in ['addInventory(','economy.','settleShipping(','Math.random(']:
+            if token in journal: failures.append(f'journal must remain read-only toward fishing/economy: {token}')
+          if re.search(r'(較容易|現在很適合|目前普通)[^`\n]*\d+(?:\.\d+)?%',journal):
+            failures.append('journal must not expose numeric probabilities')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('V0.5.09 guide derives from the single ecology source, remains discovery-gated and economy-isolated.')
-      - name: Verify formal V0.5.09 wiring
+          print('V0.5.10 current-condition hints use the single ecology source and remain economy-isolated.')
+      - name: Verify formal V0.5.10 wiring
         shell: python
         run: |
           import pathlib,sys
-          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0509.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0509.js').read_text(encoding='utf-8');failures=[]
-          if 'bootstrap-v0509.js?v=0.5.09' not in index: failures.append('index is not on V0.5.09 bootstrap')
-          if '<meta name="ag-runtime-version" content="V0.5.09">' not in index: failures.append('index meta is not V0.5.09')
-          if 'AG Cute Blocks <small>V0.5.09</small>' not in index: failures.append('visible version is not V0.5.09')
-          for token in ['fishing-ecology-runtime-v0505.js?v=0.5.09','fishing-forecast-runtime-v0506.js?v=0.5.09','fishing-journal-runtime-v0509.js?v=0.5.09']:
+          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0510.js').read_text(encoding='utf-8');failures=[]
+          if 'bootstrap-v0510.js?v=0.5.10' not in index: failures.append('index is not on V0.5.10 bootstrap')
+          if '<meta name="ag-runtime-version" content="V0.5.10">' not in index: failures.append('index meta is not V0.5.10')
+          if 'AG Cute Blocks <small>V0.5.10</small>' not in index: failures.append('visible version is not V0.5.10')
+          for token in ['fishing-ecology-runtime-v0505.js?v=0.5.10','fishing-forecast-runtime-v0506.js?v=0.5.10','fishing-journal-runtime-v0510.js?v=0.5.10']:
             if token not in boot: failures.append(f'bootstrap wiring missing: {token}')
           if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
-          if "const VERSION='V0.5.09'" not in wrapper: failures.append('wrapper version mismatch')
+          if "const VERSION='V0.5.10'" not in wrapper: failures.append('wrapper version mismatch')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Formal V0.5.09 ecology + forecast + journal guide wiring passed.')
+          print('Formal V0.5.10 ecology + forecast + journal current-condition wiring passed.')
