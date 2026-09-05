@@ -14,12 +14,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Parse fishing ecology modules
+      - name: Parse fishing modules
         shell: bash
         run: |
           set -euo pipefail
           node --input-type=module --check < fishing-ecology-system.js
           node --input-type=module --check < fishing-ecology-runtime-v0505.js
+          node --input-type=module --check < fishing-forecast-runtime-v0506.js
       - name: Verify ecology math and legacy bridge
         shell: bash
         run: |
@@ -51,14 +52,30 @@ jobs:
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('Fishing timeout discrimination safely ignores the preceding toast timer.')
-      - name: Verify formal V0.5.05 wiring
+      - name: Verify V0.5.06 forecast presentation safety
         shell: python
         run: |
           import pathlib,sys
-          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0505.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0505.js').read_text(encoding='utf-8');failures=[]
-          if 'bootstrap-v0505.js?v=0.5.05' not in index: failures.append('index is not on V0.5.05 bootstrap')
-          if 'fishing-ecology-runtime-v0505.js?v=0.5.05' not in boot: failures.append('ecology runtime not wired')
-          if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
+          forecast=pathlib.Path('fishing-forecast-runtime-v0506.js').read_text(encoding='utf-8')
+          failures=[]
+          for token in ["selectedFishingRod()","chip.classList.toggle('on',on)","position:fixed","right:max(","pointer-events:none","probabilitiesHidden:true","稀有魚較活躍","河魚較活躍","小魚較活躍"]:
+            if token not in forecast: failures.append(f'forecast presentation missing: {token}')
+          if '%' in forecast: failures.append('forecast UI must not expose numeric percentages')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Formal V0.5.05 ecology wiring passed.')
+          print('Fish forecast is contextual, right-side, non-blocking and hides numeric probabilities.')
+      - name: Verify formal V0.5.06 wiring
+        shell: python
+        run: |
+          import pathlib,sys
+          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0506.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0506.js').read_text(encoding='utf-8');failures=[]
+          if 'bootstrap-v0506.js?v=0.5.06' not in index: failures.append('index is not on V0.5.06 bootstrap')
+          if '<meta name="ag-runtime-version" content="V0.5.06">' not in index: failures.append('index meta is not V0.5.06')
+          if 'AG Cute Blocks <small>V0.5.06</small>' not in index: failures.append('visible version is not V0.5.06')
+          if 'fishing-ecology-runtime-v0505.js?v=0.5.06' not in boot: failures.append('ecology runtime not wired into V0.5.06')
+          if 'fishing-forecast-runtime-v0506.js?v=0.5.06' not in boot: failures.append('forecast runtime not wired into V0.5.06')
+          if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
+          if "const VERSION='V0.5.06'" not in wrapper: failures.append('wrapper version mismatch')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Formal V0.5.06 ecology + forecast wiring passed.')
