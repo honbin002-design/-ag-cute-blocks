@@ -21,6 +21,7 @@ jobs:
           node --input-type=module --check < fishing-ecology-system.js
           node --input-type=module --check < fishing-ecology-runtime-v0505.js
           node --input-type=module --check < fishing-forecast-runtime-v0506.js
+          node --input-type=module --check < fishing-journal-runtime-v0507.js
       - name: Verify ecology math and legacy bridge
         shell: bash
         run: |
@@ -52,7 +53,7 @@ jobs:
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('Fishing timeout discrimination safely ignores the preceding toast timer.')
-      - name: Verify V0.5.06 forecast presentation safety
+      - name: Verify forecast presentation safety
         shell: python
         run: |
           import pathlib,sys
@@ -63,19 +64,45 @@ jobs:
           if '%' in forecast: failures.append('forecast UI must not expose numeric percentages')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Fish forecast is contextual, right-side, non-blocking and hides numeric probabilities.')
-      - name: Verify formal V0.5.06 wiring
+          print('Fish forecast remains contextual, right-side, non-blocking and hides numeric probabilities.')
+      - name: Verify V0.5.07 journal persistence and isolation
         shell: python
         run: |
           import pathlib,sys
-          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0506.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0506.js').read_text(encoding='utf-8');failures=[]
-          if 'bootstrap-v0506.js?v=0.5.06' not in index: failures.append('index is not on V0.5.06 bootstrap')
-          if '<meta name="ag-runtime-version" content="V0.5.06">' not in index: failures.append('index meta is not V0.5.06')
-          if 'AG Cute Blocks <small>V0.5.06</small>' not in index: failures.append('visible version is not V0.5.06')
-          if 'fishing-ecology-runtime-v0505.js?v=0.5.06' not in boot: failures.append('ecology runtime not wired into V0.5.06')
-          if 'fishing-forecast-runtime-v0506.js?v=0.5.06' not in boot: failures.append('forecast runtime not wired into V0.5.06')
-          if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
-          if "const VERSION='V0.5.06'" not in wrapper: failures.append('wrapper version mismatch')
+          journal=pathlib.Path('fishing-journal-runtime-v0507.js').read_text(encoding='utf-8')
+          failures=[]
+          required=[
+            "const KEY='ag_cute_blocks_fishing_journal_v1'",
+            "localStorage.getItem(KEY)",
+            "localStorage.setItem(KEY",
+            "text.includes('釣到')",
+            "text.includes(name)",
+            "journal[id]++",
+            "selectedFishingRod()",
+            "btn.classList.toggle('on',selectedFishingRod())",
+            "observesCatchToast:true",
+            "persistent:true"
+          ]
+          for token in required:
+            if token not in journal: failures.append(f'journal behavior missing: {token}')
+          forbidden=['addInventory(','economy.','settleShipping(','Math.random(']
+          for token in forbidden:
+            if token in journal: failures.append(f'journal must not mutate fishing/economy state: {token}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Formal V0.5.06 ecology + forecast wiring passed.')
+          print('Fishing journal persists locally, records only catch toasts, and stays isolated from economy/random state.')
+      - name: Verify formal V0.5.07 wiring
+        shell: python
+        run: |
+          import pathlib,sys
+          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0507.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0507.js').read_text(encoding='utf-8');failures=[]
+          if 'bootstrap-v0507.js?v=0.5.07' not in index: failures.append('index is not on V0.5.07 bootstrap')
+          if '<meta name="ag-runtime-version" content="V0.5.07">' not in index: failures.append('index meta is not V0.5.07')
+          if 'AG Cute Blocks <small>V0.5.07</small>' not in index: failures.append('visible version is not V0.5.07')
+          for token in ['fishing-ecology-runtime-v0505.js?v=0.5.07','fishing-forecast-runtime-v0506.js?v=0.5.07','fishing-journal-runtime-v0507.js?v=0.5.07']:
+            if token not in boot: failures.append(f'bootstrap wiring missing: {token}')
+          if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
+          if "const VERSION='V0.5.07'" not in wrapper: failures.append('wrapper version mismatch')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Formal V0.5.07 ecology + forecast + journal wiring passed.')
