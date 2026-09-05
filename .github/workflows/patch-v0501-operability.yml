@@ -1,0 +1,123 @@
+name: Build V0.5.01 operability and compact world HUD
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-v0501-operability.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Patch runtime
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app-v0500.js')
+          s=p.read_text()
+          def rep(old,new,label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'missing patch target: {label}')
+              s=s.replace(old,new,1)
+
+          rep("const VERSION='V0.5.00'", "const VERSION='V0.5.01'", 'version')
+
+          settings_line="let season=settings.season||'spring',weather=settings.weather||'sunny',timeSpeed=Number(settings.timeSpeed||1),simMinutes=settings.simMinutes??480,worldDay=Number(settings.worldDay||1),economy=createEconomyState(settings.economy||{}),cameraTuningNeedsMigration=settings.cameraTuningRevision!==CAMERA_TUNING_REVISION;settings.cameraTuningRevision=CAMERA_TUNING_REVISION;let farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,cameraTuningNeedsMigration?FARM_DISTANCE_DEFAULT:Number(settings.farmDistance)||FARM_DISTANCE_DEFAULT)),farmPitch=Math.max(.42,Math.min(1.12,Number(settings.farmPitch)||.64)),farmYaw=Number.isFinite(Number(settings.farmYaw))?Number(settings.farmYaw):FARM_YAW;"
+          rep(settings_line,settings_line+"\nlet playerColor=settings.playerColor||'#ff6b8a';",'player color state')
+
+          rep("else if(t==='shippingBox'){box(g,1.55,1.05,1.05,0,.52,0,'wood');g.userData.shippingBox=true}",
+              "else if(t==='shippingBox'){box(g,1.55,1.05,1.05,0,.52,0,'wood');g.userData.shippingBox=true}\nelse if(t==='soilPlot'){box(g,1.82,.08,1.82,0,.04,0,'soil');g.userData.solid=false;g.userData.tilled=true}", 'soil plot')
+
+          player_line="let avatarCustomization=normalizeAvatarCustomization({...settings.avatarCustomization,role:settings.avatarRole||settings.avatarCustomization?.role||'standard'},settings.avatar||'girl');function createAvatar(style=avatarCustomization.gender,options=avatarCustomization){return createCuteChildAvatar(style,options)}let player=createAvatar(avatarCustomization.gender,avatarCustomization);player.userData.entityId='player-local';world.add(player);player.position.set(0,0,8);registerWorldEntity(player,'player');"
+          nav="""
+function installCompactNavigation(){
+ const top=document.querySelector('.top'),title=top?.querySelector('.title');if(!top||!title)return{};
+ const style=document.createElement('style');style.textContent=`#admin,.lifeBtn{display:none!important}.top .title:not(#menuBtn){display:none!important}#menuBtn{cursor:pointer}.compactMenu{position:fixed;z-index:120;left:max(8px,env(safe-area-inset-left));top:max(48px,calc(env(safe-area-inset-top) + 42px));display:none;width:176px;padding:8px;background:#fffaf0f2;border-radius:15px;box-shadow:0 6px 24px #0004;pointer-events:auto}.compactMenu.open{display:grid;gap:7px}.compactMenu button,.compactMenu label{border:0;border-radius:11px;background:#fff;padding:9px 10px;font-weight:850;color:#3d5556;text-align:left;font-size:12px}.compactMenu label{display:flex;align-items:center;justify-content:space-between;gap:8px}.compactMenu input{width:38px;height:28px;border:0;background:transparent}.worldMapBtn{margin-left:auto;font-size:18px!important;padding:7px 10px!important}.worldMapPanel{position:fixed;z-index:118;right:max(8px,env(safe-area-inset-right));top:max(49px,calc(env(safe-area-inset-top) + 43px));display:none;background:#fffaf0ee;border-radius:15px;padding:8px;box-shadow:0 6px 24px #0004;pointer-events:auto}.worldMapPanel.open{display:block}.worldMapPanel canvas{position:static;width:220px;height:150px;border-radius:10px;background:#dff1d4;touch-action:none}.worldMapLegend{font-size:10px;font-weight:800;color:#456;margin-top:4px}.adminCastle{grid-column:1/-1;background:#ffe6a5!important}@media(max-height:430px){.compactMenu{top:max(43px,calc(env(safe-area-inset-top) + 38px));width:164px}.worldMapPanel{top:max(43px,calc(env(safe-area-inset-top) + 38px))}.worldMapPanel canvas{width:190px;height:126px}}`;document.head.appendChild(style);
+ title.id='menuBtn';title.innerHTML=`☰ 功能 <small>${VERSION}</small>`;title.setAttribute('role','button');title.setAttribute('aria-label','功能列表');
+ const menu=document.createElement('div');menu.className='compactMenu';menu.innerHTML=`<button id="menuWorld">👥 世界 1/6</button><button id="menuLife">🎒 生活</button><button id="menuAdmin">⚙️ 管理者</button><label>📍 我的代表色 <input id="playerColor" type="color" value="${playerColor}"></label>`;document.body.appendChild(menu);
+ const mapBtn=document.createElement('button');mapBtn.id='worldMapBtn';mapBtn.className='pill worldMapBtn';mapBtn.textContent='🗺️';mapBtn.setAttribute('aria-label','世界地圖');top.appendChild(mapBtn);
+ const mapPanel=document.createElement('div');mapPanel.className='worldMapPanel';mapPanel.innerHTML='<canvas id="worldMapCanvas" width="440" height="300"></canvas><div class="worldMapLegend">📍 彩色點＝角色位置・1～6＝家園區</div>';document.body.appendChild(mapPanel);
+ title.onclick=()=>{menu.classList.toggle('open');mapPanel.classList.remove('open')};mapBtn.onclick=()=>{mapPanel.classList.toggle('open');menu.classList.remove('open')};
+ menu.querySelector('#menuWorld').onclick=()=>{toast('目前世界 1/6・你的代表色可在此更改');menu.classList.remove('open')};
+ menu.querySelector('#menuLife').onclick=()=>{renderLife();lifeUI.panel.classList.add('open');lifeUI.close.classList.add('open');menu.classList.remove('open')};
+ menu.querySelector('#menuAdmin').onclick=()=>{ui.panel.classList.add('open');ui.closeAdmin.classList.add('open');menu.classList.remove('open')};
+ menu.querySelector('#playerColor').oninput=e=>{playerColor=e.target.value;settings.playerColor=playerColor;saveSettings();drawWorldMap()};
+ const actions=document.querySelector('.adminActions');if(actions&&!document.querySelector('#generateCastle')){const b=document.createElement('button');b.id='generateCastle';b.className='adminCastle';b.textContent='🏰 一鍵生成豪華大城堡';actions.appendChild(b)}
+ return{menu,mapPanel,mapCanvas:mapPanel.querySelector('canvas')}
+}
+const compactUI=installCompactNavigation();
+let mapPaintAt=0;function drawWorldMap(){const c=compactUI.mapCanvas;if(!c)return;const ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#dff1d4';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#8fc6df';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(w*.25,0);ctx.lineTo(w*.36,h);ctx.stroke();ctx.beginPath();ctx.ellipse(w*.74,h*.73,w*.12,h*.08,0,0,Math.PI*2);ctx.stroke();const tx=x=>(x+HALF)/WORLD_SIZE*w,tz=z=>(z+HALF)/WORLD_SIZE*h;ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';for(let i=0;i<plotCenters.length;i++){const [x,z]=plotCenters[i];ctx.fillStyle='#ffffffb8';ctx.beginPath();ctx.arc(tx(x),tz(z),13,0,Math.PI*2);ctx.fill();ctx.fillStyle='#63756d';ctx.fillText(String(i+1),tx(x),tz(z))}const roles=Object.values(worldIndex.entities).filter(e=>e.partition==='players');for(const e of roles){ctx.fillStyle=e.id==='player-local'?playerColor:'#5b8def';ctx.beginPath();ctx.arc(tx(e.x),tz(e.z),11,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.stroke()}ctx.fillStyle=playerColor;ctx.beginPath();ctx.arc(tx(player.position.x),tz(player.position.z),12,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.stroke();}
+"""
+          rep(player_line,player_line+nav,'compact navigation/map')
+
+          old_catalog="const catalog={'形狀':[['cube','▣','正方體'],['rect','▬','長方體'],['sphere','●','圓形'],['cylinder','⬤','圓柱'],['triangle','▲','三角形'],['slope','◢','斜坡'],['roof','⌂','屋頂塊']],'建材':[['wood','🪵','木材'],['darkwood','🟫','深木'],['stone','🪨','石材'],['marble','◻️','大理石'],['brick','🧱','磚'],['concrete','⬜','混凝土'],['glass','🪟','玻璃'],['roof','🏠','屋瓦'],['pink','🌸','粉色']],'建築':[['door','🚪','門'],['window','🪟','窗'],['fence','🪵','圍欄'],['stair','🪜','樓梯']],'家具':[['chair','🪑','椅子'],['table','🍽️','桌子'],['sofa','🛋️','沙發'],['bed','🛏️','床'],['lamp','💡','燈'],['cabinet','🗄️','櫃子']],'家電':[['fridge','🧊','冰箱'],['stove','🍳','爐具'],['washer','🧺','洗衣機'],['tv','📺','電視']],'農作':[['carrot','🥕','紅蘿蔔'],['corn','🌽','玉米'],['pumpkin','🎃','南瓜'],['tomato','🍅','番茄'],['strawberry','🍓','草莓'],['cabbage','🥬','高麗菜'],['potato','🥔','馬鈴薯']],'果樹':[['appleTree','🍎','蘋果樹'],['orangeTree','🍊','橘子樹'],['tree','🌳','樹木']],'動物':[['petDog','🐶','小狗'],['petCat','🐱','小貓'],['chicken','🐔','雞'],['cow','🐄','牛'],['sheep','🐑','羊']],'生活':[['shippingBox','📦','出貨箱']]};"
+          new_catalog=old_catalog.replace("'農作':", "'農具':[['hoe','⛏️','鋤頭']],'農作':")
+          rep(old_catalog,new_catalog,'farm tool catalog')
+
+          rep("function drawCats(){ui.cats.innerHTML='';Object.keys(catalog).forEach(k=>{const b=document.createElement('button');b.className='cat'+(k===category?' on':'');b.textContent=k;b.onclick=()=>{category=k;selected=k==='建材'?selectedMat:catalog[k][0][0];drawCats();drawItems()};ui.cats.appendChild(b)})}function drawItems(){ui.items.innerHTML='';(catalog[category]||[]).forEach(([v,i,n])=>{const b=document.createElement('button');b.className='item'+(v===selected?' on':'');b.innerHTML=`${i}<small>${n}</small>`;b.onclick=()=>{selected=v;if(category==='建材')selectedMat=v;drawItems()};ui.items.appendChild(b)})}",
+              "let lastFencePlacement=null;function drawCats(){ui.cats.innerHTML='';Object.keys(catalog).forEach(k=>{const b=document.createElement('button');b.className='cat'+(k===category?' on':'');b.textContent=k;b.onclick=()=>{category=k;selected=k==='建材'?selectedMat:catalog[k][0][0];if(selected!=='fence')lastFencePlacement=null;drawCats();drawItems()};ui.cats.appendChild(b)})}function drawItems(){ui.items.innerHTML='';(catalog[category]||[]).forEach(([v,i,n])=>{const b=document.createElement('button');b.className='item'+(v===selected?' on':'');b.innerHTML=`${i}<small>${n}</small>`;b.onclick=()=>{selected=v;if(selected!=='fence')lastFencePlacement=null;if(category==='建材')selectedMat=v;drawItems()};ui.items.appendChild(b)})}", 'fence state')
+
+          old_place="function place(){if(playerState.mode!=='free')return;const h=aim();if(!h)return;const p=h.point;if(category==='形狀'||category==='建材'||(category==='建築'&&selected==='stair')){const pos=h.object.userData.kind==='block'?h.object.position.clone().add(h.face.normal):p.clone();pos.y=h.object.userData.kind==='block'?Math.max(.5,Math.round(pos.y*2)/2):.5;const shape=category==='形狀'||(category==='建築'&&selected==='stair')?selected:'cube',mat=category==='建材'?selected:selectedMat;if(!inWater(pos.x,pos.z))addBlock({x:Math.round(pos.x),y:pos.y,z:Math.round(pos.z),shape,mat,rot:objRot})}else if(!inWater(p.x,p.z))addObject({type:selected,x:Math.round(p.x),z:Math.round(p.z),rot:objRot,growth:.18})}"
+          new_place="""function place(){if(playerState.mode!=='free')return;const h=aim();if(!h)return;const p=h.point;if(category==='農具'&&selected==='hoe'){const x=Math.round(p.x),z=Math.round(p.z);if(inWater(x,z))return toast('水面不能開墾');if(objects.some(o=>o.userData.tilled&&Math.abs(o.position.x-x)<.2&&Math.abs(o.position.z-z)<.2))return toast('這格已經挖好土');addObject({type:'soilPlot',x,z,rot:0});toast('已用鋤頭開墾土地 ✓');return}if(category==='農作'){const x=Math.round(p.x),z=Math.round(p.z),soil=objects.find(o=>o.userData.tilled&&Math.abs(o.position.x-x)<.35&&Math.abs(o.position.z-z)<.35);if(!soil)return toast('先用鋤頭挖土，才能播種');if(objects.some(o=>o.userData.crop&&Math.abs(o.position.x-x)<.35&&Math.abs(o.position.z-z)<.35))return toast('這格已經有作物');addObject({type:selected,x,z,rot:0,growth:.18});toast('播種完成 ✓');return}if(category==='建築'&&selected==='fence'){let x=Math.round(p.x),z=Math.round(p.z),rot=objRot;if(lastFencePlacement&&Math.hypot(p.x-lastFencePlacement.x,p.z-lastFencePlacement.z)<4.2){rot=lastFencePlacement.rot;const dx=Math.cos(rot)*2,dz=-Math.sin(rot)*2,sign=((p.x-lastFencePlacement.x)*dx+(p.z-lastFencePlacement.z)*dz)>=0?1:-1;x=Math.round(lastFencePlacement.x+dx*sign);z=Math.round(lastFencePlacement.z+dz*sign)}if(inWater(x,z))return toast('圍籬不能蓋在水面');addObject({type:'fence',x,z,rot});lastFencePlacement={x,z,rot};toast('圍籬已自動接合');return}if(category==='形狀'||category==='建材'||(category==='建築'&&selected==='stair')){const pos=h.object.userData.kind==='block'?h.object.position.clone().add(h.face.normal):p.clone();pos.y=h.object.userData.kind==='block'?Math.max(.5,Math.round(pos.y*2)/2):.5;const shape=category==='形狀'||(category==='建築'&&selected==='stair')?selected:'cube',mat=category==='建材'?selected:selectedMat;if(!inWater(pos.x,pos.z))addBlock({x:Math.round(pos.x),y:pos.y,z:Math.round(pos.z),shape,mat,rot:objRot})}else if(!inWater(p.x,p.z))addObject({type:selected,x:Math.round(p.x),z:Math.round(p.z),rot:objRot,growth:.18})}"""
+          rep(old_place,new_place,'till/crop/fence placement')
+
+          old_collision="function standSurfaceY(x,z){let best=stairSurfaceY(x,z);const bucket=solidGrid.get(solidCellKey(Math.floor(x/SOLID_CELL),Math.floor(z/SOLID_CELL)));if(!bucket)return best;for(const g of bucket){if(g.userData.kind!=='block'||g.userData.shape==='stair'||g.userData.shape==='stairs')continue;const b=collisionBox.setFromObject(g);if(x>=b.min.x&&x<=b.max.x&&z>=b.min.z&&z<=b.max.z){const y=b.max.y;if(best===null||y>best)best=y}}return best}function solidAt(x,z){if(Math.abs(x)>HALF-2||Math.abs(z)>HALF-2||inWater(x,z))return true;const feet=player.position.y,stepLimit=1.05;collisionPoint.set(x,feet+1,z);const bucket=solidGrid.get(solidCellKey(Math.floor(x/SOLID_CELL),Math.floor(z/SOLID_CELL)));if(!bucket)return false;for(const g of bucket){if(g===playerState.anchor||g.userData.shape==='stair'||g.userData.shape==='stairs')continue;const b=collisionBox.setFromObject(g).expandByScalar(g.userData.collisionPad??(g.userData.kind==='block'?.24:.22));if(!b.containsPoint(collisionPoint))continue;if(b.max.y<=feet+stepLimit)continue;return true}return false}function movePlayer(dx,dz){if(playerState.mode!=='free')return;const nx=player.position.x+dx,nz=player.position.z+dz;if(!solidAt(nx,player.position.z))player.position.x=nx;if(!solidAt(player.position.x,nz))player.position.z=nz;const surfaceY=standSurfaceY(player.position.x,player.position.z);if(surfaceY!==null&&onGround&&surfaceY<=player.position.y+1.05){player.position.y=surfaceY;vy=0}}"
+          new_collision="""function standSurfaceY(x,z){let best=stairSurfaceY(x,z);const bucket=solidGrid.get(solidCellKey(Math.floor(x/SOLID_CELL),Math.floor(z/SOLID_CELL)));if(!bucket)return best;for(const g of bucket){if(g.userData.kind!=='block'||g.userData.shape==='stair'||g.userData.shape==='stairs')continue;const b=collisionBox.setFromObject(g);if(x>=b.min.x&&x<=b.max.x&&z>=b.min.z&&z<=b.max.z){const y=b.max.y;if(best===null||y>best)best=y}}return best}function dynamicActorBlocked(x,z){for(const g of pets){if(Math.hypot(x-g.position.x,z-g.position.z)<.62)return true}for(const g of ranch){if(Math.hypot(x-g.position.x,z-g.position.z)<.72)return true}return false}function solidAt(x,z){if(Math.abs(x)>HALF-2||Math.abs(z)>HALF-2)return true;if(dynamicActorBlocked(x,z))return true;const feet=player.position.y,radius=.27;const bucket=solidGrid.get(solidCellKey(Math.floor(x/SOLID_CELL),Math.floor(z/SOLID_CELL)));if(!bucket)return false;for(const g of bucket){if(g===playerState.anchor||g.userData.shape==='stair'||g.userData.shape==='stairs')continue;const b=collisionBox.setFromObject(g);if(b.max.y<=feet+.18||b.min.y>=feet+1.65)continue;const qx=Math.max(b.min.x,Math.min(x,b.max.x)),qz=Math.max(b.min.z,Math.min(z,b.max.z)),ddx=x-qx,ddz=z-qz;if(ddx*ddx+ddz*ddz<radius*radius)return true}return false}function movePlayer(dx,dz){if(playerState.mode!=='free')return;const nx=player.position.x+dx,nz=player.position.z+dz;if(!solidAt(nx,player.position.z))player.position.x=nx;if(!solidAt(player.position.x,nz))player.position.z=nz;const surfaceY=standSurfaceY(player.position.x,player.position.z);if(surfaceY!==null&&onGround&&surfaceY<=player.position.y+1.05){player.position.y=surfaceY;vy=0}}"""
+          rep(old_collision,new_collision,'collision and water walking')
+
+          rep("const pillowTop=o.localToWorld(new THREE.Vector3(0,.94,0)).y;if(Number.isFinite(posedBox.min.y))player.position.y+=Math.max(0,pillowTop+.025-posedBox.min.y);",
+              "const mattressTop=o.localToWorld(new THREE.Vector3(0,.79,0)).y;if(Number.isFinite(posedBox.min.y))player.position.y+=mattressTop+.012-posedBox.min.y;", 'sleep height')
+
+          rep("function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,cameraMode,farmDistance,farmPitch,farmYaw,season,weather,timeSpeed,simMinutes,worldDay,economy,avatar:",
+              "function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,playerColor,cameraMode,farmDistance,farmPitch,farmYaw,season,weather,timeSpeed,simMinutes,worldDay,economy,avatar:", 'save player color')
+
+          castle="""
+function castleBlock(x,y,z,mat='stone',shape='cube',rot=0){for(const b of blocks.values())if(Math.abs(b.position.x-x)<.1&&Math.abs(b.position.y-y)<.1&&Math.abs(b.position.z-z)<.1)return null;return addBlock({x,y,z,shape,mat,rot})}
+function generateCastle(){if(playerState.mode!=='free')exitFurniture();const cx=Math.round(player.position.x-Math.sin(yaw)*16),cz=Math.round(player.position.z-Math.cos(yaw)*16);if(inWater(cx,cz))return toast('前方是水域，請換個方向再生成城堡');const W=18,D=14,H=5;for(let z=-D/2+1;z<=D/2-1;z+=1)for(let x=-W/2+1;x<=W/2-1;x+=2)castleBlock(cx+x,.5,cz+z,'marble','rect',0);for(let y=.5;y<=H-.5;y+=1){for(let x=-W/2;x<=W/2;x+=2){const gate=Math.abs(x)<2&&y<3.5;if(!gate){const win=y===2.5&&(Math.abs(x)===4||Math.abs(x)===8);castleBlock(cx+x,y,cz-D/2,win?'glass':'stone','rect',0)}const backWin=y===2.5&&(Math.abs(x)===4||Math.abs(x)===8);castleBlock(cx+x,y,cz+D/2,backWin?'glass':'stone','rect',0)}for(let z=-D/2+1;z<=D/2-1;z+=2){const win=y===2.5&&(Math.abs(z)===3||Math.abs(z)===5);castleBlock(cx-W/2,y,cz+z,win?'glass':'stone','rect',Math.PI/2);castleBlock(cx+W/2,y,cz+z,win?'glass':'stone','rect',Math.PI/2)}}for(const sx of[-1,1])for(const sz of[-1,1])for(let y=.5;y<=H+2.5;y+=1){castleBlock(cx+sx*(W/2+1),y,cz+sz*(D/2+1),'stone');castleBlock(cx+sx*(W/2+2),y,cz+sz*(D/2+1),'stone');castleBlock(cx+sx*(W/2+1),y,cz+sz*(D/2+2),'stone');castleBlock(cx+sx*(W/2+2),y,cz+sz*(D/2+2),'stone')}for(let x=-W/2;x<=W/2;x+=4){castleBlock(cx+x,H+.5,cz-D/2,'marble');castleBlock(cx+x,H+.5,cz+D/2,'marble')}for(let z=-D/2;z<=D/2;z+=4){castleBlock(cx-W/2,H+.5,cz+z,'marble');castleBlock(cx+W/2,H+.5,cz+z,'marble')}addObject({type:'door',x:cx,z:cz-D/2,rot:0});addBlock({x:cx,y:.5,z:cz-D/2-2,shape:'stair',mat:'marble',rot:0});changed=true;saveWorld();toast('🏰 豪華大城堡已一鍵完成');ui.panel.classList.remove('open');ui.closeAdmin.classList.remove('open')}
+const castleButton=$('#generateCastle');if(castleButton)castleButton.onclick=generateCastle;
+"""
+          rep("ui.season.value=season;ui.weather.value=weather;",castle+"\nui.season.value=season;ui.weather.value=weather;",'castle generator')
+
+          rep("objRot=(objRot+Math.PI/2)%(Math.PI*2);toast(`放置方向：${Math.round(objRot*180/Math.PI)}°`)",
+              "objRot=(objRot+Math.PI/2)%(Math.PI*2);lastFencePlacement=null;toast(`放置方向：${Math.round(objRot*180/Math.PI)}°`)", 'fence rotate reset')
+
+          rep("const prev=simMinutes;simMinutes=", "if(compactUI.mapPanel?.classList.contains('open')&&t-mapPaintAt>180){mapPaintAt=t;drawWorldMap()}const prev=simMinutes;simMinutes=", 'map live update')
+
+          Path('app-v0501.js').write_text(s)
+
+          b=Path('bootstrap-v0500.js').read_text().replace('0.5.00','0.5.01').replace('app-v0500.js','app-v0501.js')
+          Path('bootstrap-v0501.js').write_text(b)
+
+          idx=Path('index.html').read_text().replace('V0.5.00','V0.5.01').replace('agcb-v0500-sw-retire','agcb-v0501-sw-retire').replace('bootstrap-v0500.js?v=0.5.00','bootstrap-v0501.js?v=0.5.01')
+          Path('index.html').write_text(idx)
+          Path('play-v0501.html').write_text(idx)
+
+          sw=Path('sw.js').read_text()
+          sw=sw.replace("const CACHE='ag-cute-blocks-v0500-runtime1';", "const CACHE='ag-cute-blocks-v0501-runtime1';")
+          sw=sw.replace("'./bootstrap-v0500.js','./app-v0500.js'", "'./bootstrap-v0501.js','./app-v0501.js'")
+          sw=sw.replace("key.startsWith('ag-cute-blocks-v0500-runtime')", "key.startsWith('ag-cute-blocks-v0500-runtime')||key.startsWith('ag-cute-blocks-v0501-runtime')")
+          Path('sw.js').write_text(sw)
+          PY
+      - name: Validate
+        run: |
+          node --check app-v0501.js
+          node --check bootstrap-v0501.js
+          grep -q "V0.5.01" index.html
+          grep -q "bootstrap-v0501.js?v=0.5.01" index.html
+          grep -q "generateCastle" app-v0501.js
+          grep -q "dynamicActorBlocked" app-v0501.js
+          grep -q "先用鋤頭挖土" app-v0501.js
+          grep -q "worldMapCanvas" app-v0501.js
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v0501.js bootstrap-v0501.js play-v0501.html index.html sw.js
+          git commit -m 'release: V0.5.01 compact HUD map castle and operability'
+          git push origin HEAD:dev-v0.1
