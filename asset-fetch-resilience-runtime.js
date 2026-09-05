@@ -1,4 +1,4 @@
-// AG Cute Blocks V0.4.91 — resilient character asset fetch layer.
+// AG Cute Blocks V0.4.94 — resilient character asset fetch layer.
 // Applies only to same-origin character asset GET requests; gameplay/network requests are untouched.
 const nativeFetch=globalThis.fetch.bind(globalThis);
 const RETRY_DELAYS=[220,650];
@@ -7,6 +7,7 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const OFFLINE_GROUPS={
   special2:{base:'./assets/characters/special2/model.v051.b64.',count:17},
   special3:{base:'./assets/characters/special3/model.v051.b64.',count:13},
+  special5:{base:'./assets/characters/special5/model.v094.glb.part',count:14},
   manus5:{base:'./assets/characters/manus5/chibi_8_variants_rigged.glb.part',count:16},
   boy:{base:'./assets/characters/general/boy.v052.glb.part',count:2},
   girl:{base:'./assets/characters/general/girl.v052.glb.part',count:2}
@@ -41,7 +42,7 @@ async function verifyOfflineGroup(key){
   const group=OFFLINE_GROUPS[key];if(!group||!('caches'in globalThis))return false;
   const checks=await Promise.all(Array.from({length:group.count},(_,i)=>caches.match(new URL(group.base+String(i).padStart(3,'0'),location.href).href,{ignoreSearch:true})));
   const ready=checks.every(Boolean);offlineReady[key]=ready;
-  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.91',groups:{...offlineReady},verifiedAt:Date.now()};
+  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.94',groups:{...offlineReady},verifiedAt:Date.now()};
   return ready;
 }
 function scheduleOfflineVerify(input){
@@ -78,4 +79,4 @@ if(!globalThis.__AGCB_NATIVE_FETCH){
   globalThis.fetch=resilientFetch;
 }
 globalThis.__AGCB_VERIFY_CHARACTER_OFFLINE=verifyOfflineGroup;
-globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.91',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true,directPersistentCache:true,offlineCacheFallback:true};
+globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.94',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true,directPersistentCache:true,offlineCacheFallback:true};

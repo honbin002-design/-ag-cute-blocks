@@ -16,6 +16,7 @@ const GENERAL_BOY_BASE='./assets/characters/general/boy.v052.glb.part',GENERAL_B
 const GENERAL_GIRL_BASE='./assets/characters/general/girl.v052.glb.part',GENERAL_GIRL_TOTAL_BYTES=1070664,GENERAL_GIRL_PART_COUNT=2;
 const SPECIAL2_BASE='./assets/characters/special2/model.v051.b64.',SPECIAL2_TOTAL_BYTES=48368084,SPECIAL2_PART_COUNT=17;
 const SPECIAL3_BASE='./assets/characters/special3/model.v051.b64.',SPECIAL3_TOTAL_BYTES=38501928,SPECIAL3_PART_COUNT=13;
+const SPECIAL5_BASE='./assets/characters/special5/model.v094.glb.part',SPECIAL5_TOTAL_BYTES=39650000,SPECIAL5_PART_COUNT=14;
 const SOURCES={
   girl:GENERAL_GIRL_BASE,
   boy:GENERAL_BOY_BASE,
@@ -75,7 +76,7 @@ async function loadManus5Gltf(){
 function loadVariant(key){
   if(loaded.has(key))return Promise.resolve(loaded.get(key));
   if(pending.has(key))return pending.get(key);
-  const p=(key==='boy'?loadBinaryGltf(GENERAL_BOY_BASE,GENERAL_BOY_PART_COUNT,GENERAL_BOY_TOTAL_BYTES):key==='girl'?loadBinaryGltf(GENERAL_GIRL_BASE,GENERAL_GIRL_PART_COUNT,GENERAL_GIRL_TOTAL_BYTES):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});
+  const p=(key==='boy'?loadBinaryGltf(GENERAL_BOY_BASE,GENERAL_BOY_PART_COUNT,GENERAL_BOY_TOTAL_BYTES):key==='girl'?loadBinaryGltf(GENERAL_GIRL_BASE,GENERAL_GIRL_PART_COUNT,GENERAL_GIRL_TOTAL_BYTES):key==='special2'?loadBase64Gltf(SPECIAL2_BASE,SPECIAL2_PART_COUNT,SPECIAL2_TOTAL_BYTES):key==='special5'?loadBinaryGltf(SPECIAL5_BASE,SPECIAL5_PART_COUNT,SPECIAL5_TOTAL_BYTES):loadBase64Gltf(SPECIAL3_BASE,SPECIAL3_PART_COUNT,SPECIAL3_TOTAL_BYTES)).then(gltf=>{loaded.set(key,gltf);return gltf});
   pending.set(key,p);p.then(()=>{if(pending.get(key)===p)pending.delete(key)},()=>{if(pending.get(key)===p)pending.delete(key)});return p;
 }
 function findClip(clips,pattern){return clips.find(c=>pattern.test(c.name))||null}
@@ -133,12 +134,12 @@ function applyAsset(group,c,gltf){
     swing:findClip(clips,/swing/i)
   };
   const actionMap={};for(const [name,clip] of Object.entries(actions))if(clip)actionMap[name]=mixer.clipAction(clip);
-  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special'||c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':c.gender==='boy'?'03_boy.glb (完整分片)':'04_girl.glb (完整分片)';u.assetAge=c.age||'child';u.assetShapeRevision='gameplay-normalized-v2';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
+  const primitiveChildren=[...u.visual.children];primitiveChildren.forEach(child=>{child.visible=false});u.visual.add(root);u.visual.visible=true;u.assetRoot=root;u.assetDetailLayer=null;u.assetMixer=mixer;u.assetActions=actionMap;u.assetWalkBones=assetWalkBones;u.assetArmOffsets={};u.assetWalkPhase=0;u.assetWalkBlend=0;u.assetVariant=['special','special2','special3','special5'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';u.assetManus5Variant=selectedVariant?.name||MANUS5_DEFAULT_VARIANT;u.assetAction=null;u.assetLastTime=0;u.assetLoaded=true;u.assetSource=c.role==='special5'?'Meshy_AI_Sweet_Cloud_Hug_0904105730_texture.glb':c.role==='special2'?'Meshy_AI_Chibi_Figure_0902142703_texture.glb':c.role==='special'||c.role==='special3'?'Meshy_AI_Meshy_Merged_Animations.glb':c.gender==='boy'?'03_boy.glb (完整分片)':'04_girl.glb (完整分片)';u.assetAge=c.age||'child';u.assetShapeRevision='gameplay-normalized-v2';u.assetCustomization={...c};globalThis.__AGCB_RIGGED_AVATAR.loaded++;
   globalThis.__AGCB_ASSET_SET_MOTION(group,'idle');globalThis.__AGCB_ASSET_SET_POSE?.(group,u.pose||'idle');
 }
 function upgrade(group,c){
   const u=group?.userData;if(!u)return;
-  const key=['special','special2','special3'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';
+  const key=['special','special2','special3','special5'].includes(c.role)?c.role:c.gender==='boy'?'boy':'girl';
   if(u.assetVariant===key&&u.assetRoot&&!u.assetDesiredVariant)return;
   const requestId=(u.assetRequestId||0)+1;u.assetRequestId=requestId;u.assetDesiredVariant=key;
   // Atomic switch: hide the previous/procedural avatar while the requested GLB is loading.
@@ -155,7 +156,7 @@ function upgrade(group,c){
 }
 globalThis.__AGCB_ASSET_SET_MOTION=(group,state='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const next=u.assetActions[state]||u.assetActions.idle;
-  if(!next){if(state==='idle'&&['special','special2','special3'].includes(u.assetVariant)&&u.assetAction){u.assetAction.fadeOut(.12);u.assetAction.stop();u.assetAction=null}return}if(u.assetAction===next)return;
+  if(!next){if(state==='idle'&&['special','special2','special3','special5'].includes(u.assetVariant)&&u.assetAction){u.assetAction.fadeOut(.12);u.assetAction.stop();u.assetAction=null}return}if(u.assetAction===next)return;
   if(u.assetAction)u.assetAction.fadeOut(.18);next.reset().fadeIn(.18).play();next.setEffectiveTimeScale(state==='walk'?1.35:1);u.assetAction=next;
 };
 globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
@@ -169,6 +170,6 @@ globalThis.__AGCB_ASSET_TICK=(group,moving=false,dt=0)=>{
 globalThis.__AGCB_ASSET_SET_POSE=(group,pose='idle')=>{
   const u=group?.userData;if(!u?.assetActions)return;const map={sit:'sit',lie:'lie',sleep:'lie',swing:'swing',dine:'dine',interact:'interact'};globalThis.__AGCB_ASSET_SET_MOTION(group,map[pose]||'idle');
 };
-globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,special2ChunkBase:SPECIAL2_BASE,special2ChunkCount:SPECIAL2_PART_COUNT,special3ChunkBase:SPECIAL3_BASE,special3ChunkCount:SPECIAL3_PART_COUNT,special2Source:'Meshy_AI_Chibi_Figure_0902142703_texture.glb',special3Source:'Meshy_AI_Meshy_Merged_Animations.glb',license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
+globalThis.__AGCB_RIGGED_AVATAR={schema:RIGGED_AVATAR_SCHEMA,source:'Manus5 chibi_8_variants_rigged.glb',sourceFile:MANUS5_SOURCE,chunkBase:MANUS5_CHUNK_BASE,chunkCount:MANUS5_CHUNK_COUNT,totalBytes:MANUS5_TOTAL_BYTES,special2ChunkBase:SPECIAL2_BASE,special2ChunkCount:SPECIAL2_PART_COUNT,special3ChunkBase:SPECIAL3_BASE,special3ChunkCount:SPECIAL3_PART_COUNT,special5ChunkBase:SPECIAL5_BASE,special5ChunkCount:SPECIAL5_PART_COUNT,special2Source:'Meshy_AI_Chibi_Figure_0902142703_texture.glb',special3Source:'Meshy_AI_Meshy_Merged_Animations.glb',special5Source:'Meshy_AI_Sweet_Cloud_Hug_0904105730_texture.glb',license:'user-supplied',loaded:0,failed:0,originalPreserved:true,visibleBase:'complete-rigged-glb',legacyProceduralHidden:true};
 globalThis.__AGCB_UPGRADE_AVATAR=(group,c)=>{upgrade(group,c);};
 for(const group of globalThis.__AGCB_LIVE_AVATARS||[])upgrade(group,group.userData.avatarCustomization||{gender:group.userData.avatarStyle||'girl'});
