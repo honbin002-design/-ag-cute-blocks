@@ -94,8 +94,8 @@ jobs:
           forbidden=['addInventory(','economy.','settleShipping(','Math.random(']
           for token in forbidden:
             if token in journal: failures.append(f'journal must not mutate fishing/economy state: {token}')
-          if journal.count("showFirstDiscovery(name,icon)") != 1:
-            failures.append('first-discovery notification must only be called from the first-catch guard')
+          if journal.count("if(first)showFirstDiscovery(name,icon)") != 1:
+            failures.append('first-discovery notification must have exactly one first-catch guarded call')
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('V0.5.08 first-discovery feedback is one-time, non-blocking, persistent and economy-isolated.')
