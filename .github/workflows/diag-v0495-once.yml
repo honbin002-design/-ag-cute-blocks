@@ -1,0 +1,27 @@
+name: Diagnose V0.4.95 once
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diag-v0495-once.yml']
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Print targeted runtime contexts
+        shell: python
+        run: |
+          from pathlib import Path
+          s=Path('app-v043.js').read_text()
+          needles=['sleep','morning','bed','furnitureAnchorWorld','special3','special5','avatar.addEventListener','ui.avatar','setCuteCharacterPose']
+          for n in needles:
+            print('\n===== NEEDLE',n,'=====')
+            start=0; count=0
+            while True:
+              i=s.find(n,start)
+              if i<0 or count>=8: break
+              print(s[max(0,i-700):min(len(s),i+1400)].replace(';',';\n'))
+              start=i+len(n); count+=1
+          print('\nVERSION COUNT',s.count("V0.4.93"),s.count("V0.4.94"))
