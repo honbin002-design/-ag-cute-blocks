@@ -49,6 +49,7 @@ jobs:
           expected_groups={
             'special2':("./assets/characters/special2/model.v051.b64.",17),
             'special3':("./assets/characters/special3/model.v051.b64.",13),
+            'special5':("./assets/characters/special5/model.v094.glb.part",14),
             'manus5':("./assets/characters/manus5/chibi_8_variants_rigged.glb.part",16),
             'boy':("./assets/characters/general/boy.v052.glb.part",2),
             'girl':("./assets/characters/general/girl.v052.glb.part",2),
