@@ -1,0 +1,60 @@
+name: Build V0.5.02 animal collision hardening
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-v0502-animal-collision.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Patch V0.5.02
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app=Path('app-v0501.js')
+          s=app.read_text()
+          s=s.replace("const VERSION='V0.5.01'", "const VERSION='V0.5.02'", 1)
+          old="function dynamicActorBlocked(x,z){for(const g of pets){if(Math.hypot(x-g.position.x,z-g.position.z)<.62)return true}for(const g of ranch){if(Math.hypot(x-g.position.x,z-g.position.z)<.72)return true}return false}"
+          new="function dynamicActorBlocked(x,z){for(const g of pets){if(Math.hypot(x-g.position.x,z-g.position.z)<.62)return true}for(const g of ranch){if(Math.hypot(x-g.position.x,z-g.position.z)<.72)return true}const wildlife=globalThis.__AGCB_WILDLIFE_RUNTIME?.models;if(wildlife)for(const rec of wildlife.values()){const g=rec?.holder;if(!g||g.visible===false)continue;const r=rec.entity?.type==='deer'?.88:rec.entity?.type==='fox'?.68:.5;if(Math.hypot(x-g.position.x,z-g.position.z)<r)return true}return false}"
+          if old not in s: raise SystemExit('dynamicActorBlocked signature not found')
+          s=s.replace(old,new,1)
+          app.write_text(s)
+
+          idx=Path('index.html')
+          s=idx.read_text().replace('V0.5.01','V0.5.02').replace('v=0.5.01','v=0.5.02')
+          idx.write_text(s)
+
+          boot=Path('bootstrap-v0501.js')
+          s=boot.read_text().replace('0.5.01','0.5.02')
+          boot.write_text(s)
+
+          sw=Path('sw.js')
+          s=sw.read_text().replace("const CACHE='ag-cute-blocks-v0501-runtime1'", "const CACHE='ag-cute-blocks-v0502-runtime1'", 1)
+          s=s.replace("key.startsWith('ag-cute-blocks-v0501-runtime')||key.startsWith('ag-cute-blocks-v0501-runtime')", "key.startsWith('ag-cute-blocks-v0501-runtime')||key.startsWith('ag-cute-blocks-v0502-runtime')")
+          sw.write_text(s)
+          PY
+      - name: Validate
+        run: |
+          node --check app-v0501.js
+          node --check bootstrap-v0501.js
+          node --check sw.js
+          grep -q "V0.5.02" app-v0501.js
+          grep -q "V0.5.02" index.html
+          grep -q "__AGCB_WILDLIFE_RUNTIME" app-v0501.js
+          grep -q "ag-cute-blocks-v0502-runtime1" sw.js
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v0501.js bootstrap-v0501.js index.html sw.js
+          git commit -m 'release: V0.5.02 harden wildlife and animal collision'
+          git push origin HEAD:dev-v0.1
