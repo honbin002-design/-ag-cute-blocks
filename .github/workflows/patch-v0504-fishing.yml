@@ -1,0 +1,81 @@
+name: Build V0.5.04 fishing tool and contextual controls
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-v0504-fishing.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Patch V0.5.04
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          s=Path('app-v0503.js').read_text()
+          if "const VERSION='V0.5.03'" not in s: raise SystemExit('expected V0.5.03')
+          s=s.replace("const VERSION='V0.5.03'","const VERSION='V0.5.04'",1)
+
+          s=s.replace("'農具':[['hoe','⛏️','鋤頭']]", "'農具':[['hoe','⛏️','鋤頭'],['fishingRod','🎣','釣魚竿']]",1)
+
+          old="function syncActionLabels(){const defs={add:['＋','放置'],del:['⛏','拆除'],jump:['⬆️','跳躍'],rot:['↻','轉向']};for(const [id,[icon,label]] of Object.entries(defs)){const b=document.getElementById(id);if(!b)continue;b.innerHTML=`<span>${icon}</span><small class=\"actionLabel\">${label}</small>`;b.setAttribute('aria-label',label)}"
+          new="function syncActionLabels(){const addLabel=category==='農具'?(selected==='fishingRod'?['🎣','釣魚']:['⛏️','使用']):['＋','放置'];const defs={add:addLabel,del:['⛏','拆除'],jump:['⬆️','跳躍'],rot:['↻','轉向']};for(const [id,[icon,label]] of Object.entries(defs)){const b=document.getElementById(id);if(!b)continue;b.innerHTML=`<span>${icon}</span><small class=\"actionLabel\">${label}</small>`;b.setAttribute('aria-label',label)}"
+          if old not in s: raise SystemExit('syncActionLabels anchor missing')
+          s=s.replace(old,new,1)
+
+          s=s.replace("drawCats();drawItems()};ui.cats.appendChild(b)","drawCats();drawItems();syncActionLabels()};ui.cats.appendChild(b)")
+          s=s.replace("if(category==='建材')selectedMat=v;drawItems()};ui.items.appendChild(b)","if(category==='建材')selectedMat=v;drawItems();syncActionLabels()};ui.items.appendChild(b)")
+
+          anchor="function place(){if(playerState.mode!=='free')return;const h=aim();if(!h)return;const p=h.point;"
+          insert="""let fishingBusy=false;function castFishing(p){if(fishingBusy)return toast('魚漂還在水裡…');if(!inWater(p.x,p.z))return toast('請把準星對準河面或湖面');if(Math.hypot(p.x-player.position.x,p.z-player.position.z)>7)return toast('距離太遠，請靠近水邊');fishingBusy=true;toast('🎣 拋竿… 等魚上鉤');setTimeout(()=>{const roll=Math.random(),fish=roll<.5?'smallFish':roll<.82?'riverFish':'goldFish';addInventory(economy,fish,1);fishingBusy=false;changed=true;renderLife();toast(`🎣 釣到 ${ITEM_NAMES[fish]||'魚'}！`)},900+Math.random()*1200)}\nfunction place(){if(playerState.mode!=='free')return;const h=aim();if(!h)return;const p=h.point;if(category==='農具'&&selected==='fishingRod'){castFishing(p);return;}"""
+          if anchor not in s: raise SystemExit('place anchor missing')
+          s=s.replace(anchor,insert,1)
+
+          Path('app-v0504.js').write_text(s)
+
+          eco=Path('economy-system.js').read_text()
+          eco=eco.replace("apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛'", "apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'")
+          eco=eco.replace("apple:24,orange:26,peach:30,egg:18,milk:34,wool:38", "apple:24,orange:26,peach:30,egg:18,milk:34,wool:38,smallFish:18,riverFish:34,goldFish:88")
+          Path('economy-system.js').write_text(eco)
+
+          boot=Path('bootstrap-v0503.js').read_text().replace('0.5.03','0.5.04').replace("import './app-v0503.js';","import './app-v0504.js';")
+          Path('bootstrap-v0504.js').write_text(boot)
+
+          idx=Path('index.html').read_text().replace('V0.5.03','V0.5.04').replace('v=0.5.03','v=0.5.04').replace('bootstrap-v0503.js','bootstrap-v0504.js')
+          Path('index.html').write_text(idx)
+          Path('play-v0504.html').write_text(idx)
+
+          sw=Path('sw.js').read_text().replace("const CACHE='ag-cute-blocks-v0503-runtime1';","const CACHE='ag-cute-blocks-v0504-runtime1';")
+          sw=sw.replace("'./bootstrap-v0503.js','./app-v0503.js'","'./bootstrap-v0504.js','./app-v0504.js'")
+          sw=sw.replace("key.startsWith('ag-cute-blocks-v0503-runtime')","key.startsWith('ag-cute-blocks-v0503-runtime')||key.startsWith('ag-cute-blocks-v0504-runtime')")
+          Path('sw.js').write_text(sw)
+          PY
+      - name: Validate
+        run: |
+          set -euo pipefail
+          node --check app-v0504.js
+          node --check bootstrap-v0504.js
+          node --check economy-system.js
+          node --check sw.js
+          grep -q "V0.5.04" app-v0504.js
+          grep -q "fishingRod" app-v0504.js
+          grep -q "castFishing" app-v0504.js
+          grep -q "goldFish" economy-system.js
+          grep -q "bootstrap-v0504.js" index.html
+      - name: Commit
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v0504.js bootstrap-v0504.js play-v0504.html index.html sw.js economy-system.js
+          git commit -m 'release: V0.5.04 add fishing tool and contextual action labels'
+          git push origin HEAD:dev-v0.1
