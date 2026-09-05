@@ -1,3 +1,4 @@
+# trigger 2
 name: Patch V0.4.97 Safari recovery
 on:
   push:
@@ -17,7 +18,6 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-
           p=Path('index.html'); s=p.read_text()
           s=s.replace('V0.4.96','V0.4.97').replace('v=0.4.96','v=0.4.97')
           s=s.replace('<script src="./service-worker-register.js?v=0.4.97"></script>\n','')
@@ -26,10 +26,8 @@ jobs:
           if anchor not in s: raise SystemExit('index bootstrap anchor missing')
           if 'agcb-v0497-sw-retire' not in s: s=s.replace(anchor,cleanup+anchor)
           p.write_text(s)
-
           p=Path('app-v043.js'); s=p.read_text().replace("const VERSION='V0.4.96'","const VERSION='V0.4.97'"); p.write_text(s)
           p=Path('bootstrap-v045.js'); s=p.read_text().replace('0.4.96','0.4.97').replace('V0.4.96','V0.4.97'); p.write_text(s)
-
           recovery='''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#9ed9ff"><title>AG Cute Blocks V0.4.97 更新修復</title><style>html,body{margin:0;height:100%;background:#9ed9ff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#36515d}main{height:100%;display:grid;place-items:center;padding:24px;box-sizing:border-box}.card{background:#fffde8f2;border-radius:24px;padding:24px;max-width:520px;text-align:center;box-shadow:0 8px 28px #0002}h1{font-size:24px;margin:0 0 10px}p{margin:8px 0;font-weight:700}.small{font-size:13px;opacity:.75}.go{display:none;margin-top:18px;border:0;border-radius:16px;padding:14px 20px;background:#304766;color:#fff;font-weight:900;font-size:17px;text-decoration:none}.go.ready{display:inline-block}</style></head><body><main><div class="card"><h1>AG Cute Blocks 更新修復</h1><p id="status">正在解除 V0.4.94 舊版控制…</p><p class="small">目標版本：V0.4.97</p><a id="go" class="go" href="./?fresh=0497-20260905-1530" target="_blank" rel="noopener">開啟新版 V0.4.97</a></div></main><script>(async()=>{const status=document.getElementById('status'),go=document.getElementById('go');try{if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}if('caches'in window){const keys=await caches.keys();await Promise.all(keys.filter(k=>k!=='ag-cute-blocks-character-assets-v1').map(k=>caches.delete(k)));}sessionStorage.clear();status.textContent='舊版控制已解除。請按下方按鈕，以新分頁開啟新版。';go.classList.add('ready')}catch(e){status.textContent='已嘗試解除舊版。請按下方按鈕，以新分頁開啟新版。';go.classList.add('ready')}})();</script></body></html>'''
           Path('recover-v0497-20260905-1530.html').write_text(recovery)
       - name: Validate V0.4.97
