@@ -13,78 +13,52 @@ jobs:
         with:
           ref: dev-v0.1
           fetch-depth: 0
-      - name: Apply cache self-healing hotfix
-        shell: python
-        run: |
-          from pathlib import Path
-
-          sw = r'''const CACHE='ag-cute-blocks-v045-runtime156';
-const CHARACTER_CACHE='ag-cute-blocks-character-assets-v1';
-const CORE=['./','./index.html','./service-worker-register.js','./bootstrap-v045.js','./app-v043.js','./character-models.js','./asset-fetch-resilience-runtime.js','./character-asset-runtime.js','./character-motion-fix-runtime.js','./character-polish-runtime.js','./pet-grounding-runtime.js','./animal-models.js','./crop-models.js','./economy-system.js','./farming-system.js','./daily-progression-system.js','./procedural-material-runtime.js','./building-extension-runtime.js','./mobile-controls-runtime.js','./mobile-controls.css','./mobile-viewport-lock-runtime.js','./aim-reticle-runtime.js','./movement-mode-persistence-runtime.js','./wildlife-models.js','./wildlife-runtime-system.js','./wildlife-live-runtime.js','./mobile-performance-system.js','./render-performance-runtime.js','./mobile-input-runtime.js','./collision-cache-runtime.js','./raycast-budget-runtime.js','./ag-original-character-runtime.js','./assets/characters/general/boy.v052.glb.part000','./assets/characters/general/boy.v052.glb.part001','./assets/characters/general/girl.v052.glb.part000','./assets/characters/general/girl.v052.glb.part001','./ag-original-animal-runtime.js','./heading-runtime.js','./weather-visual-runtime.js','./crop-care-system.js','./crop-care-runtime.js','./orchard-runtime.js','./animal-state-system.js','./animal-life-runtime.js','./furniture-interaction.js','./furniture-safety-runtime.js','./furniture-life-details.js','./sleep-routine.js','./manifest.webmanifest','https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js','https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js'];
-const isCharacterRequest=request=>{try{return new URL(request.url).origin===self.location.origin&&new URL(request.url).pathname.includes('/assets/characters/')}catch{return false}};
-const isLocal=request=>{try{return new URL(request.url).origin===self.location.origin}catch{return false}};
-const networkFirst=async request=>{const cache=await caches.open(CACHE);try{const response=await fetch(request,{cache:'no-store'});if(response&&response.ok)await cache.put(request,response.clone());return response}catch(error){const hit=await cache.match(request,{ignoreSearch:true});if(hit)return hit;throw error}};
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(CORE.map(url=>cache.add(url)))));self.skipWaiting()});
-self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys(),characterCache=await caches.open(CHARACTER_CACHE);for(const key of keys){if(key===CACHE||key===CHARACTER_CACHE)continue;const old=await caches.open(key),requests=await old.keys();for(const request of requests){if(isCharacterRequest(request)){const response=await old.match(request);if(response)await characterCache.put(request,response)}}if(key.startsWith('ag-cute-blocks-v045-runtime'))await caches.delete(key)}})());self.clients.claim()});
-self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;if(event.request.mode==='navigate'){event.respondWith(networkFirst(event.request).catch(()=>caches.match('./index.html')));return}if(isCharacterRequest(event.request)){event.respondWith(caches.open(CHARACTER_CACHE).then(cache=>cache.match(event.request,{ignoreSearch:true}).then(hit=>hit||fetch(event.request).then(response=>{if(response&&response.ok)cache.put(event.request,response.clone()).catch(()=>{});return response}))));return}if(isLocal(event.request)){event.respondWith(networkFirst(event.request));return}event.respondWith(caches.open(CACHE).then(cache=>cache.match(event.request).then(hit=>hit||fetch(event.request).then(response=>{if(response&&response.ok)cache.put(event.request,response.clone()).catch(()=>{});return response}))));});
-'''
-          Path('sw.js').write_text(sw)
-
-          register = r'''// AG Cute Blocks V0.4.96 — explicit Service Worker registration with forced update checks.
-(()=>{
-  const VERSION='V0.4.96';
-  const state={version:VERSION,supported:'serviceWorker' in navigator,registered:false,controlled:!!navigator.serviceWorker?.controller,error:null};
-  globalThis.__AGCB_SERVICE_WORKER=state;
-  if(!state.supported)return;
-  let reloaded=false;
-  const reloadOnce=()=>{state.controlled=!!navigator.serviceWorker.controller;if(reloaded||sessionStorage.getItem('agcb_sw_reload_0496')==='1')return;reloaded=true;sessionStorage.setItem('agcb_sw_reload_0496','1');location.reload()};
-  navigator.serviceWorker.addEventListener('controllerchange',reloadOnce);
-  navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(reg=>{
-    state.registered=true;state.scope=reg.scope;
-    const update=()=>reg.update().catch(()=>{});
-    update();
-    addEventListener('focus',update,{passive:true});
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')update()},{passive:true});
-  }).catch(error=>{state.error=String(error?.message||error)});
-})();
-'''
-          Path('service-worker-register.js').write_text(register)
-
-          p=Path('app-v043.js'); s=p.read_text();
-          if "const VERSION='V0.4.95'" not in s: raise SystemExit('app version anchor missing')
-          p.write_text(s.replace("const VERSION='V0.4.95'","const VERSION='V0.4.96'",1))
-
-          p=Path('bootstrap-v045.js'); s=p.read_text();
-          if '0.4.95' not in s: raise SystemExit('bootstrap version anchor missing')
-          p.write_text(s.replace('0.4.95','0.4.96'))
-
-          p=Path('index.html'); s=p.read_text();
-          if 'V0.4.95' not in s: raise SystemExit('index version anchor missing')
-          s=s.replace('V0.4.95','V0.4.96').replace('v=0.4.95','v=0.4.96')
-          p.write_text(s)
-      - name: Validate V0.4.96
+      - name: Patch visible version chain
         shell: bash
         run: |
           set -euo pipefail
-          grep -Fq "runtime156" sw.js
-          grep -Fq "request.mode==='navigate'" sw.js
-          grep -Fq "fetch(request,{cache:'no-store'})" sw.js
-          grep -Fq "V0.4.96" service-worker-register.js
-          grep -Fq "reg.update()" service-worker-register.js
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app-v043.js')
+          s=p.read_text()
+          if "const VERSION='V0.4.95'" in s:
+              s=s.replace("const VERSION='V0.4.95'","const VERSION='V0.4.96'",1)
+          elif "const VERSION='V0.4.96'" not in s:
+              raise SystemExit('app version anchor missing')
+          p.write_text(s)
+          p=Path('index.html')
+          s=p.read_text()
+          if 'V0.4.95' in s or 'v=0.4.95' in s:
+              s=s.replace('V0.4.95','V0.4.96').replace('v=0.4.95','v=0.4.96')
+          if 'V0.4.96' not in s or 'service-worker-register.js?v=0.4.96' not in s:
+              raise SystemExit('index version update failed')
+          p.write_text(s)
+          PY
+      - name: Validate hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
           grep -Fq "const VERSION='V0.4.96'" app-v043.js
-          grep -Fq "version:'0.4.96'" bootstrap-v045.js
           grep -Fq 'content="V0.4.96"' index.html
           grep -Fq 'service-worker-register.js?v=0.4.96' index.html
-          node --check sw.js
-          node --check service-worker-register.js
+          grep -Fq "runtime156" sw.js
+          grep -Fq "request.mode==='navigate'" sw.js
+          grep -Fq "V0.4.96" service-worker-register.js
+          grep -Fq "version:'0.4.96'" bootstrap-v045.js
           node --check app-v043.js
+          node --check service-worker-register.js
           node --check bootstrap-v045.js
-      - name: Commit V0.4.96
+          node --check sw.js
+      - name: Commit visible version chain
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add sw.js service-worker-register.js app-v043.js bootstrap-v045.js index.html
-          git commit -m 'release: V0.4.96 fix stale service-worker cache'
-          git push origin HEAD:dev-v0.1
+          git add app-v043.js index.html
+          if git diff --cached --quiet; then
+            echo 'No version-chain changes needed'
+          else
+            git commit -m 'release: V0.4.96 expose cache hotfix version'
+            git push origin HEAD:dev-v0.1
+          fi
