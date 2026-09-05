@@ -3,12 +3,11 @@ on:
   workflow_dispatch:
   push:
     branches: [dev-v0.1]
-    paths:
-      - '.github/workflows/import-special5-drive.yml'
 permissions:
   contents: write
 jobs:
   import-special5:
+    if: "!contains(github.event.head_commit.message, 'release: V0.4.94 add special character 5')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
