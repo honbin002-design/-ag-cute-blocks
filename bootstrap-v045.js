@@ -3,38 +3,38 @@
 import './render-performance-runtime.js';
 import './collision-cache-runtime.js';
 import './raycast-budget-runtime.js';
-import './mobile-viewport-lock-runtime.js?v=0.4.94';
+import './mobile-viewport-lock-runtime.js?v=0.4.95';
 import './ag-original-character-runtime.js';
 import './ag-original-animal-runtime.js';
 
 // Main world establishes the live scene/player/object registries used by extension runtimes.
-import './app-v043.js?v=0.4.94';
+import './app-v043.js?v=0.4.95';
 
 // Core corrections and visual/building surface upgrades attach after base initialization.
 import './heading-runtime.js';
 import './furniture-safety-runtime.js';
 import './procedural-material-runtime.js';
-import './building-extension-runtime.js?v=0.4.94';
+import './building-extension-runtime.js?v=0.4.95';
 import './character-polish-runtime.js';
-// V0.4.94 keeps first-load-safe persistent asset caching before any GLB character-part fetch begins.
-import './asset-fetch-resilience-runtime.js?v=0.4.94';
-import './character-asset-runtime.js?v=0.4.94';
-import './character-motion-fix-runtime.js?v=0.4.94';
+// V0.4.95 keeps first-load-safe persistent asset caching before any GLB character-part fetch begins.
+import './asset-fetch-resilience-runtime.js?v=0.4.95';
+import './character-asset-runtime.js?v=0.4.95';
+import './character-motion-fix-runtime.js?v=0.4.95';
 import './pet-grounding-runtime.js';
 
 // Mobile control presentation attaches after the HUD exists, before input handlers.
-import './mobile-controls-runtime.js?v=0.4.94';
-import './aim-reticle-runtime.js?v=0.4.94';
-import './movement-mode-persistence-runtime.js?v=0.4.94';
+import './mobile-controls-runtime.js?v=0.4.95';
+import './aim-reticle-runtime.js?v=0.4.95';
+import './movement-mode-persistence-runtime.js?v=0.4.95';
 
 // Input and life extensions attach after the main HUD/world handlers exist.
-import './mobile-input-runtime.js?v=0.4.94';
+import './mobile-input-runtime.js?v=0.4.95';
 import './animal-life-runtime.js';
 import './crop-care-runtime.js';
 import './orchard-runtime.js';
 import './furniture-life-details.js';
-import './sleep-routine.js?v=0.4.94';
+import './sleep-routine.js?v=0.4.95';
 import './wildlife-live-runtime.js';
 import './weather-visual-runtime.js';
 
-globalThis.__AGCB_BOOTSTRAP={version:'0.4.94',loaded:true};
+globalThis.__AGCB_BOOTSTRAP={version:'0.4.95',loaded:true};
