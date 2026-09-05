@@ -15,27 +15,25 @@ jobs:
           ref: dev-v0.1
           fetch-depth: 0
       - name: Confirm trigger
-        run: echo "V0.5.01 explicit trigger"
-      - name: Patch runtime
+        run: echo "V0.5.01 explicit trigger 2"
+      - name: Recover and apply patch
         shell: bash
         run: |
+          set -euo pipefail
           git show 9d211a6d69ca78f87bf0a747298b6e0388029bcd:.github/workflows/patch-v0501-operability.yml > /tmp/original.yml
           python3 - <<'PY'
-          import re, subprocess
           from pathlib import Path
           y=Path('/tmp/original.yml').read_text()
-          m=re.search(r"      - name: Patch runtime\n(.*?)(?=      - name: Validate)",y,re.S)
-          if not m: raise SystemExit('cannot recover patch block')
-          block=m.group(0)
-          script=re.search(r"run: \|\n(.*)",block,re.S).group(1)
-          lines=script.splitlines()
-          indent=min(len(x)-len(x.lstrip()) for x in lines if x.strip())
-          script='\n'.join(x[indent:] for x in lines)
-          Path('/tmp/patch.sh').write_text(script+'\n')
+          start=y.index("          python3 - <<'PY'\n")+len("          python3 - <<'PY'\n")
+          end=y.index("\n          PY\n      - name: Validate",start)
+          body=y[start:end]
+          body='\n'.join(line[10:] if line.startswith('          ') else line for line in body.splitlines())+'\n'
+          Path('/tmp/patch.py').write_text(body)
           PY
-          bash /tmp/patch.sh
+          python3 /tmp/patch.py
       - name: Validate
         run: |
+          set -euo pipefail
           node --check app-v0501.js
           node --check bootstrap-v0501.js
           grep -q "V0.5.01" index.html
@@ -46,6 +44,7 @@ jobs:
           grep -q "worldMapCanvas" app-v0501.js
       - name: Commit
         run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app-v0501.js bootstrap-v0501.js play-v0501.html index.html sw.js
