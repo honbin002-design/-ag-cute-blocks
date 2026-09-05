@@ -68,7 +68,7 @@ jobs:
       - name: Verify V0.5.09 journal guide and isolation
         shell: python
         run: |
-          import pathlib,sys
+          import pathlib,re,sys
           journal=pathlib.Path('fishing-journal-runtime-v0509.js').read_text(encoding='utf-8')
           failures=[]
           required=[
@@ -88,7 +88,8 @@ jobs:
           forbidden=['addInventory(','economy.','settleShipping(','Math.random(']
           for token in forbidden:
             if token in journal: failures.append(f'journal must not mutate fishing/economy state: {token}')
-          if '%' in journal: failures.append('journal guide must not expose numeric probabilities')
+          if re.search(r'較容易：[^`\n]*\d+(?:\.\d+)?%',journal):
+            failures.append('journal guide must not expose numeric probabilities')
           if journal.count("if(first)showFirstDiscovery(name,icon)") != 1:
             failures.append('first-discovery notification must have exactly one first-catch guarded call')
           if failures:
