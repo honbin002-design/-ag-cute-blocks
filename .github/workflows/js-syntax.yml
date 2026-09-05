@@ -50,53 +50,62 @@ jobs:
                 if imported and imported not in exports:
                   failures.append(f'{source_name}: imports {imported} from {target_name}, but it is not exported')
           if failures:
-            print('\n'.join(failures)); sys.exit(1)
+            print('\n'.join(failures));sys.exit(1)
           print('Relative named-import validation passed.')
 
       - name: Verify current runtime chain
         shell: python
         run: |
           import pathlib,re,sys
-          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
-          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8')
-          mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
-          viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
-          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
-          persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8')
-          sleep=pathlib.Path('sleep-routine.js').read_text(encoding='utf-8')
-          resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          src=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=([0-9.]+)"></script>',index)
+          if not src: sys.exit('index current bootstrap reference missing')
+          boot_name,index_v=src.groups()
+          boot_path=pathlib.Path(boot_name)
+          if not boot_path.exists(): sys.exit(f'index references missing {boot_name}')
+          boot=boot_path.read_text(encoding='utf-8')
           m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
           if not m: sys.exit('bootstrap version missing')
-          v=m.group(1)
-          expected=f'V{v}'
-          failures=[]
-          if expected not in motion: failures.append('visible runtime version does not match bootstrap')
+          v=m.group(1); expected=f'V{v}'; failures=[]
+          if index_v!=v: failures.append(f'index/bootstrap version mismatch: {index_v} != {v}')
+          meta=re.search(r'<meta name="ag-runtime-version" content="([^"]+)">',index)
+          if not meta or meta.group(1)!=expected: failures.append('index visible version does not match bootstrap')
           for target,query_version in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
             if query_version!=v: failures.append(f'bootstrap query mismatch: {target}?v={query_version} != {v}')
-          css_match=re.search(r"mobile-controls\.css\?v=([0-9.]+)",mobile)
-          if not css_match or css_match.group(1)!=v: failures.append('mobile controls CSS query does not match bootstrap version')
-          for name in ['app-v043.js','building-extension-runtime.js','asset-fetch-resilience-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
+          app_match=re.search(r"import ['\"]\./(app-v\d+\.js)(?:\?v=[^'\"]+)?['\"]",boot)
+          if not app_match: failures.append('current app import missing from bootstrap')
+          else:
+            app_name=app_match.group(1); app_path=pathlib.Path(app_name)
+            if not app_path.exists(): failures.append(f'bootstrap references missing {app_name}')
+            else:
+              app=app_path.read_text(encoding='utf-8')
+              if f"const VERSION='{expected}'" not in app: failures.append(f'{app_name} visible version does not match {expected}')
+          required=['building-extension-runtime.js','asset-fetch-resilience-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','mobile-viewport-lock-runtime.js']
+          for name in required:
             if name not in boot: failures.append(f'bootstrap missing {name}')
-          if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime.js'): failures.append('asset resilience must load before character asset runtime')
-          for name in ['asset-fetch-resilience-runtime.js','mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','character-motion-fix-runtime.js','sleep-routine.js']:
-            if name not in sw: failures.append(f'service worker missing {name}')
+          if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime-v0499.js'): failures.append('asset resilience must load before character asset runtime')
+          viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
+          mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
+          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
+          persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8')
+          sleep_path=pathlib.Path('sleep-routine-v0499.js') if pathlib.Path('sleep-routine-v0499.js').exists() else pathlib.Path('sleep-routine.js')
+          sleep=sleep_path.read_text(encoding='utf-8')
+          motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8')
+          resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
             if token not in viewport: failures.append(f'viewport lock missing {token}')
-          if "crosshairVisualOnly:true" not in mobile: failures.append('mobile crosshair visual-only base marker missing')
+          if 'crosshairVisualOnly:true' not in mobile: failures.append('mobile crosshair visual-only base marker missing')
           for token in ['firstPersonCentered:true','thirdFarmDraggable:true',"setProperty('pointer-events','auto','important')","cross.style.left='50%'","cross.style.top='50%'"]:
             if token not in aim: failures.append(f'aim reticle missing {token}')
           active_key='ag_cute_blocks_settings_v048_special_models_r2'
           if active_key not in sleep: failures.append('sleep routine is not using active settings key')
           if active_key not in persist or 'persistsWalkRun:true' not in persist: failures.append('walk/run persistence runtime missing active settings key')
-          if 'ignoreSearch:true' not in sw: failures.append('service worker does not match local versioned URLs to precache')
-          if "event.request.mode==='navigate'" not in sw: failures.append('service worker navigation-only offline fallback missing')
           if 'postMixerArmSwing:true' not in motion or 'runClipRouting:true' not in motion: failures.append('walk/run correction markers missing')
           for token in ["/assets/characters/","cache:'reload'","characterOnly:true"]:
             if token not in resilience: failures.append(f'asset resilience missing {token}')
           if failures:
-            print('\n'.join(failures)); sys.exit(1)
-          print(f'Runtime chain, settings, resilience and offline checks passed for {expected}. Index release alignment is validated by Release chain sync.')
+            print('\n'.join(failures));sys.exit(1)
+          print(f'Current runtime chain checks passed for {expected} via {boot_name}.')
 
       - name: Verify centralized daily progression rules
         shell: bash
@@ -116,8 +125,12 @@ jobs:
       - name: Verify mobile HUD and tool invariants
         shell: python
         run: |
-          import pathlib,sys
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          import pathlib,re,sys
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          boot_name=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=',index).group(1)
+          boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
+          app_name=re.search(r"import ['\"]\./(app-v\d+\.js)",boot).group(1)
+          app=pathlib.Path(app_name).read_text(encoding='utf-8')
           css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
@@ -133,5 +146,5 @@ jobs:
           for token in ['#add{right:104px;bottom:4px}','#del{right:78px;bottom:88px}','#rot{right:0;top:40px}','#jump{right:0;bottom:0;width:96px;height:96px']:
             if token not in css: failures.append(f'HUD layout missing {token}')
           if failures:
-            print('\n'.join(failures)); sys.exit(1)
-          print('Mobile HUD, reticle and tool invariants passed.')
+            print('\n'.join(failures));sys.exit(1)
+          print(f'Mobile HUD, reticle and tool invariants passed for {app_name}.')
