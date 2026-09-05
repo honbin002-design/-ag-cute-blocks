@@ -1,0 +1,70 @@
+name: Patch V0.4.95 once
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/patch-v0495-once.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Apply V0.4.95 fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          # 1) Preserve special5 through avatar normalization; this was the root cause of fallback-to-girl.
+          p=Path('character-models.js'); s=p.read_text()
+          old="const role=['special','special2','special3'].includes(src.role)?src.role:'standard';"
+          new="const role=['special','special2','special3','special5'].includes(src.role)?src.role:'standard';"
+          if old not in s and new not in s: raise SystemExit('character role normalization anchor missing')
+          s=s.replace(old,new); p.write_text(s)
+
+          # 2) Sleep button: keep it on the right, but outside the action/life button columns.
+          p=Path('sleep-routine.js'); s=p.read_text()
+          old=".agSleepMorning{position:fixed;z-index:122;right:max(18px,calc(env(safe-area-inset-right) + 12px));top:38%;border:0;border-radius:14px;padding:10px 13px;background:#fff6c9ed;color:#40565d;font-size:12px;font-weight:900;box-shadow:0 4px 16px #0003;pointer-events:auto}"
+          new=".agSleepMorning{position:fixed;z-index:122;right:max(92px,calc(env(safe-area-inset-right) + 86px));top:max(94px,calc(env(safe-area-inset-top) + 82px));border:0;border-radius:14px;padding:10px 13px;background:#fff6c9ed;color:#40565d;font-size:12px;font-weight:900;box-shadow:0 4px 16px #0003;pointer-events:auto;white-space:nowrap}"
+          if old not in s and new not in s: raise SystemExit('sleep button css anchor missing')
+          s=s.replace(old,new)
+          # 3) After lie pose is applied, measure the actual posed avatar and lift it so its underside clears the pillow top.
+          old="setPose(def.action);state.active=true;state.furniture=furniture;state.action=def.action;"
+          new="setPose(def.action);if(def.action==='lie'){player.updateMatrixWorld(true);const posedBox=new THREE.Box3().setFromObject(player);const pillowTop=furniture.localToWorld(new THREE.Vector3(0,.94,0)).y;if(Number.isFinite(posedBox.min.y))player.position.y+=Math.max(0,pillowTop+.025-posedBox.min.y);player.updateMatrixWorld(true)}state.active=true;state.furniture=furniture;state.action=def.action;"
+          if old not in s and new not in s: raise SystemExit('sleep placement anchor missing')
+          s=s.replace(old,new); p.write_text(s)
+
+          # 4) Version chain and cache busting.
+          p=Path('app-v043.js'); s=p.read_text(); s=s.replace("const VERSION='V0.4.93'", "const VERSION='V0.4.95'"); p.write_text(s)
+          p=Path('index.html'); s=p.read_text().replace('V0.4.94','V0.4.95').replace('v=0.4.94','v=0.4.95'); p.write_text(s)
+          p=Path('bootstrap-v045.js'); s=p.read_text().replace('0.4.94','0.4.95'); p.write_text(s)
+          p=Path('sw.js'); s=p.read_text().replace("ag-cute-blocks-v045-runtime154","ag-cute-blocks-v045-runtime155"); p.write_text(s)
+      - name: Validate V0.4.95
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "['special','special2','special3','special5'].includes(src.role)" character-models.js
+          grep -Fq "SPECIAL5_TOTAL_BYTES=39650000" character-asset-runtime.js
+          grep -Fq "key==='special5'?loadBinaryGltf" character-asset-runtime.js
+          grep -Fq "pillowTop+.025-posedBox.min.y" sleep-routine.js
+          grep -Fq "right:max(92px" sleep-routine.js
+          grep -Fq "V0.4.95" app-v043.js
+          grep -Fq "V0.4.95" index.html
+          grep -Fq "version:'0.4.95'" bootstrap-v045.js
+          grep -Fq "runtime155" sw.js
+          node --check app-v043.js
+          node --check character-models.js
+          node --check sleep-routine.js
+          node --check bootstrap-v045.js
+          node --check sw.js
+      - name: Commit V0.4.95
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add character-models.js sleep-routine.js app-v043.js index.html bootstrap-v045.js sw.js
+          git commit -m 'release: V0.4.95 fix special5 and bed sleep layout'
+          git push origin HEAD:dev-v0.1
