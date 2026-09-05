@@ -1,0 +1,74 @@
+name: Patch V0.5.00 sleep camera and movement precision
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-v0500-controls.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Build V0.5.00 runtime
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app-v0499.js')
+          s=p.read_text()
+          def rep(old,new,label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'missing patch target: {label}')
+              s=s.replace(old,new,1)
+          rep("const VERSION='V0.4.99'", "const VERSION='V0.5.00'", 'version')
+          rep("let yaw=-.4,pitch=-.16,moveX=0,moveY=0,vy=0,onGround=true;const JUMP_VELOCITY=.23;const playerState={mode:'free',anchor:null,previousCamera:null};let movementMode=settings.movementMode==='run'?'run':'walk';",
+              "let yaw=-.4,pitch=-.16,moveX=0,moveY=0,vy=0,onGround=true,sleepDistance=4.2,sleepPitch=.42;const JUMP_VELOCITY=.17;const playerState={mode:'free',anchor:null,previousCamera:null};let movementMode=settings.movementMode==='run'?'run':'walk';", 'jump/sleep vars')
+          rep("moveX=x/radius;moveY=y/radius", "const nx=x/radius,ny=y/radius;moveX=Math.sign(nx)*Math.pow(Math.abs(nx),1.35);moveY=Math.sign(ny)*Math.pow(Math.abs(ny),1.35)", 'joystick curve')
+          old="renderer.domElement.onpointerdown=e=>{if((playerState.mode!=='free'&&playerState.mode!=='lie')||e.clientX<=innerWidth*.29)return;if(cameraMode==='farm'){renderer.domElement.setPointerCapture?.(e.pointerId);farmTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(farmTouches.size===1){lookId=e.pointerId;lx=e.clientX;ly=e.clientY}else if(farmTouches.size===2){lookId=null}return}lookId=e.pointerId;lx=e.clientX;ly=e.clientY};renderer.domElement.onpointermove=e=>{if(cameraMode==='farm'){const p=farmTouches.get(e.pointerId);if(!p)return;if(farmTouches.size>=2){const before=farmTouchDistance();p.x=e.clientX;p.y=e.clientY;const after=farmTouchDistance();if(before>0&&after>0)farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance*before/after))}else{farmYaw-=(e.clientX-lx)*.006;farmPitch=Math.max(.42,Math.min(1.12,farmPitch+(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY;p.x=e.clientX;p.y=e.clientY}return}if(e.pointerId!==lookId)return;yaw-=(e.clientX-lx)*.0075;pitch=Math.max(-1.08,Math.min(.6,pitch-(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY};renderer.domElement.onpointerup=finishFarmPointer;renderer.domElement.onpointercancel=finishFarmPointer;renderer.domElement.onwheel=e=>{if(cameraMode!=='farm')return;e.preventDefault();farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance+e.deltaY*.01));saveSettings()};"
+          new="renderer.domElement.onpointerdown=e=>{if((playerState.mode!=='free'&&playerState.mode!=='lie')||e.clientX<=innerWidth*.29)return;if(cameraMode==='farm'||playerState.mode==='lie'){renderer.domElement.setPointerCapture?.(e.pointerId);farmTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(farmTouches.size===1){lookId=e.pointerId;lx=e.clientX;ly=e.clientY}else if(farmTouches.size===2){lookId=null}return}lookId=e.pointerId;lx=e.clientX;ly=e.clientY};renderer.domElement.onpointermove=e=>{if(cameraMode==='farm'||playerState.mode==='lie'){const p=farmTouches.get(e.pointerId);if(!p)return;if(farmTouches.size>=2){const before=farmTouchDistance();p.x=e.clientX;p.y=e.clientY;const after=farmTouchDistance();if(before>0&&after>0){if(playerState.mode==='lie')sleepDistance=Math.max(2.4,Math.min(9.5,sleepDistance*before/after));else farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance*before/after))}}else{const dx=e.clientX-lx,dy=e.clientY-ly;if(playerState.mode==='lie'){yaw-=dx*.006;sleepPitch=Math.max(-.12,Math.min(1.18,sleepPitch+dy*.006))}else{farmYaw-=dx*.006;farmPitch=Math.max(.42,Math.min(1.12,farmPitch+dy*.006))}lx=e.clientX;ly=e.clientY;p.x=e.clientX;p.y=e.clientY}return}if(e.pointerId!==lookId)return;yaw-=(e.clientX-lx)*.0075;pitch=Math.max(-1.08,Math.min(.6,pitch-(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY};renderer.domElement.onpointerup=finishFarmPointer;renderer.domElement.onpointercancel=finishFarmPointer;renderer.domElement.onwheel=e=>{if(cameraMode!=='farm'&&playerState.mode!=='lie')return;e.preventDefault();if(playerState.mode==='lie')sleepDistance=Math.max(2.4,Math.min(9.5,sleepDistance+e.deltaY*.01));else farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance+e.deltaY*.01));saveSettings()};"
+          rep(old,new,'sleep orbit/pinch controls')
+          rep("const speed=(movementMode==='run'?.22:.135)*dt,dx=moveForward.x*(-moveY)*speed+moveRight.x*moveX*speed,dz=moveForward.z*(-moveY)*speed+moveRight.z*moveX*speed;",
+              "const groundSpeed=movementMode==='run'?.22:.115,airControl=onGround?1:.48,speed=groundSpeed*airControl*dt,dx=moveForward.x*(-moveY)*speed+moveRight.x*moveX*speed,dz=moveForward.z*(-moveY)*speed+moveRight.z*moveX*speed;", 'walk speed/air control')
+          oldcam="eye.set(player.position.x,player.position.y+(playerState.mode==='lie'?.65:1.62),player.position.z);if(cameraMode==='third'){desiredCamera.set(eye.x+Math.sin(yaw)*THIRD_CAMERA_DISTANCE,eye.y+1.85,eye.z+Math.cos(yaw)*THIRD_CAMERA_DISTANCE);camera.position.lerp(safeCamera(eye,desiredCamera),.3);camera.lookAt(eye)}else if(cameraMode==='farm')"
+          newcam="eye.set(player.position.x,player.position.y+(playerState.mode==='lie'?.65:1.62),player.position.z);if(cameraMode==='third'){if(playerState.mode==='lie'){const sleepHorizontal=Math.cos(sleepPitch)*sleepDistance;desiredCamera.set(eye.x+Math.sin(yaw)*sleepHorizontal,eye.y+Math.sin(sleepPitch)*sleepDistance,eye.z+Math.cos(yaw)*sleepHorizontal);camera.position.lerp(safeCamera(eye,desiredCamera),.3);camera.lookAt(eye)}else{desiredCamera.set(eye.x+Math.sin(yaw)*THIRD_CAMERA_DISTANCE,eye.y+1.85,eye.z+Math.cos(yaw)*THIRD_CAMERA_DISTANCE);camera.position.lerp(safeCamera(eye,desiredCamera),.3);camera.lookAt(eye)}}else if(cameraMode==='farm')"
+          rep(oldcam,newcam,'sleep third-person camera')
+          Path('app-v0500.js').write_text(s)
+
+          b=Path('bootstrap-v0499.js').read_text().replace('0.4.99','0.5.00').replace('app-v0499.js','app-v0500.js')
+          Path('bootstrap-v0500.js').write_text(b)
+
+          h=Path('play-v0499.html').read_text()
+          h=h.replace('V0.4.99','V0.5.00').replace('bootstrap-v0499.js?v=0.4.99','bootstrap-v0500.js?v=0.5.00')
+          Path('play-v0500.html').write_text(h)
+
+          idx=Path('index.html').read_text()
+          idx=idx.replace('V0.4.98','V0.5.00').replace('bootstrap-v0498.js?v=0.4.98','bootstrap-v0500.js?v=0.5.00')
+          idx=idx.replace('id="agcb-v0498-sw-retire"','id="agcb-v0500-sw-retire"')
+          Path('index.html').write_text(idx)
+
+          sw=Path('sw.js').read_text()
+          sw=sw.replace("const CACHE='ag-cute-blocks-v045-runtime156';", "const CACHE='ag-cute-blocks-v0500-runtime1';")
+          sw=sw.replace("'./bootstrap-v045.js','./app-v043.js'", "'./bootstrap-v0500.js','./app-v0500.js'")
+          sw=sw.replace("if(key.startsWith('ag-cute-blocks-v045-runtime'))await caches.delete(key)", "if(key.startsWith('ag-cute-blocks-v045-runtime')||key.startsWith('ag-cute-blocks-v049')||key.startsWith('ag-cute-blocks-v0500-runtime'))await caches.delete(key)")
+          Path('sw.js').write_text(sw)
+          PY
+      - name: Validate V0.5.00
+        run: |
+          node --check app-v0500.js
+          node --check bootstrap-v0500.js
+          grep -q "V0.5.00" play-v0500.html
+          grep -q "V0.5.00" index.html
+          grep -q "sleepDistance" app-v0500.js
+          grep -q "movementMode==='run'?.22:.115" app-v0500.js
+      - name: Commit V0.5.00
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v0500.js bootstrap-v0500.js play-v0500.html index.html sw.js
+          git commit -m 'release: V0.5.00 sleep orbit zoom and precision movement'
+          git push origin HEAD:dev-v0.1
