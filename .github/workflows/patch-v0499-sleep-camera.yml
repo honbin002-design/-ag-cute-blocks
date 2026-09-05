@@ -1,3 +1,4 @@
+# trigger
 name: Patch V0.4.99 sleep camera
 on:
   push:
@@ -17,37 +18,25 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-
-          # Current character normalization is copied to a never-before-cached URL.
           cm=Path('character-models.js').read_text()
           if "'special5'" not in cm: raise SystemExit('special5 missing from current character normalization')
           Path('character-models-v0499.js').write_text(cm)
-
-          # Current special5 asset loader is copied to a never-before-cached URL.
           ca=Path('character-asset-runtime.js').read_text()
           if 'SPECIAL5_TOTAL_BYTES=39650000' not in ca: raise SystemExit('special5 asset loader mismatch')
           Path('character-asset-runtime-v0499.js').write_text(ca)
-
-          # Preserve the corrected sleep button/layout through a unique runtime URL.
           sr=Path('sleep-routine.js').read_text()
           Path('sleep-routine-v0499.js').write_text(sr)
-
           app=Path('app-v0498.js').read_text()
           app=app.replace("from './character-models.js'", "from './character-models-v0499.js'")
           app=app.replace("const VERSION='V0.4.98'", "const VERSION='V0.4.99'")
-          # Role 5 must not fall through to standard/girl.
           app=app.replace("if(['special','special2','special3'].includes(value))", "if(['special','special2','special3','special5'].includes(value))")
-          # Sleeping/lying locks movement but must NOT lock camera drag.
           old="renderer.domElement.onpointerdown=e=>{if(playerState.mode!=='free'||e.clientX<=innerWidth*.29)return;"
           new="renderer.domElement.onpointerdown=e=>{if((playerState.mode!=='free'&&playerState.mode!=='lie')||e.clientX<=innerWidth*.29)return;"
           if old not in app: raise SystemExit('camera pointer lock anchor missing')
           app=app.replace(old,new)
-          # Do not resurrect the retired root service worker from the main runtime.
           app=app.replace("if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});", "")
-          # Remove misleading legacy load message.
           app=app.replace("toast(loaded?'V0.4.77 已接續原世界':'V0.4.77 已建立世界')", "toast(loaded?`${VERSION} 已接續原世界`:`${VERSION} 已建立世界`)")
           Path('app-v0499.js').write_text(app)
-
           boot=Path('bootstrap-v0498.js').read_text()
           boot=boot.replace("./app-v0498.js?v=0.4.98", "./app-v0499.js")
           boot=boot.replace("./character-asset-runtime.js?v=0.4.98", "./character-asset-runtime-v0499.js")
@@ -55,13 +44,10 @@ jobs:
           boot=boot.replace("version:'0.4.98'", "version:'0.4.99'")
           boot=boot.replace('V0.4.98','V0.4.99').replace('v=0.4.98','v=0.4.99')
           Path('bootstrap-v0499.js').write_text(boot)
-
-          # Unique HTML filename bypasses the stale root navigation cache itself.
           html=Path('index.html').read_text()
           html=html.replace('V0.4.98','V0.4.99').replace('v=0.4.98','v=0.4.99')
           html=html.replace('./bootstrap-v0498.js?v=0.4.99','./bootstrap-v0499.js')
           Path('play-v0499.html').write_text(html)
-
       - name: Validate V0.4.99
         shell: bash
         run: |
