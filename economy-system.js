@@ -4,11 +4,11 @@ export const ECONOMY_SCHEMA=2;
 
 export const ITEM_NAMES={
   carrot:'紅蘿蔔',corn:'玉米',pumpkin:'南瓜',tomato:'番茄',strawberry:'草莓',cabbage:'高麗菜',potato:'馬鈴薯',
-  apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛'
+  apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'
 };
 export const SELL_VALUES={
   carrot:18,corn:26,pumpkin:42,tomato:24,strawberry:30,cabbage:28,potato:20,
-  apple:24,orange:26,peach:30,egg:18,milk:34,wool:38
+  apple:24,orange:26,peach:30,egg:18,milk:34,wool:38,smallFish:18,riverFish:34,goldFish:88
 };
 export const SHOP_ITEMS=[
   {id:'sapling-peach',name:'特選桃樹苗',price:180,kind:'sapling',icon:'🌳'},
