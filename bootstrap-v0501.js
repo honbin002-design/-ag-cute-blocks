@@ -37,4 +37,7 @@ import './sleep-routine-v0499.js';
 import './wildlife-live-runtime.js';
 import './weather-visual-runtime.js';
 
-globalThis.__AGCB_BOOTSTRAP={version:'0.5.01',loaded:true};
+// V0.5.02 additive gameplay: fishing is isolated from the proven V0.5.01 movement/build/collision core.
+import './fishing-runtime-v0502.js?v=0.5.02';
+
+globalThis.__AGCB_BOOTSTRAP={version:'0.5.02',loaded:true};
