@@ -25,17 +25,21 @@ jobs:
           s=s.replace(old,new); p.write_text(s)
 
           p=Path('sleep-routine.js'); s=p.read_text()
-          css=".agSleepMorning{position:fixed;z-index:122;right:max(92px,calc(env(safe-area-inset-right) + 86px));top:max(94px,calc(env(safe-area-inset-top) + 82px));border:0;border-radius:14px;padding:10px 13px;background:#fff6c9ed;color:#40565d;font-size:12px;font-weight:900;box-shadow:0 4px 16px #0003;pointer-events:auto;white-space:nowrap}"
-          s,n=re.subn(r'\.agSleepMorning\{[^}]*\}',css,s,count=1)
+          css=".sleepMorning{position:fixed;z-index:88;left:auto;right:max(104px,calc(env(safe-area-inset-right) + 96px));top:max(96px,calc(env(safe-area-inset-top) + 84px));transform:none;border:0;border-radius:18px;padding:11px 15px;background:#304766e8;color:white;font-size:13px;font-weight:900;box-shadow:0 5px 22px #0004;display:none;pointer-events:auto;touch-action:manipulation;white-space:nowrap}"
+          s,n=re.subn(r'\.sleepMorning\{[^}]*\}',css,s,count=1)
           if n!=1: raise SystemExit('sleep button css anchor missing')
-          old="setPose(def.action);state.active=true;state.furniture=furniture;state.action=def.action;"
-          new="setPose(def.action);if(def.action==='lie'){player.updateMatrixWorld(true);const posedBox=new THREE.Box3().setFromObject(player);const pillowTop=furniture.localToWorld(new THREE.Vector3(0,.94,0)).y;if(Number.isFinite(posedBox.min.y))player.position.y+=Math.max(0,pillowTop+.025-posedBox.min.y);player.updateMatrixWorld(true)}state.active=true;state.furniture=furniture;state.action=def.action;"
-          if old not in s and new not in s: raise SystemExit('sleep placement anchor missing')
-          s=s.replace(old,new); p.write_text(s)
+          s=s.replace("@media(max-height:430px){.sleepMorning{top:34%;right:max(14px,calc(env(safe-area-inset-right) + 10px));padding:10px 14px;font-size:12px}}", "@media(max-height:430px){.sleepMorning{top:max(92px,calc(env(safe-area-inset-top) + 80px));right:max(98px,calc(env(safe-area-inset-right) + 90px));padding:9px 13px;font-size:12px}}")
+          s=s.replace("btn.textContent='😴 睡到早上';btn.setAttribute('aria-label','睡到早上')", "btn.textContent='😴 睡到天亮';btn.setAttribute('aria-label','睡到天亮')")
+          p.write_text(s)
 
-          p=Path('app-v043.js'); s=p.read_text();
+          p=Path('app-v043.js'); s=p.read_text()
+          old="function enterFurniture(o,action){const a=furnitureAnchorWorld(o);if(!a)return;playerState.mode=action;playerState.anchor=o;playerState.previousCamera=cameraMode;if(cameraMode==='first'){cameraMode='third';ui.cam.textContent='🎥 第三人稱'}player.position.copy(a);player.rotation.y=furnitureYaw(o);vy=0;onGround=true;setCuteCharacterPose(player,action==='lie'?'lie':'sit');toast(action==='lie'?'躺下休息 🛏️':'坐下休息 ✓')}"
+          new="function enterFurniture(o,action){const a=furnitureAnchorWorld(o);if(!a)return;playerState.mode=action;playerState.anchor=o;playerState.previousCamera=cameraMode;if(cameraMode==='first'){cameraMode='third';ui.cam.textContent='🎥 第三人稱'}player.position.copy(a);player.rotation.y=furnitureYaw(o);vy=0;onGround=true;setCuteCharacterPose(player,action==='lie'?'lie':'sit');if(action==='lie'){player.updateMatrixWorld(true);const posedBox=new THREE.Box3().setFromObject(player);const pillowTop=o.localToWorld(new THREE.Vector3(0,.94,0)).y;if(Number.isFinite(posedBox.min.y))player.position.y+=Math.max(0,pillowTop+.025-posedBox.min.y);player.updateMatrixWorld(true)}toast(action==='lie'?'躺下休息 🛏️':'坐下休息 ✓')}"
+          if old not in s and new not in s: raise SystemExit('enterFurniture anchor missing')
+          s=s.replace(old,new)
           if "const VERSION='V0.4.93'" not in s and "const VERSION='V0.4.95'" not in s: raise SystemExit('app version anchor missing')
           s=s.replace("const VERSION='V0.4.93'", "const VERSION='V0.4.95'"); p.write_text(s)
+
           p=Path('index.html'); s=p.read_text().replace('V0.4.94','V0.4.95').replace('v=0.4.94','v=0.4.95'); p.write_text(s)
           p=Path('bootstrap-v045.js'); s=p.read_text().replace('0.4.94','0.4.95'); p.write_text(s)
           p=Path('sw.js'); s=p.read_text().replace("ag-cute-blocks-v045-runtime154","ag-cute-blocks-v045-runtime155"); p.write_text(s)
@@ -46,8 +50,9 @@ jobs:
           grep -Fq "['special','special2','special3','special5'].includes(src.role)" character-models.js
           grep -Fq "SPECIAL5_TOTAL_BYTES=39650000" character-asset-runtime.js
           grep -Fq "key==='special5'?loadBinaryGltf" character-asset-runtime.js
-          grep -Fq "pillowTop+.025-posedBox.min.y" sleep-routine.js
-          grep -Fq "right:max(92px" sleep-routine.js
+          grep -Fq "pillowTop+.025-posedBox.min.y" app-v043.js
+          grep -Fq "right:max(104px" sleep-routine.js
+          grep -Fq "睡到天亮" sleep-routine.js
           grep -Fq "V0.4.95" app-v043.js
           grep -Fq "V0.4.95" index.html
           grep -Fq "version:'0.4.95'" bootstrap-v045.js
