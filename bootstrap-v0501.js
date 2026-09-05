@@ -36,5 +36,6 @@ import './furniture-life-details.js';
 import './sleep-routine-v0499.js';
 import './wildlife-live-runtime.js';
 import './weather-visual-runtime.js';
+import './fishing-runtime-v0502.js?v=0.5.02';
 
 globalThis.__AGCB_BOOTSTRAP={version:'0.5.02',loaded:true};
