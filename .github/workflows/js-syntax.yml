@@ -53,45 +53,43 @@ jobs:
             print('\n'.join(failures));sys.exit(1)
           print('Relative named-import validation passed.')
 
-      - name: Verify current runtime chain
+      - name: Resolve current release and core app
         shell: python
         run: |
           import pathlib,re,sys
           index=pathlib.Path('index.html').read_text(encoding='utf-8')
           src=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=([0-9.]+)"></script>',index)
           if not src: sys.exit('index current bootstrap reference missing')
-          boot_name,index_v=src.groups()
-          boot_path=pathlib.Path(boot_name)
-          if not boot_path.exists(): sys.exit(f'index references missing {boot_name}')
-          boot=boot_path.read_text(encoding='utf-8')
-          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
-          if not m: sys.exit('bootstrap version missing')
-          v=m.group(1); expected=f'V{v}'; failures=[]
-          if index_v!=v: failures.append(f'index/bootstrap version mismatch: {index_v} != {v}')
-          meta=re.search(r'<meta name="ag-runtime-version" content="([^"]+)">',index)
-          if not meta or meta.group(1)!=expected: failures.append('index visible version does not match bootstrap')
-          for target,query_version in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
-            if query_version!=v: failures.append(f'bootstrap query mismatch: {target}?v={query_version} != {v}')
-          app_match=re.search(r"import ['\"]\./(app-v\d+\.js)(?:\?v=[^'\"]+)?['\"]",boot)
-          if not app_match: failures.append('current app import missing from bootstrap')
-          else:
-            app_name=app_match.group(1); app_path=pathlib.Path(app_name)
-            if not app_path.exists(): failures.append(f'bootstrap references missing {app_name}')
-            else:
-              app=app_path.read_text(encoding='utf-8')
-              if f"const VERSION='{expected}'" not in app: failures.append(f'{app_name} visible version does not match {expected}')
+          boot_name,v=src.groups();boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
+          m=re.search(r"import ['\"]\./(app-v\d+\.js)(?:\?v=[^'\"]+)?['\"]",boot)
+          if not m: sys.exit('current app import missing from bootstrap')
+          wrapper_name=m.group(1);wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8')
+          core_name=wrapper_name
+          if '__AGCB_RELEASE_OVERLAY' in wrapper:
+            base=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",wrapper)
+            if not base: sys.exit('additive app wrapper does not identify base app')
+            core_name=base.group(1)
+          pathlib.Path('/tmp/agcb-current').write_text(f'{boot_name}\n{wrapper_name}\n{core_name}\n{v}\n',encoding='utf-8')
+          print(f'current release {v}: {boot_name} -> {wrapper_name} -> core {core_name}')
+
+      - name: Verify current runtime chain
+        shell: python
+        run: |
+          import pathlib,re,sys
+          boot_name,wrapper_name,core_name,v=pathlib.Path('/tmp/agcb-current').read_text().splitlines()
+          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8')
+          expected=f'V{v}';failures=[]
+          if f'<meta name="ag-runtime-version" content="{expected}">' not in index: failures.append('index visible version does not match bootstrap')
+          if f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version mismatch')
+          if f"const VERSION='{expected}'" not in wrapper: failures.append('release wrapper visible version mismatch')
+          for target,qv in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
+            if qv!=v: failures.append(f'bootstrap query mismatch: {target}?v={qv} != {v}')
           required=['building-extension-runtime.js','asset-fetch-resilience-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','mobile-viewport-lock-runtime.js']
           for name in required:
             if name not in boot: failures.append(f'bootstrap missing {name}')
+          if v=='0.5.05' and 'fishing-ecology-runtime-v0505.js?v=0.5.05' not in boot: failures.append('V0.5.05 fishing ecology runtime missing')
           if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime-v0499.js'): failures.append('asset resilience must load before character asset runtime')
-          viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
-          mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
-          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
-          persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8')
-          sleep_path=pathlib.Path('sleep-routine-v0499.js') if pathlib.Path('sleep-routine-v0499.js').exists() else pathlib.Path('sleep-routine.js')
-          sleep=sleep_path.read_text(encoding='utf-8')
-          motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8')
-          resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
+          viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8');mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8');aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8');persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8');sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8');motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8');resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
             if token not in viewport: failures.append(f'viewport lock missing {token}')
           if 'crosshairVisualOnly:true' not in mobile: failures.append('mobile crosshair visual-only base marker missing')
@@ -105,7 +103,28 @@ jobs:
             if token not in resilience: failures.append(f'asset resilience missing {token}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print(f'Current runtime chain checks passed for {expected} via {boot_name}.')
+          print(f'Current runtime chain checks passed for {expected}; core={core_name}.')
+
+      - name: Verify fishing ecology rules
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {getFishingWeights,chooseFish,fishingTimeBand,fishRollForLegacyThreshold} from './fishing-ecology-system.js';
+          const sum=w=>Object.values(w).reduce((a,b)=>a+b,0);
+          for(const ctx of [
+            {season:'spring',weather:'sunny',minute:720},
+            {season:'autumn',weather:'thunderstorm',minute:18*60},
+            {season:'winter',weather:'snow',minute:23*60},
+          ]) assert.ok(Math.abs(sum(getFishingWeights(ctx))-1)<1e-9);
+          assert.equal(fishingTimeBand(6*60),'dawn');assert.equal(fishingTimeBand(12*60),'day');assert.equal(fishingTimeBand(18*60),'dusk');assert.equal(fishingTimeBand(23*60),'night');
+          const day=getFishingWeights({season:'summer',weather:'sunny',minute:12*60});
+          const stormDusk=getFishingWeights({season:'autumn',weather:'thunderstorm',minute:18*60});
+          assert.ok(stormDusk.goldFish>day.goldFish,'autumn thunderstorm dusk should improve rare-fish weight');
+          assert.equal(chooseFish({},()=>0),'smallFish');assert.equal(chooseFish({},()=>.999),'goldFish');
+          assert.ok(fishRollForLegacyThreshold('smallFish')<.5);assert.ok(fishRollForLegacyThreshold('riverFish')>=.5&&fishRollForLegacyThreshold('riverFish')<.82);assert.ok(fishRollForLegacyThreshold('goldFish')>=.82);
+          console.log('Fishing ecology normalization, context shifts and legacy threshold bridge passed.');
+          NODE
 
       - name: Verify centralized daily progression rules
         shell: bash
@@ -125,18 +144,10 @@ jobs:
       - name: Verify mobile HUD and tool invariants
         shell: python
         run: |
-          import pathlib,re,sys
-          index=pathlib.Path('index.html').read_text(encoding='utf-8')
-          boot_name=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=',index).group(1)
-          boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
-          app_name=re.search(r"import ['\"]\./(app-v\d+\.js)",boot).group(1)
-          app=pathlib.Path(app_name).read_text(encoding='utf-8')
-          css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
-          ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
-          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
-          failures=[]
+          import pathlib,sys
+          _,_,core_name,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8');ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8');aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8');failures=[]
           for token in ["'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","function standSurfaceY","function stairSurfaceY","globalThis.__AGCB_GAME_ACTIONS"]:
-            if token not in app: failures.append(f'app missing {token}')
+            if token not in app: failures.append(f'core app missing {token}')
           if "['stair','🪜','樓梯']" not in app: failures.append('official stair entry missing')
           if 'duplicateStairRemoved:true' not in ext: failures.append('duplicate stair cleanup marker missing')
           if 'directMobileMaterialFix:true' not in ext: failures.append('mobile tile/ceramic fix marker missing')
@@ -147,4 +158,4 @@ jobs:
             if token not in css: failures.append(f'HUD layout missing {token}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print(f'Mobile HUD, reticle and tool invariants passed for {app_name}.')
+          print(f'Mobile HUD, reticle and tool invariants passed for core {core_name}.')
