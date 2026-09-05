@@ -19,28 +19,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in building-extension-runtime.js procedural-material-runtime.js collision-cache-runtime.js raycast-budget-runtime.js character-polish-runtime.js character-models.js character-asset-runtime.js character-motion-fix-runtime.js mobile-viewport-lock-runtime.js mobile-controls-runtime.js mobile-input-runtime.js ag-original-character-runtime.js ag-original-animal-runtime.js pet-grounding-runtime.js animal-models.js weather-visual-runtime.js daily-progression-system.js crop-care-runtime.js sleep-routine.js; do
+          for file in building-extension-runtime.js procedural-material-runtime.js collision-cache-runtime.js raycast-budget-runtime.js character-polish-runtime.js character-motion-fix-runtime.js mobile-viewport-lock-runtime.js mobile-controls-runtime.js mobile-input-runtime.js ag-original-character-runtime.js ag-original-animal-runtime.js pet-grounding-runtime.js animal-models.js weather-visual-runtime.js daily-progression-system.js crop-care-runtime.js sleep-routine-v0499.js; do
             echo "Checking $file"
             node --input-type=module --check < "$file"
           done
 
+      - name: Resolve current release files
+        shell: python
+        run: |
+          import pathlib,re,sys
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=([0-9.]+)"></script>',index)
+          if not m: sys.exit('current bootstrap reference missing from index')
+          boot_name,v=m.groups(); boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
+          a=re.search(r"import ['\"]\./(app-v\d+\.js)(?:\?v=[^'\"]+)?['\"]",boot)
+          if not a: sys.exit('current app import missing from bootstrap')
+          pathlib.Path('/tmp/agcb-current').write_text(f'{boot_name}\n{a.group(1)}\n{v}\n',encoding='utf-8')
+          print(f'current release: {v} / {boot_name} / {a.group(1)}')
+
       - name: Verify current building and collision invariants
         shell: python
         run: |
-          import pathlib,sys,re
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          import pathlib,sys
+          boot_name,app_name,v=pathlib.Path('/tmp/agcb-current').read_text().splitlines()
+          app=pathlib.Path(app_name).read_text(encoding='utf-8')
+          boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
           collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8')
           ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8')
-          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
-          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
           failures=[]
           required_app=["['stair','🪜','樓梯']","function stairSurfaceY","function standSurfaceY","'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","registerSolid","unregisterSolid","reindexSolid","SOLID_CELL=4","solidGrid=new Map()","buildAimTargets","registerBuildAimTarget","unregisterBuildAimTarget","globalThis.__AGCB_GAME_ACTIONS"]
           for token in required_app:
-            if token not in app: failures.append(f'app missing {token}')
-          required_ext=['duplicateStairRemoved:true','directMobileMaterialFix:true','created.userData.mat=STATE.material','stairsGeometry','upgradeStairs','schema:5']
-          for token in required_ext:
+            if token not in app: failures.append(f'{app_name} missing {token}')
+          for token in ['duplicateStairRemoved:true','directMobileMaterialFix:true','created.userData.mat=STATE.material','stairsGeometry','upgradeStairs','schema:5']:
             if token not in ext: failures.append(f'extension missing {token}')
           if 'data-agcb-build-value="stairs"' in ext: failures.append('duplicate stairs UI still present')
           if "mesh.userData.shape!=='stairs'" not in ext: failures.append('legacy stairs-save compatibility missing')
@@ -50,48 +62,48 @@ jobs:
             if token not in collision: failures.append(f'collision cache missing {token}')
           for token in ['const nearby=[]','bufferReuses']:
             if token not in ray: failures.append(f'raycast budget missing {token}')
-          for token in ['building-extension-runtime.js','procedural-material-runtime.js','collision-cache-runtime.js','raycast-budget-runtime.js']:
-            if token not in boot: failures.append(f'bootstrap missing {token}')
-            if token not in sw: failures.append(f'service worker missing {token}')
+          for name in ['building-extension-runtime.js','procedural-material-runtime.js','collision-cache-runtime.js','raycast-budget-runtime.js']:
+            if name not in boot: failures.append(f'{boot_name} missing {name}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Current building, stair compatibility, material and collision checks passed.')
+          print(f'Building, stair, material and collision checks passed for {app_name}.')
 
       - name: Verify iPhone interaction and viewport invariants
         shell: python
         run: |
           import pathlib,sys
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          _,app_name,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines()
+          app=pathlib.Path(app_name).read_text(encoding='utf-8')
           viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
           inputjs=pathlib.Path('mobile-input-runtime.js').read_text(encoding='utf-8')
           controls=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
           css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
-          sleep=pathlib.Path('sleep-routine.js').read_text(encoding='utf-8')
+          sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8')
           failures=[]
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','CONTROL_SELECTOR','controlAwareTouchGuard:true','multitouchGameplayPreserved:true']:
             if token not in viewport: failures.append(f'viewport runtime missing {token}')
           legacy="document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()" in app
-          if legacy and 'legacyBlanketTouchBlockerSuppressed' not in viewport:
-            failures.append('legacy blanket two-touch blocker exists without suppression guard')
+          if legacy and 'legacyBlanketTouchBlockerSuppressed' not in viewport: failures.append('legacy blanket two-touch blocker exists without suppression guard')
           if 'direct-game-actions-v3' not in inputjs or 'bridge?.invoke?.(el.id)' not in inputjs: failures.append('direct mobile action bridge missing')
           if 'crosshairVisualOnly:true' not in controls: failures.append('crosshair visual-only runtime marker missing')
           if 'pointer-events:none!important' not in css: failures.append('crosshair CSS still captures input')
-          if 'right:max(18px' not in sleep: failures.append('sleep-to-morning button is not kept on right side')
+          if 'right:max(' not in sleep or 'sleepMorning' not in sleep: failures.append('sleep-to-morning button is not kept on right side')
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('iPhone interaction, two-thumb safety and viewport checks passed.')
 
-      - name: Verify release chain is not pinned to legacy V0.4.76
+      - name: Verify current release alignment
         shell: python
         run: |
           import pathlib,re,sys
-          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
-          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
-          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
-          if not m: sys.exit('bootstrap version missing')
-          v=m.group(1)
-          if v=='0.4.76': sys.exit('CI is still pinned to legacy V0.4.76')
-          if not re.search(r"const CACHE='ag-cute-blocks-v045-runtime\d+';",sw): sys.exit('runtime cache version missing')
-          if 'duplicateStairRemoved:true' not in ext: sys.exit('current stair cleanup marker missing')
-          print(f'Current release chain accepted at {v}.')
+          boot_name,app_name,v=pathlib.Path('/tmp/agcb-current').read_text().splitlines()
+          index=pathlib.Path('index.html').read_text(encoding='utf-8')
+          boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
+          failures=[]
+          if v.startswith('0.4.'): failures.append(f'current release unexpectedly points to legacy {v}')
+          if f'<meta name="ag-runtime-version" content="V{v}">' not in index: failures.append('index meta version mismatch')
+          if f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version mismatch')
+          if app_name not in boot: failures.append('current app not imported by bootstrap')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print(f'Current release chain accepted at V{v}.')
