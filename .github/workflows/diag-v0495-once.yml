@@ -10,16 +10,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: dev-v0.1
-      - name: Print avatar selection contexts
+      - name: Print exact avatar handlers
         shell: python
         run: |
           from pathlib import Path
           s=Path('app-v043.js').read_text()
-          for n in ['avatarCustomization','ui.avatar','avatarStyle','settings.avatar','createCuteChildAvatar','AGCB_LIVE_AVATARS']:
+          for n in ["ui.avatar.addEventListener","ui.avatar.onchange","ui.avatar.value","role:ui.avatar","avatarCustomization.role=","role==='special3'","role==='special2'"]:
             print('\n====',n,'====')
-            start=0
+            start=0; c=0
             while True:
               i=s.find(n,start)
-              if i<0: break
-              print(s[max(0,i-900):min(len(s),i+1800)].replace(';',';\n'))
-              start=i+len(n)
+              if i<0 or c>=10: break
+              print(s[max(0,i-600):min(len(s),i+1400)].replace(';',';\n'))
+              start=i+len(n); c+=1
