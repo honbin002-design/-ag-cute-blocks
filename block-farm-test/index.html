@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Block Farm - 麥塊牧場物語</title>
+<style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        overflow: hidden; background: #87CEEB; font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif;
+        touch-action: none;
+    }
+    #webgl-container { width: 100%; height: 100%; }
+    #ui-layer { position: fixed; inset: 0; pointer-events: none; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    .hud { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 10px; background: rgba(0,0,0,.52); color: #fff; padding: 9px 13px; border-radius: 10px; font-size: 14px; line-height: 1.5; box-shadow: 0 4px 14px rgba(0,0,0,.18); backdrop-filter: blur(4px); }
+    #message { position: absolute; top: calc(74px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.52); color: white; padding: 7px 12px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+    #toolbar { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 10px; display: flex; gap: 7px; pointer-events: auto; }
+    .tool-btn { width: 46px; height: 46px; border: 2px solid rgba(60,60,60,.65); border-radius: 10px; font-size: 21px; background: rgba(255,255,255,.88); display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,.18); touch-action: manipulation; }
+    .tool-btn.active { border-color: #ffd700; background: white; transform: scale(1.07); box-shadow: 0 0 0 3px rgba(255,215,0,.25), 0 3px 10px rgba(0,0,0,.18); }
+    #joystick-zone { position: absolute; left: 24px; bottom: calc(24px + env(safe-area-inset-bottom)); width: 126px; height: 126px; border-radius: 50%; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.42); pointer-events: auto; touch-action: none; box-shadow: inset 0 0 20px rgba(255,255,255,.12); }
+    #joystick-knob { position: absolute; left: 38px; top: 38px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.9); box-shadow: 0 4px 12px rgba(0,0,0,.25); pointer-events: none; }
+    #action-btn { position: absolute; right: 32px; bottom: calc(34px + env(safe-area-inset-bottom)); width: 84px; height: 84px; border-radius: 50%; border: 4px solid rgba(255,255,255,.95); background: #4CAF50; color: white; font-size: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; pointer-events: auto; touch-action: manipulation; box-shadow: 0 5px 14px rgba(0,0,0,.3); }
+    #action-btn:active { transform: scale(.95); background: #3d9142; }
+    #help { position: absolute; right: 18px; bottom: calc(130px + env(safe-area-inset-bottom)); color: white; font-size: 12px; text-align: right; text-shadow: 0 2px 4px rgba(0,0,0,.8); }
+    @media (max-width: 430px) { #toolbar { gap: 5px; } .tool-btn { width: 42px; height: 42px; font-size: 19px; } #joystick-zone { width: 118px; height: 118px; } #joystick-knob { left: 34px; top: 34px; } }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<div id="webgl-container"></div>
+<div id="ui-layer">
+    <div class="hud">🪵 木材：<span id="wood-count">0</span><br>🌽 收穫：<span id="crop-count">0</span></div>
+    <div id="message"></div>
+    <div id="toolbar">
+        <button class="tool-btn active" data-tool="hoe" aria-label="鋤頭">🌾</button>
+        <button class="tool-btn" data-tool="water" aria-label="水壺">💧</button>
+        <button class="tool-btn" data-tool="seed" aria-label="種子">🌱</button>
+        <button class="tool-btn" data-tool="axe" aria-label="斧頭">🪓</button>
+    </div>
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div id="help">左下移動<br>右下行動</div>
+    <button id="action-btn">行動</button>
+</div>
+<script>
+let scene, camera, renderer, player;
+const blocks = {};
+const crops = {};
+const trees = [];
+let currentTool = 'hoe';
+const inventory = { wood: 0, crop: 0 };
+let moveVec = { x: 0, z: 0 };
+let joystickPointerId = null;
+const worldLimit = 15.5;
+let msgTimer = null;
+init(); animate();
+function init() {
+    scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.FogExp2(0x87CEEB, 0.028);
+    camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; document.getElementById('webgl-container').appendChild(renderer.domElement);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6d8a5d, 0.9));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.85); sun.position.set(18, 28, 12); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -22; sun.shadow.camera.right = 22; sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22; scene.add(sun);
+    createPlayer(); createWorld(); setupUI(); setupJoystick(); addEventListener('resize', onWindowResize); showMessage('🌾 先用鋤頭開墾一塊地');
+}
+function createPlayer() {
+    player = new THREE.Group();
+    const skin = new THREE.MeshLambertMaterial({ color: 0xffc89a }); const shirt = new THREE.MeshLambertMaterial({ color: 0x3388ee }); const pants = new THREE.MeshLambertMaterial({ color: 0x334466 }); const hair = new THREE.MeshLambertMaterial({ color: 0x4b2f1b });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(.62, .78, .38), shirt); body.position.y = 1.05; body.castShadow = true; player.add(body);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(.54, .54, .54), skin); head.position.y = 1.72; head.castShadow = true; player.add(head);
+    const hairTop = new THREE.Mesh(new THREE.BoxGeometry(.56, .18, .56), hair); hairTop.position.y = 2; hairTop.castShadow = true; player.add(hairTop);
+    const legGeo = new THREE.BoxGeometry(.22, .62, .26); const legL = new THREE.Mesh(legGeo, pants); const legR = new THREE.Mesh(legGeo, pants); legL.position.set(-.18, .42, 0); legR.position.set(.18, .42, 0); legL.castShadow = legR.castShadow = true; player.add(legL, legR);
+    player.position.set(0, .5, 0); scene.add(player);
+}
+function createWorld() {
+    const size = 16; const boxGeo = new THREE.BoxGeometry(1, 1, 1); const grassMat = new THREE.MeshLambertMaterial({ color: 0x66b85b });
+    for (let x = -size; x <= size; x++) for (let z = -size; z <= size; z++) { const block = new THREE.Mesh(boxGeo, grassMat.clone()); block.position.set(x, 0, z); block.receiveShadow = true; scene.add(block); blocks[`${x},${z}`] = { mesh: block, type: 'grass' }; const protectedCenter = Math.abs(x) <= 3 && Math.abs(z) <= 3; if (!protectedCenter && Math.random() < 0.045) createTree(x, z); }
+    [[5,2],[-5,3],[4,-4],[-4,-5]].forEach(([x,z]) => { if (!trees.some(t => t.x === x && t.z === z)) createTree(x,z); });
+}
+function createTree(x, z) {
+    const g = new THREE.Group(); const log = new THREE.Mesh(new THREE.BoxGeometry(.62, 2.7, .62), new THREE.MeshLambertMaterial({ color: 0x8B5A2B })); log.position.y = 1.35; log.castShadow = true; g.add(log);
+    const leafMat = new THREE.MeshLambertMaterial({ color: 0x2f8f48 }); const crown1 = new THREE.Mesh(new THREE.BoxGeometry(2, 1.35, 2), leafMat); crown1.position.y = 3; crown1.castShadow = true; g.add(crown1); const crown2 = new THREE.Mesh(new THREE.BoxGeometry(1.45, .9, 1.45), leafMat.clone()); crown2.position.y = 3.9; crown2.castShadow = true; g.add(crown2);
+    g.position.set(x, .5, z); scene.add(g); trees.push({ x, z, mesh: g, hp: 3 });
+}
+function setupUI() {
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.addEventListener('click', () => { currentTool = btn.dataset.tool; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); const names = { hoe:'鋤頭', water:'水壺', seed:'種子', axe:'斧頭' }; showMessage('已選擇：' + names[currentTool]); }));
+    document.getElementById('action-btn').addEventListener('click', performAction);
+}
+function performAction() {
+    const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion); const targetX = Math.round(player.position.x + dir.x * 1.35); const targetZ = Math.round(player.position.z + dir.z * 1.35); const key = `${targetX},${targetZ}`;
+    if (currentTool === 'axe') { const idx = trees.findIndex(t => t.x === targetX && t.z === targetZ); if (idx === -1) return showMessage('前方沒有樹'); const tree = trees[idx]; tree.hp--; tree.mesh.rotation.z = .12; setTimeout(() => { if (tree.mesh.parent) tree.mesh.rotation.z = 0; }, 110); if (tree.hp <= 0) { scene.remove(tree.mesh); trees.splice(idx, 1); inventory.wood += 3; updateHUD(); showMessage('🪵 獲得木材 ×3'); } else showMessage('🪓 砍樹 ' + (3 - tree.hp) + '/3'); return; }
+    const b = blocks[key]; if (!b) return;
+    if (currentTool === 'hoe') { if (b.type !== 'grass') return showMessage('這塊地已經耕過了'); b.type = 'farmland'; b.mesh.material.color.setHex(0x7a4d24); showMessage('🌾 已開墾'); return; }
+    if (currentTool === 'seed') { if (b.type !== 'farmland') return showMessage('要先用鋤頭開墾'); if (crops[key]) return showMessage('這裡已經有作物'); const crop = new THREE.Group(); const stemMat = new THREE.MeshLambertMaterial({ color: 0x8fd65f }); for (const rx of [-0.12, 0.12]) { const stem = new THREE.Mesh(new THREE.BoxGeometry(.11, .3, .11), stemMat); stem.position.set(rx, .15, 0); stem.castShadow = true; crop.add(stem); } crop.position.set(targetX, .5, targetZ); scene.add(crop); crops[key] = { stage: 1, mesh: crop }; showMessage('🌱 已播種'); return; }
+    if (currentTool === 'water') { const crop = crops[key]; if (!crop) return showMessage('這裡沒有作物'); if (crop.stage < 3) { crop.stage++; const s = crop.stage === 2 ? 1.55 : 2.15; crop.mesh.scale.set(1.25, s, 1.25); if (crop.stage === 3) { crop.mesh.children.forEach(m => m.material = new THREE.MeshLambertMaterial({ color: 0xf0c94e })); showMessage('🌽 作物成熟了，再按一次收成'); } else showMessage('💧 作物長大了'); } else { scene.remove(crop.mesh); delete crops[key]; inventory.crop += 1; updateHUD(); showMessage('🌽 收成 +1'); } }
+}
+function setupJoystick() {
+    const zone = document.getElementById('joystick-zone'); const knob = document.getElementById('joystick-knob'); const maxDist = 38;
+    function setFromPointer(e) { const r = zone.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; let dx = e.clientX - cx; let dy = e.clientY - cy; const d = Math.hypot(dx, dy); if (d > maxDist) { dx = dx / d * maxDist; dy = dy / d * maxDist; } knob.style.transform = `translate(${dx}px, ${dy}px)`; moveVec.x = dx / maxDist; moveVec.z = dy / maxDist; }
+    zone.addEventListener('pointerdown', e => { joystickPointerId = e.pointerId; zone.setPointerCapture(e.pointerId); setFromPointer(e); e.preventDefault(); });
+    zone.addEventListener('pointermove', e => { if (e.pointerId !== joystickPointerId) return; setFromPointer(e); e.preventDefault(); });
+    const reset = e => { if (joystickPointerId !== null && e.pointerId !== joystickPointerId) return; joystickPointerId = null; knob.style.transform = 'translate(0px, 0px)'; moveVec.x = 0; moveVec.z = 0; };
+    zone.addEventListener('pointerup', reset); zone.addEventListener('pointercancel', reset);
+}
+function isTreeBlocking(x, z) { return trees.some(t => Math.abs(t.x - x) < .65 && Math.abs(t.z - z) < .65); }
+function animate() {
+    requestAnimationFrame(animate);
+    if (Math.abs(moveVec.x) > .03 || Math.abs(moveVec.z) > .03) { const len = Math.hypot(moveVec.x, moveVec.z) || 1; const nx = moveVec.x / Math.max(1, len); const nz = moveVec.z / Math.max(1, len); const speed = .085; const nextX = THREE.MathUtils.clamp(player.position.x + nx * speed, -worldLimit, worldLimit); const nextZ = THREE.MathUtils.clamp(player.position.z + nz * speed, -worldLimit, worldLimit); if (!isTreeBlocking(nextX, nextZ)) { player.position.x = nextX; player.position.z = nextZ; } player.rotation.y = Math.atan2(nx, nz); }
+    const desired = new THREE.Vector3(player.position.x, player.position.y + 7, player.position.z + 8.4); camera.position.lerp(desired, .12); camera.lookAt(player.position.x, player.position.y + .9, player.position.z); renderer.render(scene, camera);
+}
+function updateHUD() { document.getElementById('wood-count').textContent = inventory.wood; document.getElementById('crop-count').textContent = inventory.crop; }
+function showMessage(text) { const el = document.getElementById('message'); el.textContent = text; el.style.opacity = '1'; clearTimeout(msgTimer); msgTimer = setTimeout(() => el.style.opacity = '0', 1300); }
+function onWindowResize() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }
+</script>
+</body>
+</html>
