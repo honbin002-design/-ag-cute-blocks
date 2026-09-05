@@ -1,0 +1,64 @@
+name: Fishing ecology check
+
+on:
+  push:
+    branches: [main, dev-v0.1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  fishing-ecology:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse fishing ecology modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module --check < fishing-ecology-system.js
+          node --input-type=module --check < fishing-ecology-runtime-v0505.js
+      - name: Verify ecology math and legacy bridge
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {getFishingWeights,chooseFish,fishRollForLegacyThreshold} from './fishing-ecology-system.js';
+          for(const ctx of [{season:'spring',weather:'sunny',minute:720},{season:'autumn',weather:'thunderstorm',minute:1080},{season:'winter',weather:'snow',minute:1380}]){
+            const w=getFishingWeights(ctx);assert.ok(Math.abs(Object.values(w).reduce((a,b)=>a+b,0)-1)<1e-9);
+          }
+          const noon=getFishingWeights({season:'summer',weather:'sunny',minute:720});
+          const rare=getFishingWeights({season:'autumn',weather:'thunderstorm',minute:1080});
+          assert.ok(rare.goldFish>noon.goldFish);
+          assert.equal(chooseFish({},()=>0),'smallFish');assert.equal(chooseFish({},()=>.999),'goldFish');
+          assert.ok(fishRollForLegacyThreshold('smallFish')<.5);
+          assert.ok(fishRollForLegacyThreshold('riverFish')>=.5&&fishRollForLegacyThreshold('riverFish')<.82);
+          assert.ok(fishRollForLegacyThreshold('goldFish')>=.82);
+          NODE
+      - name: Verify catch callback discrimination
+        shell: python
+        run: |
+          import pathlib,sys
+          runtime=pathlib.Path('fishing-ecology-runtime-v0505.js').read_text(encoding='utf-8')
+          core=pathlib.Path('app-v0504.js').read_text(encoding='utf-8')
+          failures=[]
+          for token in ["Function.prototype.toString.call(fn)","src.includes('smallFish')","src.includes('riverFish')","src.includes('goldFish')","src.includes('addInventory')","fishingCallback=isFishingCatchCallback(fn)","callbackFilter:'fish-inventory-signature'"]:
+            if token not in runtime: failures.append(f'runtime callback discrimination missing: {token}')
+          cast="toast('🎣 拋竿… 等魚上鉤');setTimeout(()=>{const roll=Math.random(),fish=roll<.5?'smallFish':roll<.82?'riverFish':'goldFish';addInventory(economy,fish,1)"
+          if cast not in core: failures.append('core fishing callback signature/order changed; ecology bridge must be reviewed')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Fishing timeout discrimination safely ignores the preceding toast timer.')
+      - name: Verify formal V0.5.05 wiring
+        shell: python
+        run: |
+          import pathlib,sys
+          index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path('bootstrap-v0505.js').read_text(encoding='utf-8');wrapper=pathlib.Path('app-v0505.js').read_text(encoding='utf-8');failures=[]
+          if 'bootstrap-v0505.js?v=0.5.05' not in index: failures.append('index is not on V0.5.05 bootstrap')
+          if 'fishing-ecology-runtime-v0505.js?v=0.5.05' not in boot: failures.append('ecology runtime not wired')
+          if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Formal V0.5.05 ecology wiring passed.')
