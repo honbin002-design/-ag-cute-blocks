@@ -1,0 +1,34 @@
+name: Patch V0.5.12 index
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/patch-index-v0512.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Sync index version and bootstrap query
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('meta name="ag-runtime-version" content="V0.5.10"','meta name="ag-runtime-version" content="V0.5.12"')
+          s=s.replace('AG Cute Blocks <small>V0.5.10</small>','AG Cute Blocks <small>V0.5.12</small>')
+          s=s.replace('bootstrap-v0510.js?v=0.5.10','bootstrap-v0510.js?v=0.5.12')
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix: sync index entrypoint to V0.5.12'
+          git push origin HEAD:dev-v0.1
