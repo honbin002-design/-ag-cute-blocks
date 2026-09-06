@@ -1,7 +1,8 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from 'three';
 
-// V0.4.92: atomic/latest-request-wins character switching plus locomotion correction retained from V0.4.78.
-const VERSION='V0.4.94';
+// Legacy locomotion correction retained as an additive patch only.
+// It must never overwrite the current release badge/runtime metadata.
+const PATCH_VERSION='motion-fix-v0.4.94';
 const originalUpdate=THREE.AnimationMixer.prototype.update;
 if(!THREE.AnimationMixer.prototype.__agcbMotionFixV478){
   THREE.AnimationMixer.prototype.update=function(delta){
@@ -38,8 +39,4 @@ if(priorSetMotion&&!priorSetMotion.__agcbMotionFixV478){
   fixed.__agcbMotionFixV478=true;
   globalThis.__AGCB_ASSET_SET_MOTION=fixed;
 }
-
-const badge=document.querySelector('.title small');if(badge)badge.textContent=VERSION;
-const meta=document.querySelector('meta[name="ag-runtime-version"]');if(meta)meta.content=VERSION;
-const note=document.querySelector('.note');if(note)note.textContent=note.textContent.replace(/^V0\.4\.\d+：/,`${VERSION}：`);
-globalThis.__AGCB_CHARACTER_MOTION_FIX={version:VERSION,postMixerArmSwing:true,runClipRouting:true};
+globalThis.__AGCB_CHARACTER_MOTION_FIX={version:PATCH_VERSION,postMixerArmSwing:true,runClipRouting:true,releaseBadgeSafe:true};
