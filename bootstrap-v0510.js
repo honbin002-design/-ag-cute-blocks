@@ -1,4 +1,4 @@
-// AG Cute Blocks V0.5.10 deterministic runtime bootstrap.
+// AG Cute Blocks V0.5.11 additive runtime bootstrap over the verified V0.5.04 world core.
 import './render-performance-runtime.js';
 import './collision-cache-runtime.js';
 import './raycast-budget-runtime.js';
@@ -31,4 +31,7 @@ import './weather-visual-runtime.js';
 import './fishing-ecology-runtime-v0505.js?v=0.5.10';
 import './fishing-forecast-runtime-v0506.js?v=0.5.10';
 import './fishing-journal-runtime-v0510.js?v=0.5.10';
-globalThis.__AGCB_BOOTSTRAP={version:'0.5.10',loaded:true,baseWorld:'0.5.04',testCharacterRuntime:true,testCharacterIntegration:true};
+const release='V0.5.11';
+const badge=document.querySelector('.title small');if(badge)badge.textContent=release;
+const meta=document.querySelector('meta[name="ag-runtime-version"]');if(meta)meta.setAttribute('content',release);
+globalThis.__AGCB_BOOTSTRAP={version:'0.5.11',loaded:true,baseWorld:'0.5.04',testCharacterRuntime:true,testCharacterIntegration:true};
