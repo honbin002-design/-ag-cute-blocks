@@ -5,7 +5,7 @@ import './app-v0510.js';
 const release='V0.5.15';
 const badge=document.querySelector('.title small');if(badge)badge.textContent=release;
 const meta=document.querySelector('meta[name="ag-runtime-version"]');if(meta)meta.setAttribute('content',release);
-globalThis.__AGCB_BOOTSTRAP={version:'0.5.15',loaded:true,baseWorld:'0.5.03',optional:{},testCharacterRuntime:'pending',recovery:'v0504-tdz-bypass',target:'scroll-drawer-pass-plus-cat-ear-v7-approved-target'};
+globalThis.__AGCB_BOOTSTRAP={version:'0.5.15',loaded:true,baseWorld:'0.5.03',optional:{},testCharacterRuntime:'pending',recovery:'v0504-tdz-bypass',target:'scroll-drawer-pass-plus-cat-ear-v8-close-root'};
 
 const optional=[
  './render-performance-runtime.js','./collision-cache-runtime.js','./raycast-budget-runtime.js',
@@ -17,7 +17,7 @@ const optional=[
  './mobile-input-runtime.js?v=0.5.15','./animal-life-runtime.js','./crop-care-runtime.js','./orchard-runtime.js',
  './furniture-life-details.js','./sleep-routine-v0499.js','./wildlife-live-runtime.js','./weather-visual-runtime.js',
  './fishing-ecology-runtime-v0505.js?v=0.5.15','./fishing-forecast-runtime-v0506.js?v=0.5.15','./fishing-journal-runtime-v0510.js?v=0.5.15',
- './cat-ear-fit-runtime.js?v=earfit-v7'
+ './cat-ear-fit-runtime.js?v=earfit-v8'
 ];
 
 for(const path of optional){
