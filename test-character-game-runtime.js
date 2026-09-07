@@ -9,14 +9,38 @@ const cache=new Map();
 const TEST_CHARACTERS={
   test1:{label:'測試角色1',model:'https://raw.githubusercontent.com/eturner58/game-assets/main/kenney/3D%20assets/Blocky%20Characters/Models/GLB%20format/character-a.glb'},
   test2:{label:'測試角色2',model:'https://raw.githubusercontent.com/Seyamalam/blood-league-kickoff/main/public/assets/vendor/quaternius/night-striker.glb'},
-  test3:{label:'測試角色3',model:'https://raw.githubusercontent.com/iamenahs/xlunar-ai-avatar/main/public/avatars/VRoid_Sample_A.glb',style:'CC0 VRoid日系女角・白髮貓耳目標V2',animeBase:true}
+  test3:{label:'測試角色3',model:'https://raw.githubusercontent.com/iamenahs/xlunar-ai-avatar/main/public/avatars/VRoid_Sample_A.glb',style:'CC0 VRoid日系女角・白髮貓耳目標V3',animeBase:true}
 };
 function load(url,timeout=MODEL_TIMEOUT){if(cache.has(url))return cache.get(url);const task=new Promise((resolve,reject)=>{let done=false;const timer=setTimeout(()=>{if(done)return;done=true;reject(new Error(`載入逾時：${url.split('/').pop()}`))},timeout);loader.load(url,g=>{if(done)return;done=true;clearTimeout(timer);resolve(g)},undefined,e=>{if(done)return;done=true;clearTimeout(timer);reject(e)})});cache.set(url,task);task.catch(()=>cache.delete(url));return task}
 function normalize(root,targetHeight=2.0){root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3());const scale=targetHeight/Math.max(size.y,.001);root.scale.multiplyScalar(scale);root.updateMatrixWorld(true);const scaledBox=new THREE.Box3().setFromObject(root),scaledCenter=scaledBox.getCenter(new THREE.Vector3());root.position.x-=scaledCenter.x;root.position.z-=scaledCenter.z;root.position.y-=scaledBox.min.y;root.updateMatrixWorld(true);return root}
 function chooseClip(clips,keys){for(const k of keys){const c=clips.find(x=>(x.name||'').toLowerCase().includes(k));if(c)return c}return null}
 function recolorMaterial(mat,color){if(!mat)return mat;const n=mat.clone();if(n.color)n.color.set(color);if('roughness'in n)n.roughness=Math.max(n.roughness??.5,.48);return n}
 function tintAnimeHair(root){root.traverse(o=>{if(!o.isMesh&&!o.isSkinnedMesh)return;const names=`${o.name||''} ${Array.isArray(o.material)?o.material.map(m=>m?.name||'').join(' '):o.material?.name||''}`.toLowerCase();if(!/(hair|髮|kami)/.test(names))return;const arr=Array.isArray(o.material)?o.material:[o.material];const next=arr.map(m=>recolorMaterial(m,0xf1f3ff));o.material=Array.isArray(o.material)?next:next[0]})}
-function addMockupStyle(root){const navy=new THREE.MeshStandardMaterial({color:0x152b5c,roughness:.62,metalness:.02});const inner=new THREE.MeshStandardMaterial({color:0xe7eaff,roughness:.68});const gold=new THREE.MeshStandardMaterial({color:0xf3ca55,roughness:.45,metalness:.1});const earGeo=new THREE.ConeGeometry(.13,.31,3);const left=new THREE.Mesh(earGeo,navy),right=new THREE.Mesh(earGeo,navy);left.position.set(-.17,1.86,-.005);right.position.set(.17,1.86,-.005);left.rotation.z=.09;right.rotation.z=-.09;left.name='ag-cat-ear-left';right.name='ag-cat-ear-right';root.add(left,right);const innerGeo=new THREE.ConeGeometry(.072,.18,3);const il=new THREE.Mesh(innerGeo,inner),ir=new THREE.Mesh(innerGeo,inner);il.position.set(-.17,1.86,-.075);ir.position.set(.17,1.86,-.075);il.rotation.z=.09;ir.rotation.z=-.09;root.add(il,ir);const bow=new THREE.Group();bow.name='ag-back-bow';const wingGeo=new THREE.SphereGeometry(.12,12,8);const l=new THREE.Mesh(wingGeo,navy),r=new THREE.Mesh(wingGeo,navy);l.scale.set(1.5,.68,.42);r.scale.set(1.5,.68,.42);l.position.x=-.13;r.position.x=.13;const knot=new THREE.Mesh(new THREE.SphereGeometry(.065,10,8),navy);const star=new THREE.Mesh(new THREE.OctahedronGeometry(.045,0),gold);star.position.z=-.06;bow.add(l,r,knot,star);bow.position.set(0,1.27,.18);root.add(bow)}
+function addMockupStyle(root){
+ const navy=new THREE.MeshStandardMaterial({color:0x152b5c,roughness:.62,metalness:.02});
+ const inner=new THREE.MeshStandardMaterial({color:0xf0e9ff,roughness:.7});
+ const gold=new THREE.MeshStandardMaterial({color:0xf3ca55,roughness:.45,metalness:.1});
+ root.updateMatrixWorld(true);
+ const head=findBone(root,['J_Bip_C_Head','Normalized_J_Bip_C_Head']);
+ const chest=findBone(root,['J_Bip_C_UpperChest','Normalized_J_Bip_C_UpperChest','J_Bip_C_Chest','Normalized_J_Bip_C_Chest']);
+ const earGeo=new THREE.ConeGeometry(.085,.22,3);
+ const left=new THREE.Mesh(earGeo,navy),right=new THREE.Mesh(earGeo,navy);
+ left.position.set(-.145,1.84,.005);right.position.set(.145,1.84,.005);
+ left.rotation.z=.07;right.rotation.z=-.07;left.name='ag-cat-ear-left';right.name='ag-cat-ear-right';
+ root.add(left,right);
+ const innerGeo=new THREE.ConeGeometry(.045,.12,3);
+ const il=new THREE.Mesh(innerGeo,inner),ir=new THREE.Mesh(innerGeo,inner);
+ il.position.set(-.145,1.84,-.042);ir.position.set(.145,1.84,-.042);il.rotation.z=.07;ir.rotation.z=-.07;
+ il.name='ag-cat-ear-inner-left';ir.name='ag-cat-ear-inner-right';root.add(il,ir);
+ if(head){head.attach(left);head.attach(right);head.attach(il);head.attach(ir)}
+ const bow=new THREE.Group();bow.name='ag-back-bow';
+ const wingGeo=new THREE.SphereGeometry(.09,12,8);const l=new THREE.Mesh(wingGeo,navy),r=new THREE.Mesh(wingGeo,navy);
+ l.scale.set(1.35,.58,.30);r.scale.set(1.35,.58,.30);l.position.x=-.10;r.position.x=.10;
+ const knot=new THREE.Mesh(new THREE.SphereGeometry(.047,10,8),navy);
+ const star=new THREE.Mesh(new THREE.OctahedronGeometry(.032,0),gold);star.position.z=-.04;
+ bow.add(l,r,knot,star);bow.position.set(0,1.30,.15);root.add(bow);if(chest)chest.attach(bow);
+ root.userData.agAccessories={anchored:true,earScale:'compact',bowScale:'compact'};
+}
 
 const VRoidAliases={
  hips:['J_Bip_C_Hips','Normalized_J_Bip_C_Hips'],spine:['J_Bip_C_Spine','Normalized_J_Bip_C_Spine'],chest:['J_Bip_C_Chest','Normalized_J_Bip_C_Chest'],
@@ -59,5 +83,5 @@ async function create(id){const spec=TEST_CHARACTERS[id];if(!spec)throw new Erro
  play('idle');
  return{root,mixer,actions,clips,play,update(dt){if(procedural)procedural.update(dt);else mixer.update(dt)},available:procedural?procedural.available:Object.keys(actions),animationLibraryStatus,hairStatus:spec.animeBase?'embedded':'none',styleStatus:spec.style||'',forwardYaw:Math.PI,procedural:!!procedural};
 }
-globalThis.__AGCB_TEST_CHARACTER_RUNTIME={version:10,characters:TEST_CHARACTERS,create,modelTimeout:MODEL_TIMEOUT,animationTimeout:ANIMATION_TIMEOUT,cache,sharedThree:true,target:'cc0-vroid-anime-cat-ear-v2-procedural-motion-arms-down'};
+globalThis.__AGCB_TEST_CHARACTER_RUNTIME={version:11,characters:TEST_CHARACTERS,create,modelTimeout:MODEL_TIMEOUT,animationTimeout:ANIMATION_TIMEOUT,cache,sharedThree:true,target:'cc0-vroid-anime-cat-ear-v3-anchored-accessories'};
 export{TEST_CHARACTERS,create};
