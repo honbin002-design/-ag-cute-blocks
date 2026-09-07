@@ -34,11 +34,11 @@ function makeProceduralAnimator(root){
  function reset(blend=.18){for(const [k,b] of Object.entries(bones)){if(b&&rest[k])b.quaternion.slerp(rest[k],blend)}}
  function update(dt){phase+=dt;const s=Math.sin(phase*(action==='run'?10:action==='walk'?7:2.1));const c=Math.cos(phase*(action==='run'?10:action==='walk'?7:2.1));
   reset(.15);
-  if(action==='idle'){pose('lUpperArm',.02,0,-1.18,.2);pose('rUpperArm',-.02,0,1.18,.2);pose('lLowerArm',0,0,-.08,.2);pose('rLowerArm',0,0,.08,.2);pose('chest',.015*Math.sin(phase*2),0,.018*Math.sin(phase),.12);return}
+  if(action==='idle'){pose('lUpperArm',.02,0,1.18,.2);pose('rUpperArm',-.02,0,-1.18,.2);pose('lLowerArm',0,0,.08,.2);pose('rLowerArm',0,0,-.08,.2);pose('chest',.015*Math.sin(phase*2),0,.018*Math.sin(phase),.12);return}
   if(action==='walk'||action==='run'){
    const run=action==='run',legAmp=run?.72:.48,armAmp=run?.58:.38;
-   pose('lUpperArm',s*armAmp,0,-1.12,.32);pose('rUpperArm',-s*armAmp,0,1.12,.32);
-   pose('lLowerArm',run?.28:.12,0,-.12,.28);pose('rLowerArm',run?.28:.12,0,.12,.28);
+   pose('lUpperArm',s*armAmp,0,1.08,.32);pose('rUpperArm',-s*armAmp,0,-1.08,.32);
+   pose('lLowerArm',run?.28:.12,0,.10,.28);pose('rLowerArm',run?.28:.12,0,-.10,.28);
    pose('lUpperLeg',-s*legAmp,0,0,.35);pose('rUpperLeg',s*legAmp,0,0,.35);
    pose('lLowerLeg',Math.max(0,s)*-(run?.72:.42),0,0,.32);pose('rLowerLeg',Math.max(0,-s)*-(run?.72:.42),0,0,.32);
    pose('chest',run?.08:.04,0,c*(run?.055:.03),.2);return
@@ -59,5 +59,5 @@ async function create(id){const spec=TEST_CHARACTERS[id];if(!spec)throw new Erro
  play('idle');
  return{root,mixer,actions,clips,play,update(dt){if(procedural)procedural.update(dt);else mixer.update(dt)},available:procedural?procedural.available:Object.keys(actions),animationLibraryStatus,hairStatus:spec.animeBase?'embedded':'none',styleStatus:spec.style||'',forwardYaw:Math.PI,procedural:!!procedural};
 }
-globalThis.__AGCB_TEST_CHARACTER_RUNTIME={version:9,characters:TEST_CHARACTERS,create,modelTimeout:MODEL_TIMEOUT,animationTimeout:ANIMATION_TIMEOUT,cache,sharedThree:true,target:'cc0-vroid-anime-cat-ear-v2-procedural-motion'};
+globalThis.__AGCB_TEST_CHARACTER_RUNTIME={version:10,characters:TEST_CHARACTERS,create,modelTimeout:MODEL_TIMEOUT,animationTimeout:ANIMATION_TIMEOUT,cache,sharedThree:true,target:'cc0-vroid-anime-cat-ear-v2-procedural-motion-arms-down'};
 export{TEST_CHARACTERS,create};
