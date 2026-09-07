@@ -5,7 +5,7 @@ import './app-v0510.js';
 const release='V0.5.15';
 const badge=document.querySelector('.title small');if(badge)badge.textContent=release;
 const meta=document.querySelector('meta[name="ag-runtime-version"]');if(meta)meta.setAttribute('content',release);
-globalThis.__AGCB_BOOTSTRAP={version:'0.5.15',loaded:true,baseWorld:'0.5.03',optional:{},testCharacterRuntime:'pending',recovery:'v0504-tdz-bypass',target:'cc0-vroid-anime-character-v2'};
+globalThis.__AGCB_BOOTSTRAP={version:'0.5.15',loaded:true,baseWorld:'0.5.03',optional:{},testCharacterRuntime:'pending',recovery:'v0504-tdz-bypass',target:'cc0-vroid-anime-character-motion-v3'};
 
 const optional=[
  './render-performance-runtime.js','./collision-cache-runtime.js','./raycast-budget-runtime.js',
@@ -26,7 +26,7 @@ for(const path of optional){
 
 setTimeout(async()=>{
  try{
-  await import('./test-character-game-runtime.js?v=0.5.15-target4');
+  await import('./test-character-game-runtime.js?v=0.5.15-target5');
   await import('./test-character-game-integration.js?v=0.5.15-target3');
   globalThis.__AGCB_BOOTSTRAP.testCharacterRuntime=true;
   globalThis.__AGCB_BOOTSTRAP.testCharacterIntegration=true;
