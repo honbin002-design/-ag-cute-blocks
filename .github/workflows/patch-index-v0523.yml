@@ -1,0 +1,36 @@
+name: Patch V0.5.23 entrypoint sync
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/patch-index-v0523.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: dev-v0.1}
+      - name: Sync V0.5.23 and prevent late legacy version overwrite
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          s=re.sub(r'(<meta name="ag-runtime-version" content=")V0\.5\.\d+("[^>]*>)',r'\g<1>V0.5.23\2',s,count=1)
+          s=re.sub(r'(🌈 AG Cute Blocks <small>)V0\.5\.\d+(</small>)',r'\g<1>V0.5.23\2',s,count=1)
+          s=re.sub(r'<script[^>]+src=["\'][^"\']*wardrobe-runtime\.js(?:\?[^"\']*)?["\'][^>]*></script>','<script type="module" src="./wardrobe-runtime.js?v=0.5.23"></script>',s)
+          guard='''<script>\n(()=>{const V="V0.5.23";window.AG_GAME_VERSION=V;const sync=()=>{const m=document.querySelector('meta[name="ag-runtime-version"]');if(m)m.content=V;document.querySelectorAll('small').forEach(x=>{if(/^V0\\.5\\.\\d+$/.test((x.textContent||'').trim())&&x.closest('h1'))x.textContent=V})};document.addEventListener('DOMContentLoaded',sync);setTimeout(sync,800);setTimeout(sync,2200);})();\n</script>'''
+          if 'window.AG_GAME_VERSION' not in s:s=s.replace('</body>',guard+'\n</body>')
+          p.write_text(s,encoding='utf-8')
+      - name: Validate and commit
+        run: |
+          grep -q 'content="V0.5.23"' index.html
+          grep -q 'wardrobe-runtime.js?v=0.5.23' index.html
+          grep -q 'window.AG_GAME_VERSION' index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: sync entrypoint and lock visible version V0.5.23'
+          git push origin HEAD:dev-v0.1
