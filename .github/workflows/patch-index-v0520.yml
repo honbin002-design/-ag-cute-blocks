@@ -1,0 +1,48 @@
+name: Patch V0.5.20 wardrobe entrypoint
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/patch-index-v0520.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Mount wardrobe and sync visible version
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'(<meta name="ag-runtime-version" content=")V0\.5\.\d+("[^>]*>)',r'\g<1>V0.5.20\2',s,count=1)
+          s=re.sub(r'(🌈 AG Cute Blocks <small>)V0\.5\.\d+(</small>)',r'\g<1>V0.5.20\2',s,count=1)
+          tag='<script type="module" src="./wardrobe-runtime.js?v=0.5.20"></script>'
+          if 'wardrobe-runtime.js' not in s:
+              s=s.replace('</body>',tag+'\n</body>')
+          else:
+              s=re.sub(r'<script[^>]+src=["\'][^"\']*wardrobe-runtime\.js(?:\?[^"\']*)?["\'][^>]*></script>',tag,s)
+          p.write_text(s,encoding='utf-8')
+      - name: Validate patch
+        shell: python
+        run: |
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          assert 'content="V0.5.20"' in s
+          assert 'AG Cute Blocks <small>V0.5.20</small>' in s
+          assert './wardrobe-runtime.js?v=0.5.20' in s
+          assert s.count('wardrobe-runtime.js') == 1
+          print('V0.5.20 wardrobe entrypoint validated')
+      - name: Commit patched entrypoint
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'feat: mount wardrobe runtime and sync V0.5.20'
+          git push origin HEAD:dev-v0.1
