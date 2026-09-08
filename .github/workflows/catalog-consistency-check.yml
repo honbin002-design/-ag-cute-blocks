@@ -16,28 +16,28 @@ jobs:
         run: |
           import pathlib,re,sys
           index=pathlib.Path('index.html').read_text(encoding='utf-8')
-          m=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=',index)
+          m=re.search(r'<script type="module" src="\./(bootstrap-v\d+\.js)\?v=([0-9.]+)"',index)
           if not m: sys.exit('current bootstrap missing')
-          boot=pathlib.Path(m.group(1)).read_text(encoding='utf-8')
+          boot_name,v=m.groups();boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
           a=re.search(r"import ['\"]\./(app-v\d+\.js)",boot)
           if not a: sys.exit('current app wrapper missing')
           wrapper=a.group(1);src=pathlib.Path(wrapper).read_text(encoding='utf-8');core=wrapper
-          # Current architecture may use a guarded historical-core loader so a one-line
-          # TDZ startup repair can be applied without duplicating or mutating the source.
           loader=re.search(r"import ['\"]\./(app-v\d+-fixed-loader\.js)['\"]",src)
           if loader:
             loader_name=loader.group(1);loader_src=pathlib.Path(loader_name).read_text(encoding='utf-8')
             historical=re.search(r"new URL\(['\"]\./(app-v\d+\.js)['\"],import\.meta\.url\)",loader_src)
             if not historical: sys.exit('guarded loader historical core missing')
             core=historical.group(1)
-            if 'TDZ_SIGNATURE' not in loader_src or 'queueMicrotask(syncActionLabels)' not in loader_src:
-              sys.exit('guarded loader TDZ repair contract missing')
+            required=['syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)']
+            missing=[x for x in required if x not in loader_src]
+            if missing: sys.exit('guarded loader patch-set contract missing: '+', '.join(missing))
           elif '__AGCB_RELEASE_OVERLAY' in src:
             b=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",src)
             if not b: sys.exit('additive wrapper base missing')
             core=b.group(1)
+          if f'<meta name="ag-runtime-version" content="V{v}">' not in index: sys.exit('index release meta mismatch')
           pathlib.Path('/tmp/agcb-core').write_text(core,encoding='utf-8')
-          print(f'catalog core: {core}')
+          print(f'catalog core: {core} / release {v}')
       - name: Verify catalog classifications and supported models
         shell: python
         run: |
