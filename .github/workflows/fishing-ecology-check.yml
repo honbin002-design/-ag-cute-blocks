@@ -101,14 +101,14 @@ jobs:
           failures=[]
           for token in ["import './app-v0504-fixed-loader.js'","base:'0.5.04'","rollbackBase:'0.5.03'","versionOwner:'bootstrap-v0510.js'"]:
             if token not in wrapper: failures.append(f'wrapper recovery contract missing: {token}')
-          for token in ["new URL('./app-v0504.js',import.meta.url)","TDZ_SIGNATURE","queueMicrotask(syncActionLabels)","occurrences!==1","await import(blobUrl)","__AGCB_V0504_FIXED"]:
+          for token in ["new URL('./app-v0504.js',import.meta.url)",'syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)','legacyBlanketTouchBlockerSuppressed:true','legacyDoubleTapBlockerSuppressed:true','await import(blobUrl)','__AGCB_V0504_FIXED']:
             if token not in loader: failures.append(f'guarded loader missing: {token}')
           if "function syncActionLabels(){const addLabel=category==='農具'" not in core: failures.append('historical fishing label source changed')
           if "['fishingRod','🎣','釣魚竿']" not in core: failures.append('historical core fishing rod missing')
           if "function castFishing(p)" not in core: failures.append('historical core fishing action missing')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Guarded V0.5.04 TDZ recovery preserves fishing source and rollback contract.')
+          print('Guarded V0.5.04 recovery preserves fishing source, iPhone input repairs and rollback contract.')
       - name: Verify current release wiring
         shell: python
         run: |
@@ -122,6 +122,8 @@ jobs:
           v=m.group(1);expected=f'V{v}'
           if f'<meta name="ag-runtime-version" content="{expected}">' not in index: failures.append('index meta does not match current release')
           if f'AG Cute Blocks <small>{expected}</small>' not in index: failures.append('visible version does not match current release')
+          if f'wardrobe-runtime.js?v={v}' not in index: failures.append('wardrobe cache query does not match current release')
+          if f'const V="{expected}"' not in index: failures.append('index version sync script mismatch')
           for name in ['fishing-ecology-runtime-v0505.js','fishing-forecast-runtime-v0506.js','fishing-journal-runtime-v0510.js']:
             if f'{name}?v={v}' not in boot: failures.append(f'bootstrap wiring missing: {name}?v={v}')
           if f"const release='{expected}'" not in boot: failures.append('bootstrap release owner mismatch')
