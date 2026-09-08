@@ -5,43 +5,52 @@ on:
     branches: [dev-v0.1]
     paths:
       - 'app-v0504-fixed-loader.js'
+      - 'crop-care-runtime.js'
+      - 'crop-care-system.js'
       - 'maid-work-runtime-v0582.js'
       - 'bootstrap-v0510.js'
       - 'index.html'
       - '.github/workflows/maid-work-task-check.yml'
 
 jobs:
-  maid-harvest:
+  maid-work:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Parse maid runtime and loader
+      - name: Parse task runtimes
         run: |
           node --input-type=module --check < maid-work-runtime-v0582.js
+          node --input-type=module --check < crop-care-runtime.js
           node --input-type=module --check < app-v0504-fixed-loader.js
-      - name: Verify authoritative harvest contract
+      - name: Verify authoritative harvest and shared watering contracts
         shell: python
         run: |
           from pathlib import Path
           import re,sys
           loader=Path('app-v0504-fixed-loader.js').read_text(encoding='utf-8')
+          care=Path('crop-care-runtime.js').read_text(encoding='utf-8')
           maid=Path('maid-work-runtime-v0582.js').read_text(encoding='utf-8')
           boot=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           bad=[]
           for token in ["id:'authoritative-world-task-bridge'",'__AGCB_WORLD_TASK_API','addInventory(economy,itemId,1)','Number(o.userData.growth||0)<.95','o.userData.growth=.15','rebuildCrop(o)','saveSettings();saveWorld()','AUTHORITATIVE_CORE_ONLY']:
             if token not in loader: bad.append('loader missing '+token)
-          for token in ["KEY='ag_cute_blocks_worker_tasks_v1'",'__AGCB_WORLD_TASK_API','harvestMatureCropById','listMatureCrops','REAL_CORE_MUTATION_ONLY_NO_SECOND_INVENTORY']:
+          for token in ["CARE_KEY='ag_cute_blocks_crop_care_v1'","SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2'",'listNeedsWater','waterCropById','waterCrop(care,day,Date.now())','write(CARE_KEY,careStore)',"a.listNeedsWater=listNeedsWater","a.waterCropById=waterCropById",'AUTHORITATIVE_SHARED_CARE_STORE']:
+            if token not in care: bad.append('care missing '+token)
+          if 'ag_cute_blocks_settings_v03' in care: bad.append('care still reads legacy settings key')
+          for token in ["KEY='ag_cute_blocks_worker_tasks_v1'",'__AGCB_WORLD_TASK_API','harvestMatureCropById','listMatureCrops','listNeedsWater','waterCropById','assignWater','waterCrops','REAL_SHARED_CORE_AND_CARE_MUTATION_ONLY']:
             if token not in maid: bad.append('maid missing '+token)
           if 'addInventory(' in maid: bad.append('maid runtime must not mutate inventory directly')
+          if 'waterCrop(' in maid: bad.append('maid runtime must not mutate crop care directly')
           if re.search(r'\binventory\s*[:=]',maid): bad.append('maid runtime defines parallel inventory')
+          if 'ag_cute_blocks_crop_care_v1' in maid: bad.append('maid runtime owns care store directly')
           m=re.search(r"const release='(V[0-9.]+)'",boot)
-          if m and m.group(1)>='V0.5.82':
+          if m and m.group(1)>='V0.5.83':
             v=m.group(1)[1:]
-            for token in [f"maid-work-runtime-v0582.js?v={v}",'authoritative-maid-harvest-work']:
+            for token in [f"maid-work-runtime-v0582.js?v={v}",f"crop-care-runtime.js?v={v}",'authoritative-maid-harvest-work','authoritative-maid-watering-work']:
               if token not in boot: bad.append('bootstrap missing '+token)
           if bad:
             print('\n'.join(bad));sys.exit(1)
-          print('PASS authoritative maid harvest contract; no second inventory')
+          print('PASS maid harvest + shared crop watering contracts; no second inventory/care store')
