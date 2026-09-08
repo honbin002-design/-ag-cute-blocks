@@ -1,0 +1,66 @@
+name: One-time V0.5.70 close camera sync
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/one-time-v0570-camera-near.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Patch third-person close zoom and release chain
+        shell: python
+        run: |
+          from pathlib import Path
+
+          loader=Path('app-v0504-fixed-loader.js')
+          s=loader.read_text(encoding='utf-8')
+          if s.count('THIRD_CAMERA_DISTANCE_MIN=1.6') != 1:
+              raise SystemExit('loader min signature mismatch')
+          if s.count('thirdCameraMin:1.6') != 1:
+              raise SystemExit('loader metadata signature mismatch')
+          s=s.replace('THIRD_CAMERA_DISTANCE_MIN=1.6','THIRD_CAMERA_DISTANCE_MIN=0.55')
+          s=s.replace('thirdCameraMin:1.6','thirdCameraMin:0.55')
+          loader.write_text(s,encoding='utf-8')
+
+          gate=Path('.github/workflows/third-camera-zoom-check.yml')
+          s=gate.read_text(encoding='utf-8')
+          if s.count("'min 1.6':'THIRD_CAMERA_DISTANCE_MIN=1.6' in s") != 1:
+              raise SystemExit('camera gate min signature mismatch')
+          if s.count("'V0.5.69' in b and 'third-person-pinch-zoom-1.6' in b") != 1:
+              raise SystemExit('camera gate release signature mismatch')
+          s=s.replace("'min 1.6':'THIRD_CAMERA_DISTANCE_MIN=1.6' in s","'min 0.55':'THIRD_CAMERA_DISTANCE_MIN=0.55' in s")
+          s=s.replace("'V0.5.69' in b and 'third-person-pinch-zoom-1.6' in b","'V0.5.70' in b and 'third-person-pinch-zoom-0.55' in b")
+          gate.write_text(s,encoding='utf-8')
+
+          boot=Path('bootstrap-v0510.js')
+          s=boot.read_text(encoding='utf-8')
+          if 'third-person-pinch-zoom-1.6' not in s or 'V0.5.69' not in s:
+              raise SystemExit('bootstrap release signature mismatch')
+          s=s.replace('third-person-pinch-zoom-1.6','third-person-pinch-zoom-0.55')
+          s=s.replace('V0.5.69','V0.5.70').replace('0.5.69','0.5.70')
+          boot.write_text(s,encoding='utf-8')
+
+          index=Path('index.html')
+          s=index.read_text(encoding='utf-8')
+          n=s.count('0.5.69')
+          if n < 5:
+              raise SystemExit(f'Expected at least 5 V0.5.69 index tokens, found {n}')
+          s=s.replace('0.5.69','0.5.70')
+          index.write_text(s,encoding='utf-8')
+
+      - name: Commit V0.5.70
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v0504-fixed-loader.js bootstrap-v0510.js index.html .github/workflows/third-camera-zoom-check.yml
+          git commit -m 'fix: allow very close third-person zoom in V0.5.70'
+          git push origin HEAD:dev-v0.1
