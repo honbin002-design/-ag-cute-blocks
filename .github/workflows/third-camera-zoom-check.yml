@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify guarded third-person zoom contract
+      - name: Verify guarded third-person free orbit contract
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -16,16 +16,16 @@ jobs:
           b=Path('bootstrap-v0510.js').read_text()
           checks={
             'min 0.55':'THIRD_CAMERA_DISTANCE_MIN=0.55' in s,
-            'default 3.8':'THIRD_CAMERA_DISTANCE_DEFAULT=3.8' in s,
-            'settings state':'let thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,Number(settings.thirdDistance)||THIRD_CAMERA_DISTANCE_DEFAULT));' in s,
-            'persist thirdDistance':'cameraMode,thirdDistance,farmDistance,farmPitch,farmYaw,season' in s,
+            'orbit pitch bounds':'THIRD_CAMERA_PITCH_MIN=-.72' in s and 'THIRD_CAMERA_PITCH_MAX=1.16' in s,
+            'settings state':'let thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,Number(settings.thirdDistance)||THIRD_CAMERA_DISTANCE_DEFAULT));let thirdPitch=' in s,
+            'persist orbit':'cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season' in s,
             'pinch handler':"thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,thirdDistance*thirdPinchDistance/next))" in s,
-            'wheel handler':"else if(cameraMode==='third')thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,thirdDistance+e.deltaY*.01))" in s,
-            'render uses thirdDistance':'eye.x+Math.sin(yaw)*thirdDistance,eye.y+1.85,eye.z+Math.cos(yaw)*thirdDistance' in s,
-            'release v0570':'V0.5.70' in b and 'third-person-pinch-zoom-0.55' in b,
+            'free drag':"if(cameraMode==='third'){yaw-=thirdDx*.0075;thirdPitch=Math.max(THIRD_CAMERA_PITCH_MIN,Math.min(THIRD_CAMERA_PITCH_MAX,thirdPitch+thirdDy*.0065))}" in s,
+            'render orbit':'Math.sin(yaw)*Math.cos(thirdPitch)*thirdDistance' in s and 'Math.sin(thirdPitch)*thirdDistance' in s,
+            'release v0571':'V0.5.71' in b and 'third-person-free-orbit+pinch-zoom-0.55' in b,
           }
           bad=[k for k,v in checks.items() if not v]
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS third-person very-close zoom contract')
+          print('PASS third-person free orbit + very-close zoom contract')
           PY
