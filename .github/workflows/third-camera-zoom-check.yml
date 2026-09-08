@@ -24,10 +24,10 @@ jobs:
             'document touch bridge':"bridge:'touch-to-core-wheel'" in t and "version:'0.5.74'" in t,
             'bridge sensitivity':'const wheelDelta=-delta*3.8' in t,
             'render orbit':'Math.sin(yaw)*Math.cos(thirdPitch)*thirdDistance' in s and 'Math.sin(thirdPitch)*thirdDistance' in s,
-            'release v0575':'V0.5.75' in b and 'third-camera-safe-clearance-0.12' in b,
+            'release v0576':'V0.5.76' in b and 'third-camera-safe-clearance-0.12' in b,
           }
           bad=[k for k,v in checks.items() if not v]
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS preserved V0.5.74 camera behavior carried into current release')
+          print('PASS preserved V0.5.74 camera behavior carried into V0.5.76')
           PY
