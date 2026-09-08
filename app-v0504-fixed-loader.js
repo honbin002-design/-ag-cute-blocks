@@ -1,10 +1,7 @@
-// AG Cute Blocks V0.5.04 fixed loader.
-// Purpose: recover the complete V0.5.04 world/fishing feature set without copying
-// or permanently modifying the historical source file. The historical module has
-// one known TDZ startup fault: syncActionLabels() executes before category/selected
-// are initialized. We patch only that exact first-call sequence in memory, then
-// import the resulting module. Any mismatch fails closed instead of silently running
-// an unverified transformation.
+// AG Cute Blocks guarded V0.5.04 loader.
+// Recover the complete V0.5.04 world/fishing feature set while applying only
+// verified startup/input compatibility repairs in memory. Historical source stays
+// untouched. Every patch is signature-count gated and fails closed on mismatch.
 
 const SOURCE_URL=new URL('./app-v0504.js',import.meta.url);
 const original=await fetch(SOURCE_URL,{cache:'no-cache'}).then(r=>{
@@ -12,23 +9,38 @@ const original=await fetch(SOURCE_URL,{cache:'no-cache'}).then(r=>{
   return r.text();
 });
 
-const TDZ_SIGNATURE="document.head.appendChild(st)};syncActionLabels();\n\nconst scene=new THREE.Scene()";
-const TDZ_FIXED="document.head.appendChild(st)};queueMicrotask(syncActionLabels);\n\nconst scene=new THREE.Scene()";
-const occurrences=original.split(TDZ_SIGNATURE).length-1;
-if(occurrences!==1)throw new Error(`V0.5.04 TDZ signature mismatch: expected 1, got ${occurrences}`);
+const patches=[
+  {
+    id:'syncActionLabels-tdz-defer',
+    from:"document.head.appendChild(st)};syncActionLabels();\n\nconst scene=new THREE.Scene()",
+    to:"document.head.appendChild(st)};queueMicrotask(syncActionLabels);\n\nconst scene=new THREE.Scene()"
+  },
+  {
+    id:'legacy-doubletap-blocker-suppress',
+    from:"let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<=350)e.preventDefault();lastTouchEnd=now},{passive:false});",
+    to:"let lastTouchEnd=0;/* AG guarded recovery: double-tap policy is owned by mobile-viewport-lock-runtime.js */"
+  },
+  {
+    id:'legacy-blanket-multitouch-suppress',
+    from:"document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});",
+    to:"/* AG guarded recovery: legacy blanket multitouch blocker suppressed; control-aware policy is owned by mobile-viewport-lock-runtime.js */"
+  }
+];
 
-let source=original.replace(TDZ_SIGNATURE,TDZ_FIXED);
+let source=original;const applied=[];
+for(const patch of patches){
+  const count=source.split(patch.from).length-1;
+  if(count!==1)throw new Error(`V0.5.04 patch signature mismatch (${patch.id}): expected 1, got ${count}`);
+  source=source.replace(patch.from,patch.to);applied.push(patch.id);
+}
 
-// Blob modules cannot resolve relative imports against the original file URL.
-// Rewrite only static relative JS imports to absolute URLs rooted at app-v0504.js.
-source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,prefix,spec,suffix)=>{
-  return `${prefix}${new URL(spec,SOURCE_URL).href}${suffix}`;
-});
+// Blob modules cannot resolve relative imports against the historical file URL.
+// Rewrite static relative JS imports only; all feature code stays byte-equivalent
+// apart from the guarded patches above.
+source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,prefix,spec,suffix)=>`${prefix}${new URL(spec,SOURCE_URL).href}${suffix}`);
 
 const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
 try{
   await import(blobUrl);
-  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patch:'syncActionLabels-tdz-defer',signatureCount:occurrences};
-}finally{
-  URL.revokeObjectURL(blobUrl);
-}
+  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
+}finally{URL.revokeObjectURL(blobUrl)}
