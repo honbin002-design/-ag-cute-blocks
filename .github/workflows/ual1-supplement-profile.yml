@@ -5,6 +5,8 @@ on:
     branches: [dev-v0.1]
     paths:
       - '.github/workflows/ual1-supplement-profile.yml'
+      - 'tests/ual2-rig-contract.json'
+      - 'tests/rig-test-character-3-ual1-supplement.html'
   workflow_dispatch:
 
 permissions:
@@ -15,29 +17,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download UAL1 Standard verification copy
+      - name: Download UAL1 and character 3 verification assets
         run: |
           set -euo pipefail
           curl -L --fail --retry 3 -o /tmp/ual1.glb 'https://raw.githubusercontent.com/Seyamalam/blood-league-kickoff/main/public/assets/vendor/quaternius/universal-animation-library.glb'
-      - name: Parse GLB and report supplement candidates
+          curl -L --fail --retry 3 -o /tmp/female.glb 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Female%20Mannequin/Unreal-Godot/Mannequin_F.glb'
+      - name: Parse GLBs and gate supplement compatibility
         shell: python
         run: |
           import json, struct, pathlib
-          p=pathlib.Path('/tmp/ual1.glb')
-          data=p.read_bytes()
-          assert data[:4] == b'glTF', 'invalid GLB magic'
-          version,total=struct.unpack_from('<II',data,4)
-          assert version == 2, f'unsupported GLB version {version}'
-          off=12; doc=None
-          while off < len(data):
-              ln,typ=struct.unpack_from('<II',data,off); off += 8
-              chunk=data[off:off+ln]; off += ln
-              if typ == 0x4E4F534A:
-                  doc=json.loads(chunk.decode('utf-8').rstrip('\x00 \t\r\n'))
-                  break
-          assert doc is not None, 'missing JSON chunk'
-          nodes=doc.get('nodes',[])
-          skins=doc.get('skins',[])
+          def read_glb(path):
+              data=pathlib.Path(path).read_bytes()
+              assert data[:4] == b'glTF', f'{path}: invalid GLB magic'
+              version,total=struct.unpack_from('<II',data,4)
+              assert version == 2, f'{path}: unsupported GLB version {version}'
+              off=12; doc=None
+              while off < len(data):
+                  ln,typ=struct.unpack_from('<II',data,off); off += 8
+                  chunk=data[off:off+ln]; off += ln
+                  if typ == 0x4E4F534A:
+                      doc=json.loads(chunk.decode('utf-8').rstrip('\x00 \t\r\n'))
+                      break
+              assert doc is not None, f'{path}: missing JSON chunk'
+              return data,doc
+          data,doc=read_glb('/tmp/ual1.glb')
+          _,female=read_glb('/tmp/female.glb')
+          nodes=doc.get('nodes',[]); skins=doc.get('skins',[])
+          female_nodes=female.get('nodes',[])
+          female_names={n.get('name') for n in female_nodes if n.get('name')}
           joint_ids=[]
           for s in skins: joint_ids += s.get('joints',[])
           joint_names=[]
@@ -56,5 +63,25 @@ jobs:
           required={'root','pelvis','spine_01','spine_02','spine_03','neck_01','Head','clavicle_l','upperarm_l','lowerarm_l','hand_l','clavicle_r','upperarm_r','lowerarm_r','hand_r','thigh_l','calf_l','foot_l','thigh_r','calf_r','foot_r'}
           overlap=len(required.intersection(joint_names))
           print(f'AG_CORE_RIG_OVERLAP={overlap}/{len(required)}')
-          if overlap < 18:
-              raise SystemExit('FAIL: UAL1 rig naming is too far from AG character 3 baseline')
+          if overlap < 21:
+              raise SystemExit('FAIL: UAL1 core rig is not identical enough for character 3')
+          channels=0; matched=0; missing=set()
+          for anim in anims:
+              for ch in anim.get('channels',[]):
+                  target=ch.get('target',{}); idx=target.get('node')
+                  if idx is None or not (0 <= idx < len(nodes)): continue
+                  channels += 1
+                  name=nodes[idx].get('name',f'node_{idx}')
+                  if name in female_names: matched += 1
+                  else: missing.add(name)
+          pct=(matched/channels*100) if channels else 0
+          print(f'ANIMATION_CHANNEL_NODE_MATCH={matched}/{channels} ({pct:.2f}%)')
+          print('MISSING_TARGET_NODES='+'|'.join(sorted(missing)))
+          if channels == 0 or pct < 99.9:
+              raise SystemExit('FAIL: UAL1 animation channels do not fully target character 3 node names')
+          needed={'Jog_Fwd_Loop','Sprint_Loop','Sitting_Enter','Sitting_Idle_Loop','Sitting_Exit','Swim_Fwd_Loop','Swim_Idle_Loop','Interact','Roll'}
+          absent=sorted(needed-set(names))
+          print('REQUIRED_SUPPLEMENT_CLIPS_MISSING='+'|'.join(absent))
+          if absent:
+              raise SystemExit('FAIL: expected supplement clips are missing')
+          print('PASS: UAL1 supplement is structurally direct-compatible with character 3; visual deformation validation remains required.')
