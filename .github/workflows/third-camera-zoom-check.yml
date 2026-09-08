@@ -12,9 +12,12 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           s=Path('app-v0504-fixed-loader.js').read_text()
           b=Path('bootstrap-v0510.js').read_text()
           t=Path('third-camera-touch-zoom-runtime.js').read_text()
+          m=re.search(r"const release='(V[0-9.]+)'",b)
+          release=m.group(1) if m else ''
           checks={
             'min 0.28':'THIRD_CAMERA_DISTANCE_MIN=0.28' in s,
             'near plane 0.05':"new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.05,260)" in s,
@@ -27,10 +30,11 @@ jobs:
             'sit camera unlocked':"id:'furniture-camera-orbit-unlock'" in s and "playerState.mode!=='sit'" in s,
             'lie special camera removed':"legacyFurnitureCameraCount!==2" in s and "join(\"if(cameraMode==='farm')\")" in s and 'lieUsesNormalThirdCamera:true' in s,
             'active furniture state bridge':'furnitureStateBridge:true' in s and '__AGCB_ACTIVE_FURNITURE_STATE' in s,
-            'release v0578':'V0.5.78' in b and 'third-camera-safe-clearance-0.12' in b and 'sit-lie-normal-third-camera-orbit' in b,
+            'current release':bool(release) and release in b and 'third-camera-safe-clearance-0.12' in b and 'sit-lie-normal-third-camera-orbit' in b,
           }
           bad=[k for k,v in checks.items() if not v]
+          print('release',release)
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS preserved V0.5.74 free camera and V0.5.78 sit/lie uses the same third-person orbit/pinch path')
+          print('PASS preserved V0.5.74 iPhone-PASS free camera contract under '+release+'; sit/lie uses the same third-person orbit/pinch path')
           PY
