@@ -1,0 +1,60 @@
+name: UAL2 rig contract check
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'tests/ual2-rig-contract.json'
+      - '.github/workflows/ual2-rig-contract-check.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified UAL2 sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o /tmp/Mannequin_F.glb 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Female%20Mannequin/Unreal-Godot/Mannequin_F.glb'
+          curl -L --fail --retry 3 -o /tmp/UAL2_Standard.glb 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Unreal-Godot/UAL2_Standard.glb'
+      - name: Verify frozen contract against GLB contents
+        shell: python
+        run: |
+          import json,struct,pathlib,sys
+          def read_glb(path):
+              data=pathlib.Path(path).read_bytes()
+              if data[:4] != b'glTF': raise SystemExit(f'{path}: invalid GLB')
+              version,total=struct.unpack_from('<II',data,4)
+              if version != 2: raise SystemExit(f'{path}: expected GLB2, got {version}')
+              off=12
+              while off < len(data):
+                  ln,typ=struct.unpack_from('<II',data,off); off+=8
+                  chunk=data[off:off+ln]; off+=ln
+                  if typ == 0x4E4F534A:
+                      return json.loads(chunk.decode('utf-8').rstrip('\x00 \t\r\n'))
+              raise SystemExit(f'{path}: no JSON chunk')
+          contract=json.loads(pathlib.Path('tests/ual2-rig-contract.json').read_text(encoding='utf-8'))
+          female=read_glb('/tmp/Mannequin_F.glb'); lib=read_glb('/tmp/UAL2_Standard.glb')
+          nodes=female.get('nodes',[]); skins=female.get('skins',[])
+          joint_ids=[]
+          for skin in skins: joint_ids += skin.get('joints',[])
+          joint_names=[nodes[i].get('name',f'node_{i}') for i in dict.fromkeys(joint_ids) if 0 <= i < len(nodes)]
+          anim_names=[a.get('name',f'Animation_{i+1}') for i,a in enumerate(lib.get('animations',[]))]
+          failures=[]
+          f=contract['female']; u=contract['ual2Standard']
+          actual=(len(nodes),len(skins),len(joint_names),len(female.get('meshes',[])))
+          expected=(f['nodes'],f['skins'],f['joints'],f['meshes'])
+          if actual != expected: failures.append(f'female counts drifted actual={actual} expected={expected}')
+          if joint_names != f['jointNames']: failures.append('female joint names/order drifted')
+          if len(lib.get('nodes',[])) != u['nodes'] or len(lib.get('skins',[])) != u['skins']: failures.append('UAL2 node/skin counts drifted')
+          if len(anim_names) != u['animationCount']: failures.append(f'UAL2 animation count drifted: {len(anim_names)} != {u["animationCount"]}')
+          if anim_names != u['animationNames']: failures.append('UAL2 animation names/order drifted')
+          actual_set=set(anim_names)
+          for action,names in contract['agActionMap'].items():
+              for name in names:
+                  if name not in actual_set: failures.append(f'action {action} points to missing clip {name}')
+          if failures:
+              print('\n'.join(failures)); sys.exit(1)
+          print(f'PASS: female {len(joint_names)} joints; UAL2 {len(anim_names)} clips; AG mappings all resolve.')
