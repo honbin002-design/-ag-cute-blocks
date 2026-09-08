@@ -1,0 +1,59 @@
+name: UAL2 rig profile
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/rig-profile-ual2.yml'
+  workflow_dispatch:
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download UAL2 female and animation library
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o /tmp/Mannequin_F.glb 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Female%20Mannequin/Unreal-Godot/Mannequin_F.glb'
+          curl -L --fail --retry 3 -o /tmp/UAL2_Standard.glb 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Unreal-Godot/UAL2_Standard.glb'
+      - name: Profile GLB structure
+        shell: python
+        run: |
+          import json, struct, pathlib
+          def read_glb(path):
+              data=pathlib.Path(path).read_bytes()
+              if data[:4] != b'glTF': raise SystemExit(f'{path}: invalid GLB magic')
+              version,total=struct.unpack_from('<II',data,4)
+              if version != 2: raise SystemExit(f'{path}: GLB version {version}')
+              off=12; doc=None
+              while off < len(data):
+                  ln,typ=struct.unpack_from('<II',data,off); off += 8
+                  chunk=data[off:off+ln]; off += ln
+                  if typ == 0x4E4F534A:
+                      doc=json.loads(chunk.decode('utf-8').rstrip('\x00 \t\r\n'))
+                      break
+              if doc is None: raise SystemExit(f'{path}: missing JSON chunk')
+              return doc
+          female=read_glb('/tmp/Mannequin_F.glb')
+          lib=read_glb('/tmp/UAL2_Standard.glb')
+          nodes=female.get('nodes',[])
+          skins=female.get('skins',[])
+          joint_ids=[]
+          for s in skins: joint_ids += s.get('joints',[])
+          joint_names=[]
+          for i in dict.fromkeys(joint_ids):
+              if 0 <= i < len(nodes): joint_names.append(nodes[i].get('name',f'node_{i}'))
+          print('=== FEMALE PROFILE ===')
+          print('nodes=',len(nodes),'skins=',len(skins),'joints=',len(joint_names),'meshes=',len(female.get('meshes',[])))
+          print('JOINT_NAMES=' + '|'.join(joint_names))
+          anims=lib.get('animations',[])
+          names=[a.get('name',f'Animation_{i+1}') for i,a in enumerate(anims)]
+          print('=== UAL2 PROFILE ===')
+          print('animations=',len(anims),'nodes=',len(lib.get('nodes',[])),'skins=',len(lib.get('skins',[])))
+          print('ANIMATION_NAMES=' + '|'.join(names))
+          keys=['idle','walk','run','jump','fish','farm','chop','attack','dodge','sit','sleep','swim','climb','carry','interact']
+          for key in keys:
+              hits=[n for n in names if key in n.lower()]
+              print(f'KEY_{key.upper()}=' + '|'.join(hits[:12]))
