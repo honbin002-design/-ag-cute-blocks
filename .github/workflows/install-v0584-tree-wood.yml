@@ -16,40 +16,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: dev-v0.1
-      - name: Apply guarded V0.5.84 patches
+          fetch-depth: 0
+      - name: Apply remaining guarded V0.5.84 patches
         shell: python
         run: |
           from pathlib import Path
-
-          def once(path, old, new):
-              p=Path(path); s=p.read_text(encoding='utf-8')
-              n=s.count(old)
+          def once(path,old,new):
+              p=Path(path); s=p.read_text(encoding='utf-8'); n=s.count(old)
               if n!=1: raise SystemExit(f'{path}: expected 1 signature, got {n}')
               p.write_text(s.replace(old,new),encoding='utf-8')
 
-          # Existing inventory becomes the single source of truth for timber.
-          once('economy-system.js',
-               "apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'",
-               "apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',wood:'木材',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'")
-
-          # Extend the guarded core task API; maid never mutates world/inventory directly.
           old="globalThis.__AGCB_WORLD_TASK_API={version:1,status:'AUTHORITATIVE_CORE_ONLY',inventoryOwner:'economy-system/addInventory',listMatureCrops,harvestMatureCropById};\""
           new="function listHarvestableTrees(){return objects.filter(o=>o.userData?.type==='tree').map(o=>({id:o.userData.id,itemId:'wood',x:o.position.x,z:o.position.z}))}function chopTreeById(id){const o=taskObjectById(id);if(!o||o.userData?.type!=='tree')return{ok:false,reason:'missing-tree'};const oi=objects.indexOf(o);if(oi<0)return{ok:false,reason:'tree-not-live'};unregisterSolid(o);unregisterCameraTarget(o);unregisterInteractionTarget(o);unregisterBuildAimTarget(o);unregisterWorldEntity(o);world.remove(o);objects.splice(oi,1);addInventory(economy,'wood',1);changed=true;renderLife();saveSettings();saveWorld();return{ok:true,id,itemId:'wood',qty:1,inventory:Number(economy.inventory.wood||0)}}globalThis.__AGCB_WORLD_TASK_API={version:2,status:'AUTHORITATIVE_CORE_ONLY',inventoryOwner:'economy-system/addInventory',worldOwner:'objects/worldIndex',listMatureCrops,harvestMatureCropById,listHarvestableTrees,chopTreeById};\""
           once('app-v0504-fixed-loader.js',old,new)
-
-          maid=Path('maid-work-runtime-v0582.js').read_text(encoding='utf-8')
-          maid=maid.replace("const VERSION='V0.5.83'","const VERSION='V0.5.84'",1)
-          maid=maid.replace("function waterTargets(){return api()?.listNeedsWater?.()||[]}","function waterTargets(){return api()?.listNeedsWater?.()||[]}\nfunction treeTargets(){return api()?.listHarvestableTrees?.()||[]}",1)
-          maid=maid.replace("function assignWater(){const targets=waterTargets();if(!targets.length){setStatus('目前沒有需要澆水的作物');return false}return assign('waterCrops',targets)}","function assignWater(){const targets=waterTargets();if(!targets.length){setStatus('目前沒有需要澆水的作物');return false}return assign('waterCrops',targets)}\nfunction assignChop(){const targets=treeTargets();if(!targets.length){setStatus('目前沒有可砍伐的樹木');return false}return assign('chopTrees',targets)}",1)
-          maid=maid.replace("if(task.kind==='waterCrops')return a.waterCropById?.(id);return{ok:false,reason:'unknown-task'}","if(task.kind==='waterCrops')return a.waterCropById?.(id);if(task.kind==='chopTrees')return a.chopTreeById?.(id);return{ok:false,reason:'unknown-task'}",1)
-          maid=maid.replace("function completionText(task){if(task.kind==='waterCrops')return task.completed?`女僕完成澆水：${task.completed} 株使用同一份作物照護資料`:'女僕檢查完成：沒有需要澆水的作物';return task.completed?`女僕完成收成：${task.completed} 份已放入同一個背包`:'女僕檢查完成：沒有可收成作物'}","function completionText(task){if(task.kind==='waterCrops')return task.completed?`女僕完成澆水：${task.completed} 株使用同一份作物照護資料`:'女僕檢查完成：沒有需要澆水的作物';if(task.kind==='chopTrees')return task.completed?`女僕完成砍樹：${task.completed} 木材已放入同一個背包`:'女僕檢查完成：沒有可砍伐樹木';return task.completed?`女僕完成收成：${task.completed} 份已放入同一個背包`:'女僕檢查完成：沒有可收成作物'}",1)
-          old_render="const t=state.task,harvest=harvestTargets().length,water=waterTargets().length,working=t?.status==='working',done=t?.status==='done',label=t?.kind==='waterCrops'?'澆水':'收成';box.innerHTML=`<h3 style=\"margin:0 0 7px\">🧹 女僕工作</h3><div style=\"font-size:11px;line-height:1.45;margin-bottom:8px\">${state.worker}・收成進既有背包；澆水共用既有作物照護資料。</div><div style=\"font-size:12px;margin-bottom:8px\">成熟：<b>${harvest}</b>　需澆水：<b>${water}</b>${t?`<br>目前：<b>${working?'工作中':done?'完成':t.status}</b>・${label} <b>${t.completed||0}</b>`:''}</div><button id=\"agMaidHarvest\" style=\"width:100%;border:0;border-radius:10px;padding:9px;background:#fff1b8;font-weight:900\" ${working||!harvest?'disabled':''}>🧺 指派收成熟作物</button><button id=\"agMaidWater\" style=\"width:100%;border:0;border-radius:10px;padding:9px;margin-top:6px;background:#dff6ff;font-weight:900\" ${working||!water?'disabled':''}>💧 指派澆水</button>${working?'<button id=\"agMaidCancel\" style=\"width:100%;border:0;border-radius:10px;padding:8px;margin-top:6px;background:#eee;font-weight:800\">停止目前工作</button>':''}`;box.querySelector('#agMaidHarvest')?.addEventListener('click',assignHarvest);box.querySelector('#agMaidWater')?.addEventListener('click',assignWater);box.querySelector('#agMaidCancel')?.addEventListener('click',cancel)"
-          new_render="const t=state.task,harvest=harvestTargets().length,water=waterTargets().length,trees=treeTargets().length,working=t?.status==='working',done=t?.status==='done',label=t?.kind==='waterCrops'?'澆水':t?.kind==='chopTrees'?'砍樹':'收成';box.innerHTML=`<h3 style=\"margin:0 0 7px\">🧹 女僕工作</h3><div style=\"font-size:11px;line-height:1.45;margin-bottom:8px\">${state.worker}・成果全部進既有背包／世界資料，不建立第二套資源。</div><div style=\"font-size:12px;margin-bottom:8px\">成熟：<b>${harvest}</b>　需澆水：<b>${water}</b>　樹木：<b>${trees}</b>${t?`<br>目前：<b>${working?'工作中':done?'完成':t.status}</b>・${label} <b>${t.completed||0}</b>`:''}</div><button id=\"agMaidHarvest\" style=\"width:100%;border:0;border-radius:10px;padding:9px;background:#fff1b8;font-weight:900\" ${working||!harvest?'disabled':''}>🧺 指派收成熟作物</button><button id=\"agMaidWater\" style=\"width:100%;border:0;border-radius:10px;padding:9px;margin-top:6px;background:#dff6ff;font-weight:900\" ${working||!water?'disabled':''}>💧 指派澆水</button><button id=\"agMaidChop\" style=\"width:100%;border:0;border-radius:10px;padding:9px;margin-top:6px;background:#e7d6b7;font-weight:900\" ${working||!trees?'disabled':''}>🪓 指派砍樹</button>${working?'<button id=\"agMaidCancel\" style=\"width:100%;border:0;border-radius:10px;padding:8px;margin-top:6px;background:#eee;font-weight:800\">停止目前工作</button>':''}`;box.querySelector('#agMaidHarvest')?.addEventListener('click',assignHarvest);box.querySelector('#agMaidWater')?.addEventListener('click',assignWater);box.querySelector('#agMaidChop')?.addEventListener('click',assignChop);box.querySelector('#agMaidCancel')?.addEventListener('click',cancel)"
-          if maid.count(old_render)!=1: raise SystemExit('maid render signature mismatch')
-          maid=maid.replace(old_render,new_render)
-          maid=maid.replace("assignHarvest,assignWater,cancel,step,status:'REAL_SHARED_CORE_AND_CARE_MUTATION_ONLY'","assignHarvest,assignWater,assignChop,cancel,step,status:'REAL_SHARED_CORE_CARE_AND_TREE_MUTATION_ONLY'",1)
-          if "listHarvestableTrees" not in maid or "chopTreeById" not in maid or "assignChop" not in maid: raise SystemExit('maid tree patch incomplete')
-          Path('maid-work-runtime-v0582.js').write_text(maid,encoding='utf-8')
 
           boot=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           if boot.count('V0.5.83')<2: raise SystemExit('bootstrap V0.5.83 signature missing')
@@ -58,22 +37,22 @@ jobs:
           Path('bootstrap-v0510.js').write_text(boot,encoding='utf-8')
 
           gate=Path('.github/workflows/maid-work-task-check.yml').read_text(encoding='utf-8')
-          gate=gate.replace("      - 'crop-care-system.js'","      - 'crop-care-system.js'\n      - 'economy-system.js'",1)
-          gate=gate.replace("for token in [\"id:'authoritative-world-task-bridge'\",'__AGCB_WORLD_TASK_API','addInventory(economy,itemId,1)'","for token in [\"id:'authoritative-world-task-bridge'\",'__AGCB_WORLD_TASK_API','addInventory(economy,itemId,1)'",1)
+          if "      - 'economy-system.js'" not in gate:
+              gate=gate.replace("      - 'crop-care-system.js'","      - 'crop-care-system.js'\n      - 'economy-system.js'",1)
           gate=gate.replace("'AUTHORITATIVE_CORE_ONLY']:","'AUTHORITATIVE_CORE_ONLY','listHarvestableTrees','chopTreeById',\"addInventory(economy,'wood',1)\",'unregisterWorldEntity(o)','unregisterInteractionTarget(o)','unregisterBuildAimTarget(o)']:",1)
           gate=gate.replace("'assignWater','waterCrops','REAL_SHARED_CORE_AND_CARE_MUTATION_ONLY']:","'assignWater','waterCrops','listHarvestableTrees','chopTreeById','assignChop','chopTrees','REAL_SHARED_CORE_CARE_AND_TREE_MUTATION_ONLY']:",1)
-          gate=gate.replace("if 'addInventory(' in maid: bad.append('maid runtime must not mutate inventory directly')","if 'addInventory(' in maid: bad.append('maid runtime must not mutate inventory directly')\n          if 'world.remove(' in maid or 'objects.splice' in maid: bad.append('maid runtime must not remove trees directly')")
-          gate=gate.replace("if m and m.group(1)>='V0.5.83':","if m and m.group(1)>='V0.5.83':",1)
-          gate=gate.replace("if bad:\n            print", "eco=Path('economy-system.js').read_text(encoding='utf-8')\n          if m and m.group(1)>='V0.5.84':\n            if \"wood:'木材'\" not in eco: bad.append('economy missing canonical wood inventory item')\n            if \"wood:\" in re.search(r'export const SELL_VALUES=\\{(.*?)\\};',eco,re.S).group(1): bad.append('wood must not become sellable before economy balance decision')\n            for token in ['authoritative-maid-tree-chop-wood-loop']:\n              if token not in boot: bad.append('bootstrap missing '+token)\n          if bad:\n            print",1)
+          gate=gate.replace("if 'addInventory(' in maid: bad.append('maid runtime must not mutate inventory directly')","if 'addInventory(' in maid: bad.append('maid runtime must not mutate inventory directly')\n          if 'world.remove(' in maid or 'objects.splice' in maid: bad.append('maid runtime must not remove trees directly')",1)
+          marker="if bad:\n            print"
+          if marker not in gate: raise SystemExit('gate final marker missing')
+          extra="eco=Path('economy-system.js').read_text(encoding='utf-8')\n          if m and m.group(1)>='V0.5.84':\n            if \"wood:'木材'\" not in eco: bad.append('economy missing canonical wood inventory item')\n            sell=re.search(r'export const SELL_VALUES=\\{(.*?)\\};',eco,re.S)\n            if not sell: bad.append('economy SELL_VALUES block missing')\n            elif 'wood:' in sell.group(1): bad.append('wood must not become sellable before economy balance decision')\n            if 'authoritative-maid-tree-chop-wood-loop' not in boot: bad.append('bootstrap missing authoritative-maid-tree-chop-wood-loop')\n          "
+          gate=gate.replace(marker,extra+marker,1)
           Path('.github/workflows/maid-work-task-check.yml').write_text(gate,encoding='utf-8')
-
-          # One-time installer removes itself after a successful guarded patch.
           Path('.github/workflows/install-v0584-tree-wood.yml').unlink()
       - name: Commit V0.5.84
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git diff --cached --check
           git commit -m 'release: V0.5.84 authoritative maid tree wood loop'
+          git pull --rebase origin dev-v0.1
           git push origin HEAD:dev-v0.1
