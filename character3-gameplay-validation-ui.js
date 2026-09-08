@@ -1,0 +1,15 @@
+// AG Cute Blocks V0.5.64 - in-game character 3 validation controls.
+// This UI lives inside the normal playable world. It does not replace the formal character automatically.
+const RELEASE='V0.5.64';
+const ACTIONS=[['run','跑步'],['sit','坐下'],['swim','游泳'],['interact','互動'],['dodge','翻滾'],['fish','釣魚'],['sleep','睡覺'],['wake','起身']];
+let panel=null,open=false;
+function integration(){return globalThis.__AGCB_TEST_CHARACTER_INTEGRATION}
+function ensureCharacter3(){const api=integration();if(!api)return false;if(api.selected!=='test3')api.select('test3');return true}
+function fire(name){if(!ensureCharacter3())return;setTimeout(()=>{const api=integration();if(!api)return;const duration=name==='sleep'||name==='wake'?0:(name==='fish'?2600:1800);api.force(name,duration);const st=document.getElementById('status');if(st)st.textContent=`角色3遊戲內驗收：${ACTIONS.find(x=>x[0]===name)?.[1]||name}（只測候選，不列正式 PASS）`;},integration()?.selected==='test3'?0:650)}
+function build(){if(document.getElementById('agCharacter3GameplayValidation'))return;const admin=document.getElementById('adminPanel');if(!admin)return;const box=document.createElement('section');box.id='agCharacter3GameplayValidation';box.style.cssText='margin-top:14px;padding:10px;border-radius:14px;background:#eef6f1;border:1px solid #cbded3';box.innerHTML=`<div style="font-weight:900;font-size:14px">角色3｜遊戲內動作驗收</div><div style="font-size:11px;line-height:1.45;margin:4px 0 8px">直接在目前遊戲場景測試，不再跳獨立測試頁。可照常走動、轉鏡頭。這裡只控制候選動作，不會把角色3升為正式角色。</div><button id="agC3Open" style="width:100%;border:0;border-radius:11px;padding:10px;background:#fff;font-weight:900">開啟動作控制列</button>`;admin.appendChild(box);
+const dock=document.createElement('div');dock.id='agC3Dock';dock.style.cssText='display:none;position:fixed;z-index:88;right:max(10px,env(safe-area-inset-right));top:max(128px,calc(env(safe-area-inset-top) + 118px));width:116px;padding:7px;background:#17323dcc;border-radius:14px;pointer-events:auto;max-height:calc(100dvh - 170px);overflow:auto';dock.innerHTML=`<button id="agC3Close" style="width:100%;border:0;border-radius:9px;padding:7px;background:#fff;font-weight:900;margin-bottom:6px">關閉驗收</button>${ACTIONS.map(([k,l])=>`<button data-ag-c3="${k}" style="width:100%;border:0;border-radius:9px;padding:8px 5px;background:#fffde8;margin:3px 0;font-weight:900">${l}</button>`).join('')}`;document.body.appendChild(dock);panel=dock;
+document.getElementById('agC3Open').onclick=()=>{open=true;panel.style.display='block';ensureCharacter3()};document.getElementById('agC3Close').onclick=()=>{open=false;panel.style.display='none';fire('wake')};dock.addEventListener('click',e=>{const b=e.target.closest('[data-ag-c3]');if(b)fire(b.dataset.agC3)});
+}
+function install(){build();if(!document.getElementById('agCharacter3GameplayValidation'))setTimeout(install,400)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+globalThis.__AGCB_CHARACTER3_GAMEPLAY_VALIDATION={version:1,release:RELEASE,get open(){return open},fire};
