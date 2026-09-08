@@ -1,4 +1,4 @@
-name: One-time V0.5.68 index sync
+name: One-time V0.5.69 index sync
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          old='0.5.67'; new='0.5.68'
+          old='0.5.68'; new='0.5.69'
           n=s.count(old)
           if n < 5:
               raise SystemExit(f'Expected at least 5 V{old} index tokens, found {n}')
@@ -38,5 +38,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'chore: sync index release chain to V0.5.68'
+          git commit -m 'chore: sync index release chain to V0.5.69'
           git push origin HEAD:dev-v0.1
