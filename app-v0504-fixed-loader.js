@@ -40,7 +40,7 @@ const cameraPatches=[
   {
     id:'third-camera-distance-state',
     from:'THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;',
-    to:'THIRD_CAMERA_DISTANCE_DEFAULT=3.8,THIRD_CAMERA_DISTANCE_MIN=1.6,CAMERA_TUNING_REVISION=2;'
+    to:'THIRD_CAMERA_DISTANCE_DEFAULT=3.8,THIRD_CAMERA_DISTANCE_MIN=0.55,CAMERA_TUNING_REVISION=2;'
   },
   {
     id:'third-camera-distance-settings',
@@ -88,5 +88,5 @@ source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,pref
 const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
 try{
   await import(blobUrl);
-  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:1.6,thirdCameraDefault:3.8,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
+  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.55,thirdCameraDefault:3.8,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
 }finally{URL.revokeObjectURL(blobUrl)}
