@@ -64,30 +64,40 @@ jobs:
           m=re.search(r"import ['\"]\./(app-v\d+\.js)(?:\?v=[^'\"]+)?['\"]",boot)
           if not m: sys.exit('current app import missing from bootstrap')
           wrapper_name=m.group(1);wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8')
-          core_name=wrapper_name
-          if '__AGCB_RELEASE_OVERLAY' in wrapper:
+          core_name=wrapper_name;loader_name=''
+          loader=re.search(r"import ['\"]\./(app-v\d+-fixed-loader\.js)['\"]",wrapper)
+          if loader:
+            loader_name=loader.group(1);loader_src=pathlib.Path(loader_name).read_text(encoding='utf-8')
+            historical=re.search(r"new URL\(['\"]\./(app-v\d+\.js)['\"],import\.meta\.url\)",loader_src)
+            if not historical: sys.exit('guarded loader historical core missing')
+            core_name=historical.group(1)
+            if 'TDZ_SIGNATURE' not in loader_src or 'queueMicrotask(syncActionLabels)' not in loader_src: sys.exit('guarded TDZ repair contract missing')
+          elif '__AGCB_RELEASE_OVERLAY' in wrapper:
             base=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",wrapper)
             if not base: sys.exit('additive app wrapper does not identify base app')
             core_name=base.group(1)
-          pathlib.Path('/tmp/agcb-current').write_text(f'{boot_name}\n{wrapper_name}\n{core_name}\n{v}\n',encoding='utf-8')
-          print(f'current release {v}: {boot_name} -> {wrapper_name} -> core {core_name}')
+          pathlib.Path('/tmp/agcb-current').write_text(f'{boot_name}\n{wrapper_name}\n{core_name}\n{v}\n{loader_name}\n',encoding='utf-8')
+          print(f'current release {v}: {boot_name} -> {wrapper_name} -> {loader_name or "direct"} -> core {core_name}')
 
       - name: Verify current runtime chain
         shell: python
         run: |
           import pathlib,re,sys
-          boot_name,wrapper_name,core_name,v=pathlib.Path('/tmp/agcb-current').read_text().splitlines()
+          boot_name,wrapper_name,core_name,v,loader_name=pathlib.Path('/tmp/agcb-current').read_text().splitlines()
           index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8')
           expected=f'V{v}';failures=[]
           if f'<meta name="ag-runtime-version" content="{expected}">' not in index: failures.append('index visible version does not match bootstrap')
-          if f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version mismatch')
-          if f"const VERSION='{expected}'" not in wrapper: failures.append('release wrapper visible version mismatch')
+          if f"const release='{expected}'" not in boot or f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version owner mismatch')
+          if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('wrapper must defer visible version ownership to bootstrap')
+          if loader_name:
+            loader=pathlib.Path(loader_name).read_text(encoding='utf-8')
+            for token in ['TDZ_SIGNATURE','queueMicrotask(syncActionLabels)','occurrences!==1','await import(blobUrl)']:
+              if token not in loader: failures.append(f'guarded core loader missing {token}')
           for target,qv in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
             if qv!=v: failures.append(f'bootstrap query mismatch: {target}?v={qv} != {v}')
           required=['building-extension-runtime.js','asset-fetch-resilience-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','mobile-viewport-lock-runtime.js']
           for name in required:
             if name not in boot: failures.append(f'bootstrap missing {name}')
-          if v=='0.5.05' and 'fishing-ecology-runtime-v0505.js?v=0.5.05' not in boot: failures.append('V0.5.05 fishing ecology runtime missing')
           if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime-v0499.js'): failures.append('asset resilience must load before character asset runtime')
           viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8');mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8');aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8');persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8');sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8');motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8');resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
@@ -145,10 +155,11 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
-          _,_,core_name,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8');ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8');aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8');failures=[]
+          _,_,core_name,_,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8');ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8');aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8');failures=[]
           for token in ["'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","function standSurfaceY","function stairSurfaceY","globalThis.__AGCB_GAME_ACTIONS"]:
             if token not in app: failures.append(f'core app missing {token}')
           if "['stair','🪜','樓梯']" not in app: failures.append('official stair entry missing')
+          if "['fishingRod','🎣','釣魚竿']" not in app: failures.append('fishing rod missing from current core')
           if 'duplicateStairRemoved:true' not in ext: failures.append('duplicate stair cleanup marker missing')
           if 'directMobileMaterialFix:true' not in ext: failures.append('mobile tile/ceramic fix marker missing')
           if 'data-agcb-build-value="stairs"' in ext: failures.append('duplicate stairs UI still exposed')
