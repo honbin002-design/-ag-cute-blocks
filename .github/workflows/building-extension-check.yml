@@ -41,7 +41,9 @@ jobs:
             historical=re.search(r"new URL\(['\"]\./(app-v\d+\.js)['\"],import\.meta\.url\)",loader_src)
             if not historical: sys.exit('guarded loader historical core missing')
             core_name=historical.group(1)
-            if 'TDZ_SIGNATURE' not in loader_src or 'queueMicrotask(syncActionLabels)' not in loader_src: sys.exit('guarded loader TDZ repair contract missing')
+            required_loader=['syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)','await import(blobUrl)']
+            missing=[x for x in required_loader if x not in loader_src]
+            if missing: sys.exit('guarded loader patch-set contract missing: '+', '.join(missing))
           elif '__AGCB_RELEASE_OVERLAY' in wrapper:
             b=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",wrapper)
             if not b: sys.exit('additive wrapper base app missing')
@@ -72,7 +74,7 @@ jobs:
             if name not in boot: failures.append(f'{boot_name} missing {name}')
           if loader_name:
             loader=pathlib.Path(loader_name).read_text(encoding='utf-8')
-            for token in ['TDZ_SIGNATURE','queueMicrotask(syncActionLabels)','occurrences!==1','await import(blobUrl)']:
+            for token in ['syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)','legacyBlanketTouchBlockerSuppressed:true','legacyDoubleTapBlockerSuppressed:true','await import(blobUrl)']:
               if token not in loader: failures.append(f'guarded loader missing {token}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
@@ -83,17 +85,18 @@ jobs:
         run: |
           import pathlib,sys
           _,_,core_name,_,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8');inputjs=pathlib.Path('mobile-input-runtime.js').read_text(encoding='utf-8');controls=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8');css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8');sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8');failures=[]
-          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','CONTROL_SELECTOR','controlAwareTouchGuard:true','multitouchGameplayPreserved:true']:
+          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','CONTROL_SELECTOR','controlAwareTouchGuard:true','multitouchGameplayPreserved:true','mixedTwoThumbGameplayPreserved:true']:
             if token not in viewport: failures.append(f'viewport runtime missing {token}')
           legacy="document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()" in app
-          if legacy and 'legacyBlanketTouchBlockerSuppressed' not in viewport: failures.append('legacy blanket two-touch blocker exists without suppression guard')
+          if legacy and 'legacyBlanketTouchBlockerSuppressed:true' not in viewport: failures.append('legacy blanket two-touch blocker exists without suppression guard')
+          if 'legacyDoubleTapBlockerSuppressed:true' not in viewport: failures.append('legacy double-tap blocker suppression marker missing')
           if 'direct-game-actions-v3' not in inputjs or 'bridge?.invoke?.(el.id)' not in inputjs: failures.append('direct mobile action bridge missing')
           if 'crosshairVisualOnly:true' not in controls: failures.append('crosshair visual-only runtime marker missing')
           if 'pointer-events:none!important' not in css: failures.append('crosshair CSS still captures input')
           if 'right:max(' not in sleep or 'sleepMorning' not in sleep: failures.append('sleep-to-morning button is not kept on right side')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('iPhone interaction, two-thumb safety and viewport checks passed.')
+          print('iPhone interaction, mixed two-thumb safety and viewport checks passed.')
 
       - name: Verify current release alignment
         shell: python
@@ -102,6 +105,10 @@ jobs:
           boot_name,wrapper_name,core_name,v,loader_name=pathlib.Path('/tmp/agcb-current').read_text().splitlines();index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8');failures=[]
           if v.startswith('0.4.'): failures.append(f'current release unexpectedly points to legacy {v}')
           if f'<meta name="ag-runtime-version" content="V{v}">' not in index: failures.append('index meta version mismatch')
+          if f'<small>V{v}</small>' not in index: failures.append('visible index version mismatch')
+          if f'bootstrap-v0510.js?v={v}' not in index: failures.append('bootstrap cache query mismatch')
+          if f'wardrobe-runtime.js?v={v}' not in index: failures.append('wardrobe cache query mismatch')
+          if f'const V="V{v}"' not in index: failures.append('index version sync script mismatch')
           if f"const release='V{v}'" not in boot or f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version owner mismatch')
           if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('release wrapper version ownership mismatch')
           if wrapper_name not in boot: failures.append('current app wrapper not imported by bootstrap')
