@@ -4,7 +4,7 @@ export const ECONOMY_SCHEMA=2;
 
 export const ITEM_NAMES={
   carrot:'紅蘿蔔',corn:'玉米',pumpkin:'南瓜',tomato:'番茄',strawberry:'草莓',cabbage:'高麗菜',potato:'馬鈴薯',
-  apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'
+  apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',wood:'木材',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'
 };
 export const SELL_VALUES={
   carrot:18,corn:26,pumpkin:42,tomato:24,strawberry:30,cabbage:28,potato:20,
