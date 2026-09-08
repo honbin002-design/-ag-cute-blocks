@@ -6,6 +6,7 @@ on:
     paths:
       - 'ual-character3-game-runtime.js'
       - 'test-character-game-integration.js'
+      - 'ual-swim-action-sync-v0581.js'
       - 'character3-gameplay-validation-ui.js'
       - 'bootstrap-v0510.js'
       - 'index.html'
@@ -25,6 +26,7 @@ jobs:
           set -euo pipefail
           node --input-type=module --check < ual-character3-game-runtime.js
           node --input-type=module --check < test-character-game-integration.js
+          node --input-type=module --check < ual-swim-action-sync-v0581.js
           node --input-type=module --check < character3-gameplay-validation-ui.js
       - name: Verify true UAL gameplay contract
         shell: python
@@ -32,6 +34,7 @@ jobs:
           import json,pathlib,re,sys
           rt=pathlib.Path('ual-character3-game-runtime.js').read_text(encoding='utf-8')
           integ=pathlib.Path('test-character-game-integration.js').read_text(encoding='utf-8')
+          swim=pathlib.Path('ual-swim-action-sync-v0581.js').read_text(encoding='utf-8')
           ui=pathlib.Path('character3-gameplay-validation-ui.js').read_text(encoding='utf-8')
           boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           idx=pathlib.Path('index.html').read_text(encoding='utf-8')
@@ -42,6 +45,8 @@ jobs:
             if token not in rt: failures.append('UAL runtime missing: '+token)
           for token in ["PROTECTED=new Set(['test3','ual3'", "id==='ual3'", "value=\"ual3\"", "release:'V0.5.65'"]:
             if token not in integ: failures.append('integration missing: '+token)
+          for token in ["VERSION='V0.5.81'","selected!=='ual3'","force?.('swim',320)","/swim|swimming/","/swim|游泳/",'UAL3_SWIM_GAMEPLAY_STATE_SYNC']:
+            if token not in swim: failures.append('swim sync missing: '+token)
           for token in ["TARGET='ual3'",'8385/8385','真 UAL Female Mannequin','release:RELEASE',"get('ual3')==='1'",'AUTO_ACTION',"PARAMS.get('action')",'VALID_ACTIONS',"setTimeout(()=>fire(AUTO_ACTION),1250)","autoAction:AUTO_ACTION"]:
             if token not in ui: failures.append('validation UI missing: '+token)
           m=re.search(r"const release='(V[0-9.]+)'",boot)
@@ -51,6 +56,9 @@ jobs:
             v=current[1:]
             for token in [f"ual-character3-game-runtime.js?v={v}",f"test-character-game-integration.js?v={v}",f"character3-gameplay-validation-ui.js?v={v}",f"version:'{v}'",'action-query-validation']:
               if token not in boot: failures.append('bootstrap missing: '+token)
+            if current>='V0.5.81':
+              for token in [f"ual-swim-action-sync-v0581.js?v={v}",'ual3-swim-gameplay-state-sync']:
+                if token not in boot: failures.append('bootstrap swim sync missing: '+token)
             for token in [current,f'bootstrap-v0510.js?v={v}',f'wardrobe-runtime.js?v={v}',f'const V="{current}"']:
               if token not in idx: failures.append('index release sync missing: '+token)
           if contract.get('missingRequiredActions')!=[]: failures.append('required action gap is no longer zero')
