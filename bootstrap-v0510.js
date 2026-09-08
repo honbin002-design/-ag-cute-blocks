@@ -1,4 +1,4 @@
-// AG Cute Blocks V0.5.66 bootstrap over guarded V0.5.04 world core.
+// AG Cute Blocks V0.5.66 bootstrap over guarded V0.5.04 world core. Full-gate validation marker.
 import './app-v0510.js';
 const release='V0.5.66';
 function syncRelease(){const badge=document.querySelector('.title small,#menuBtn small');if(badge)badge.textContent=release;const meta=document.querySelector('meta[name="ag-runtime-version"]');if(meta)meta.setAttribute('content',release);const note=document.querySelector('.note');if(note)note.textContent=note.textContent.replace(/V0\.5\.\d+/g,release)}syncRelease();queueMicrotask(syncRelease);setTimeout(syncRelease,600);setTimeout(syncRelease,1800);globalThis.AG_GAME_VERSION=release;globalThis.__AGCB_BOOTSTRAP={version:'0.5.66',loaded:true,baseWorld:'0.5.04-guarded',rollbackBase:'0.5.03',optional:{},specialCharacter:'selectable-test3-ual3-special2-special5',target:'right-side-furniture-interaction-ui+walk-run-restore+iphone-zoom-lock+mixed-two-thumb-gameplay+walkable-build-surfaces+wardrobe+castle+stairs+sleep-camera+true-ual-character3-ingame-validation+one-tap-ual3-validation-url',versionOwner:true};
