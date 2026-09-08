@@ -24,6 +24,11 @@ const patches=[
     id:'legacy-blanket-multitouch-suppress',
     from:"document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});",
     to:"/* AG guarded recovery: legacy blanket multitouch blocker suppressed; control-aware policy is owned by mobile-viewport-lock-runtime.js */"
+  },
+  {
+    id:'active-furniture-state-bridge',
+    from:"const playerState={mode:'free',anchor:null,previousCamera:null};",
+    to:"const playerState={mode:'free',anchor:null,previousCamera:null};globalThis.__AGCB_ACTIVE_FURNITURE_STATE={version:1,get mode(){return playerState.mode},get anchor(){return playerState.anchor},get type(){return playerState.anchor?.userData?.type||''},get active(){return playerState.mode!=='free'&&!!playerState.anchor}};"
   }
 ];
 
@@ -34,11 +39,19 @@ for(const patch of patches){
   source=source.replace(patch.from,patch.to);applied.push(patch.id);
 }
 
+// Sit and lie should lock player movement, not the third-person camera. The legacy
+// core routed lie through a separate sleep camera branch in two pointer handlers.
+const legacyFurnitureCameraBranch="if(cameraMode==='farm'||playerState.mode==='lie')";
+const legacyFurnitureCameraCount=source.split(legacyFurnitureCameraBranch).length-1;
+if(legacyFurnitureCameraCount!==2)throw new Error(`V0.5.04 furniture camera branch mismatch: expected 2, got ${legacyFurnitureCameraCount}`);
+source=source.split(legacyFurnitureCameraBranch).join("if(cameraMode==='farm')");
+applied.push('sit-lie-use-normal-third-pointer-orbit');
+
 const cameraPatches=[
   {
     id:'third-camera-orbit-state',
     from:'THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;',
-    to:'THIRD_CAMERA_DISTANCE_DEFAULT=3.8,THIRD_CAMERA_DISTANCE_MIN=0.28,THIRD_CAMERA_PITCH_DEFAULT=.24,THIRD_CAMERA_PITCH_MIN=-.72,THIRD_CAMERA_PITCH_MAX=1.16,CAMERA_TUNING_REVISION=5;'
+    to:'THIRD_CAMERA_DISTANCE_DEFAULT=3.8,THIRD_CAMERA_DISTANCE_MIN=0.28,THIRD_CAMERA_PITCH_DEFAULT=.24,THIRD_CAMERA_PITCH_MIN=-.72,THIRD_CAMERA_PITCH_MAX=1.16,CAMERA_TUNING_REVISION=6;'
   },
   {
     id:'third-camera-near-plane',
@@ -73,7 +86,7 @@ const cameraPatches=[
   {
     id:'third-camera-wheel',
     from:"renderer.domElement.onwheel=e=>{if(cameraMode!=='farm'&&playerState.mode!=='lie')return;e.preventDefault();if(playerState.mode==='lie')sleepDistance=Math.max(2.4,Math.min(9.5,sleepDistance+e.deltaY*.01));else farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance+e.deltaY*.01));saveSettings()};",
-    to:"renderer.domElement.onwheel=e=>{if(cameraMode!=='farm'&&cameraMode!=='third'&&playerState.mode!=='lie')return;e.preventDefault();if(playerState.mode==='lie')sleepDistance=Math.max(2.4,Math.min(9.5,sleepDistance+e.deltaY*.01));else if(cameraMode==='third')thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,thirdDistance+e.deltaY*.01));else farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance+e.deltaY*.01));saveSettings()};"
+    to:"renderer.domElement.onwheel=e=>{if(cameraMode!=='farm'&&cameraMode!=='third')return;e.preventDefault();if(cameraMode==='third')thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,thirdDistance+e.deltaY*.01));else farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance+e.deltaY*.01));saveSettings()};"
   },
   {
     id:'third-camera-safe-clearance',
@@ -82,8 +95,8 @@ const cameraPatches=[
   },
   {
     id:'third-camera-render-orbit',
-    from:'eye.x+Math.sin(yaw)*THIRD_CAMERA_DISTANCE,eye.y+1.85,eye.z+Math.cos(yaw)*THIRD_CAMERA_DISTANCE',
-    to:'eye.x+Math.sin(yaw)*Math.cos(thirdPitch)*thirdDistance,eye.y+Math.sin(thirdPitch)*thirdDistance,eye.z+Math.cos(yaw)*Math.cos(thirdPitch)*thirdDistance'
+    from:"if(cameraMode==='third'){if(playerState.mode==='lie'){const sleepHorizontal=Math.cos(sleepPitch)*sleepDistance;desiredCamera.set(eye.x+Math.sin(yaw)*sleepHorizontal,eye.y+Math.sin(sleepPitch)*sleepDistance,eye.z+Math.cos(yaw)*sleepHorizontal);camera.position.lerp(safeCamera(eye,desiredCamera),.3);camera.lookAt(eye)}else{desiredCamera.set(eye.x+Math.sin(yaw)*THIRD_CAMERA_DISTANCE,eye.y+1.85,eye.z+Math.cos(yaw)*THIRD_CAMERA_DISTANCE);camera.position.lerp(safeCamera(eye,desiredCamera),.3);camera.lookAt(eye)}}else if(cameraMode==='farm')",
+    to:"if(cameraMode==='third'){desiredCamera.set(eye.x+Math.sin(yaw)*Math.cos(thirdPitch)*thirdDistance,eye.y+Math.sin(thirdPitch)*thirdDistance,eye.z+Math.cos(yaw)*Math.cos(thirdPitch)*thirdDistance);camera.position.lerp(safeCamera(eye,desiredCamera),.3);camera.lookAt(eye)}else if(cameraMode==='farm')"
   }
 ];
 const cameraApplied=[];
@@ -98,5 +111,5 @@ source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,pref
 const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
 try{
   await import(blobUrl);
-  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,furnitureOrbit:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
+  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,furnitureOrbit:true,furnitureStateBridge:true,lieUsesNormalThirdCamera:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
 }finally{URL.revokeObjectURL(blobUrl)}
