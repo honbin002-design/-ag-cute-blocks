@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "contractVersion": 2,
   "sourceProfileCommit": "c0b08170482eb2287a9fa05242af44223aadeee2",
   "female": {
     "nodes": 67,
@@ -14,22 +14,42 @@
     "animationCount": 43,
     "animationNames": ["A_TPose","Chest_Open","ClimbUp_1m_RM","Consume","Farm_Harvest","Farm_PlantSeed","Farm_Watering","Hit_Knockback","Hit_Knockback_RM","Idle_FoldArms_Loop","Idle_Lantern_Loop","Idle_No_Loop","Idle_Rail_Call","Idle_Rail_Loop","Idle_Shield_Break","Idle_Shield_Loop","Idle_TalkingPhone_Loop","LayToIdle","Melee_Hook","Melee_Hook_Rec","NinjaJump_Idle_Loop","NinjaJump_Land","NinjaJump_Start","OverhandThrow","Shield_Dash_RM","Shield_OneShot","Slide_Exit","Slide_Loop","Slide_Start","Sword_Block","Sword_Dash_RM","Sword_Regular_A","Sword_Regular_A_Rec","Sword_Regular_B","Sword_Regular_B_Rec","Sword_Regular_C","Sword_Regular_Combo","TreeChopping_Loop","Walk_Carry_Loop","Yes","Zombie_Idle_Loop","Zombie_Scratch","Zombie_Walk_Fwd_Loop"]
   },
-  "agActionMap": {
-    "idle": ["Idle_No_Loop", "Idle_FoldArms_Loop"],
-    "walk": ["Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop"],
-    "jump": ["NinjaJump_Start", "NinjaJump_Idle_Loop", "NinjaJump_Land"],
-    "farmHarvest": ["Farm_Harvest"],
-    "farmPlant": ["Farm_PlantSeed"],
-    "farmWater": ["Farm_Watering"],
-    "chop": ["TreeChopping_Loop"],
-    "climb": ["ClimbUp_1m_RM"],
-    "carryWalk": ["Walk_Carry_Loop"],
-    "throw": ["OverhandThrow"],
-    "melee": ["Melee_Hook", "Sword_Regular_A", "Sword_Regular_B", "Sword_Regular_C", "Sword_Regular_Combo"]
+  "ual1Supplement": {
+    "verificationCommit": "8df9c56fa160a81bd5d54ca32aa9e6844cb525b1",
+    "nodes": 67,
+    "skins": 1,
+    "joints": 65,
+    "agCoreRigOverlap": "21/21",
+    "animationCount": 43,
+    "animationNames": ["A_TPose","Crouch_Fwd_Loop","Crouch_Idle_Loop","Dance_Loop","Death01","Driving_Loop","Fixing_Kneeling","Hit_Chest","Hit_Head","Idle_Loop","Idle_Talking_Loop","Idle_Torch_Loop","Interact","Jog_Fwd_Loop","Jump_Land","Jump_Loop","Jump_Start","PickUp_Table","Pistol_Aim_Down","Pistol_Aim_Neutral","Pistol_Aim_Up","Pistol_Idle_Loop","Pistol_Reload","Pistol_Shoot","Punch_Cross","Punch_Jab","Push_Loop","Roll","Sitting_Enter","Sitting_Exit","Sitting_Idle_Loop","Sitting_Talking_Loop","Spell_Simple_Enter","Spell_Simple_Exit","Spell_Simple_Idle_Loop","Spell_Simple_Shoot","Sprint_Loop","Swim_Fwd_Loop","Swim_Idle_Loop","Sword_Attack","Sword_Idle","Walk_Formal_Loop","Walk_Loop"],
+    "license": "CC0-1.0",
+    "status": "STRUCTURAL_PASS_VISUAL_PENDING"
   },
-  "missingRequiredActions": ["run", "fish", "sit", "sleep", "swim", "dodge", "genericInteract"],
+  "agActionMap": {
+    "idle": ["UAL2:Idle_No_Loop", "UAL2:Idle_FoldArms_Loop", "UAL1:Idle_Loop"],
+    "walk": ["UAL1:Walk_Loop", "UAL2:Walk_Carry_Loop"],
+    "jump": ["UAL1:Jump_Start", "UAL1:Jump_Loop", "UAL1:Jump_Land"],
+    "farmHarvest": ["UAL2:Farm_Harvest"],
+    "farmPlant": ["UAL2:Farm_PlantSeed"],
+    "farmWater": ["UAL2:Farm_Watering"],
+    "chop": ["UAL2:TreeChopping_Loop"],
+    "climb": ["UAL2:ClimbUp_1m_RM"],
+    "carryWalk": ["UAL2:Walk_Carry_Loop"],
+    "throw": ["UAL2:OverhandThrow"],
+    "melee": ["UAL2:Melee_Hook", "UAL2:Sword_Regular_A", "UAL2:Sword_Regular_B", "UAL2:Sword_Regular_C", "UAL2:Sword_Regular_Combo"]
+  },
+  "supplementCandidatesVisualPending": {
+    "run": ["UAL1:Jog_Fwd_Loop", "UAL1:Sprint_Loop"],
+    "sit": ["UAL1:Sitting_Enter", "UAL1:Sitting_Idle_Loop", "UAL1:Sitting_Exit"],
+    "swim": ["UAL1:Swim_Fwd_Loop", "UAL1:Swim_Idle_Loop"],
+    "genericInteract": ["UAL1:Interact"],
+    "dodge": ["UAL1:Roll"]
+  },
+  "missingRequiredActions": ["fish", "sleep"],
   "rules": [
     "Do not claim an AG action is supported unless it maps to an actual clip name in this contract.",
+    "UAL1 supplement candidates are structurally compatible but remain visual-pending until the character-3 retarget test passes on iPhone.",
+    "Roll is only a dodge candidate; do not relabel it as a non-roll dodge animation.",
     "Rig/track structural compatibility is not equivalent to visual deformation PASS.",
     "Formal V0.5.10 characters must not be replaced until visual iPhone validation passes."
   ]
