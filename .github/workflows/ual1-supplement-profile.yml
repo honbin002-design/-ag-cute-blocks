@@ -1,0 +1,60 @@
+name: UAL1 supplement profile
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/ual1-supplement-profile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download UAL1 Standard verification copy
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o /tmp/ual1.glb 'https://raw.githubusercontent.com/Seyamalam/blood-league-kickoff/main/public/assets/vendor/quaternius/universal-animation-library.glb'
+      - name: Parse GLB and report supplement candidates
+        shell: python
+        run: |
+          import json, struct, pathlib
+          p=pathlib.Path('/tmp/ual1.glb')
+          data=p.read_bytes()
+          assert data[:4] == b'glTF', 'invalid GLB magic'
+          version,total=struct.unpack_from('<II',data,4)
+          assert version == 2, f'unsupported GLB version {version}'
+          off=12; doc=None
+          while off < len(data):
+              ln,typ=struct.unpack_from('<II',data,off); off += 8
+              chunk=data[off:off+ln]; off += ln
+              if typ == 0x4E4F534A:
+                  doc=json.loads(chunk.decode('utf-8').rstrip('\x00 \t\r\n'))
+                  break
+          assert doc is not None, 'missing JSON chunk'
+          nodes=doc.get('nodes',[])
+          skins=doc.get('skins',[])
+          joint_ids=[]
+          for s in skins: joint_ids += s.get('joints',[])
+          joint_names=[]
+          for i in dict.fromkeys(joint_ids):
+              if 0 <= i < len(nodes): joint_names.append(nodes[i].get('name',f'node_{i}'))
+          anims=doc.get('animations',[])
+          names=[a.get('name',f'Animation_{i+1}') for i,a in enumerate(anims)]
+          print('=== UAL1 SUPPLEMENT PROFILE ===')
+          print('bytes=',len(data),'nodes=',len(nodes),'skins=',len(skins),'joints=',len(joint_names),'animations=',len(names))
+          print('JOINT_NAMES='+'|'.join(joint_names))
+          print('ANIMATION_NAMES='+'|'.join(names))
+          keys=['run','jog','sprint','sit','sleep','swim','fish','dodge','roll','interact','idle','walk','jump']
+          for key in keys:
+              hits=[n for n in names if key in n.lower()]
+              print(f'KEY_{key.upper()}='+'|'.join(hits[:24]))
+          required={'root','pelvis','spine_01','spine_02','spine_03','neck_01','Head','clavicle_l','upperarm_l','lowerarm_l','hand_l','clavicle_r','upperarm_r','lowerarm_r','hand_r','thigh_l','calf_l','foot_l','thigh_r','calf_r','foot_r'}
+          overlap=len(required.intersection(joint_names))
+          print(f'AG_CORE_RIG_OVERLAP={overlap}/{len(required)}')
+          if overlap < 18:
+              raise SystemExit('FAIL: UAL1 rig naming is too far from AG character 3 baseline')
