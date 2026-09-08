@@ -1,0 +1,7 @@
+const VERSION='V0.5.48',IDS=new Set(['special2','special5']),KEY='agcb.specialYaw.';
+function selected(){return globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.selected||localStorage.getItem('ag_cute_blocks_test_character_v1')||''}
+function candidate(){return globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate||null}
+function stored(id){const raw=localStorage.getItem(KEY+id);return raw==null?null:Number(raw)}
+function sync(){const id=selected(),c=candidate();if(!IDS.has(id)||!c?.root)return false;const yaw=stored(id);if(yaw==null||!Number.isFinite(yaw))return false;c.forwardYaw=yaw;c.setForwardYaw?.(yaw);globalThis.__AGCB_SPECIAL_GROUNDING?.setYaw?.(id,yaw);c.root.rotation.y=yaw;c.root.userData.agDirectionSync={version:VERSION,id,yaw};return true}
+function install(){let lastRoot=null,lastId='';const tick=()=>{const id=selected(),c=candidate();if(c?.root&&(c.root!==lastRoot||id!==lastId)){lastRoot=c.root;lastId=id;sync()}setTimeout(tick,180)};tick();window.addEventListener('ag-wardrobe-applied',()=>setTimeout(sync,0));document.addEventListener('change',e=>{if(e.target?.id==='agTestCharacterSelect')setTimeout(sync,120)},true)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();globalThis.__AGCB_SPECIAL_DIRECTION_SYNC={version:VERSION,sync};
