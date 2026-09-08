@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>AG｜角色3 最終集中視覺驗收</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#edf6f2;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#263a34;touch-action:none}canvas{display:block;touch-action:none}.hud{position:fixed;z-index:5;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));width:min(460px,58vw);max-height:calc(100vh - 16px);overflow:auto;background:#fffdf2ee;border-radius:14px;padding:10px;box-shadow:0 4px 18px #0002}.hud h1{font-size:16px;margin:0 0 4px}.small,.status{font-size:11px;line-height:1.45}.small{opacity:.82}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}button{border:0;border-radius:10px;padding:9px 8px;background:#fff;font-size:12px;font-weight:850;color:#30443e;box-shadow:0 1px 5px #0001}button.on{background:#ccefdc;outline:2px solid #6db88e}.tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.tools button{padding:7px 9px;font-size:11px}.status{white-space:pre-wrap;margin-top:8px;background:#f5f8f5;padding:7px;border-radius:9px}.legend{position:fixed;right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));z-index:4;background:#ffffffdd;padding:7px 9px;border-radius:10px;font-size:10px;line-height:1.4;max-width:37vw}@media(max-width:700px){.hud{width:min(430px,62vw)}.grid{grid-template-columns:1fr 1fr}button{padding:8px 6px;font-size:11px}.legend{max-width:32vw}}
+</style>
+</head>
+<body>
+<div class="hud">
+  <h1>AG 角色3｜7 動作最終集中驗收</h1>
+  <div class="small">只驗剩餘 visual-pending：Run、Sit、Swim、Interact、Dodge、Fish、Sleep。此頁不會替換正式遊戲人物。看肩／肘／腕／髖／膝／腳踝是否錯位，以及動作語意是否自然。</div>
+  <div class="grid">
+    <button data-key="run">1. Run 跑步</button>
+    <button data-key="sit">2. Sit 坐下</button>
+    <button data-key="swim">3. Swim 游泳</button>
+    <button data-key="interact">4. Interact 互動</button>
+    <button data-key="dodge">5. Dodge 翻滾</button>
+    <button data-key="fish">6. Fish 釣魚</button>
+    <button data-key="sleep">7. Sleep 睡眠</button>
+    <button data-key="idle">回原姿勢</button>
+  </div>
+  <div class="tools"><button id="skel">骨架線</button><button id="spin">旋轉</button><button id="resetCam">重置視角</button></div>
+  <div id="status" class="status">載入角色3與 UAL1 動作庫…</div>
+</div>
+<div class="legend">Fish 顯示測試釣竿／魚線；Sleep 顯示測試床面。兩者只是判斷姿勢與穿模的參考物，不是正式資產。</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+
+const FEMALE='https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Female%20Mannequin/Unreal-Godot/Mannequin_F.glb';
+const UAL1='https://raw.githubusercontent.com/Seyamalam/blood-league-kickoff/main/public/assets/vendor/quaternius/universal-animation-library.glb';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xedf6f2);
+const camera=new THREE.PerspectiveCamera(34,innerWidth/innerHeight,.01,100);camera.position.set(3.2,2.35,5.8);camera.lookAt(0,1.05,0);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);document.body.prepend(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x6d8178,2.5));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(4,7,5);scene.add(sun);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(3.4,48),new THREE.MeshStandardMaterial({color:0xf5f0db,roughness:.9}));floor.rotation.x=-Math.PI/2;scene.add(floor);
+
+const status=document.getElementById('status'),loader=new GLTFLoader();let model,mixer,clips=[],action,helper,spinning=false,activeKey='idle';const restQ={},restP={};
+const load=u=>new Promise((resolve,reject)=>loader.load(u,resolve,undefined,reject));
+function trackNodeName(track){const p=track.name.lastIndexOf('.');return p>0?track.name.slice(0,p):track.name}
+function sourceDiagnostics(){const nodes=new Set();model.traverse(o=>o.name&&nodes.add(o.name));let tracks=0,matched=0;for(const c of clips)for(const tr of c.tracks){tracks++;if(nodes.has(trackNodeName(tr)))matched++}return{tracks,matched,pct:tracks?matched/tracks*100:0}}
+function qDelta(name,x=0,y=0,z=0){const o=model.getObjectByName(name);if(!o)return null;return restQ[name].clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(x,y,z,'XYZ')))}
+function qTrack(name,times,rots){if(!model.getObjectByName(name))return null;const vals=[];for(const e of rots){const q=qDelta(name,...e);vals.push(q.x,q.y,q.z,q.w)}return new THREE.QuaternionKeyframeTrack(name+'.quaternion',times,vals)}
+function pTrack(name,times,offs){if(!model.getObjectByName(name))return null;const b=restP[name],vals=[];for(const o of offs)vals.push(b.x+o[0],b.y+o[1],b.z+o[2]);return new THREE.VectorKeyframeTrack(name+'.position',times,vals)}
+function fishClip(){const t=[0,.45,.95,1.45,2.15,2.8,3.4,4],tr=[],add=x=>x&&tr.push(x);add(qTrack('spine_02',t,[[0,0,0],[-.12,0,.05],[.09,0,-.03],[.02,0,0],[.03,0,.02],[.02,0,-.02],[.03,0,.02],[0,0,0]]));add(qTrack('upperarm_l',t,[[0,0,-.35],[-.65,.1,-.55],[-.15,.1,-.4],[-.05,.1,-.38],[-.08,.08,-.35],[-.02,.12,-.4],[-.08,.08,-.35],[0,0,-.35]]));add(qTrack('lowerarm_l',t,[[-.75,0,0],[-1.15,0,0],[-.75,0,0],[-.65,0,0],[-.75,0,.05],[-.58,0,-.05],[-.75,0,.05],[-.75,0,0]]));add(qTrack('upperarm_r',t,[[0,0,.35],[-.55,-.1,.48],[-.12,-.1,.38],[-.04,-.1,.36],[-.1,-.08,.34],[-.02,-.12,.4],[-.1,-.08,.34],[0,0,.35]]));add(qTrack('lowerarm_r',t,[[-.8,0,0],[-1.2,0,0],[-.8,0,0],[-.7,0,0],[-.55,0,-.08],[-.85,0,.08],[-.55,0,-.08],[-.8,0,0]]));add(qTrack('hand_r',t,[[0,0,0],[0,0,.25],[0,0,.05],[0,0,0],[0,.1,.18],[0,-.1,-.15],[0,.1,.18],[0,0,0]]));add(qTrack('hand_l',t,[[0,0,0],[0,0,-.18],[0,0,-.05],[0,0,0],[0,-.08,-.08],[0,.08,.08],[0,-.08,-.08],[0,0,0]]));add(qTrack('Head',t,[[0,0,0],[-.05,0,0],[.03,0,0],[-.04,.06,0],[-.05,-.04,0],[-.04,.05,0],[-.05,-.04,0],[0,0,0]]));return new THREE.AnimationClip('AG_Fish_Rod_Loop',4,tr)}
+function sleepClip(){const t=[0,1.2,2,3.2,4.4],tr=[],add=x=>x&&tr.push(x);add(qTrack('root',t,[[0,0,0],[0,0,-1.35],[0,0,-1.5],[0,0,-1.5],[0,0,-1.5]]));add(pTrack('root',t,[[0,0,0],[0,-.15,0],[0,-.28,0],[0,-.28,0],[0,-.28,0]]));add(qTrack('spine_01',t,[[0,0,0],[0,.08,.03],[.05,.12,.04],[.05,.12,.04],[.05,.12,.04]]));add(qTrack('spine_03',t,[[0,0,0],[.02,-.08,-.05],[.08,-.12,-.08],[.08,-.12,-.08],[.08,-.12,-.08]]));add(qTrack('Head',t,[[0,0,0],[.05,.1,.08],[.12,.18,.12],[.1,.18,.12],[.12,.18,.12]]));add(qTrack('upperarm_l',t,[[0,0,0],[-.55,.1,-.25],[-.9,.12,-.35],[-.88,.12,-.35],[-.9,.12,-.35]]));add(qTrack('lowerarm_l',t,[[0,0,0],[-.8,0,.08],[-1.15,0,.12],[-1.12,0,.12],[-1.15,0,.12]]));add(qTrack('upperarm_r',t,[[0,0,0],[-.25,-.12,.45],[-.5,-.12,.65],[-.48,-.12,.65],[-.5,-.12,.65]]));add(qTrack('lowerarm_r',t,[[0,0,0],[-.5,0,-.1],[-.75,0,-.15],[-.72,0,-.15],[-.75,0,-.15]]));add(qTrack('thigh_l',t,[[0,0,0],[.18,.04,-.05],[.35,.08,-.1],[.34,.08,-.1],[.35,.08,-.1]]));add(qTrack('calf_l',t,[[0,0,0],[-.2,0,0],[-.45,0,.03],[-.43,0,.03],[-.45,0,.03]]));add(qTrack('thigh_r',t,[[0,0,0],[.08,-.04,.05],[.18,-.08,.08],[.17,-.08,.08],[.18,-.08,.08]]));add(qTrack('calf_r',t,[[0,0,0],[-.12,0,0],[-.28,0,-.03],[-.27,0,-.03],[-.28,0,-.03]]));return new THREE.AnimationClip('AG_Sleep_Side_Loop',4.4,tr)}
+function restClip(){const tr=[];for(const n of Object.keys(restQ)){const q=restQ[n],p=restP[n];tr.push(new THREE.QuaternionKeyframeTrack(n+'.quaternion',[0,.25],[q.x,q.y,q.z,q.w,q.x,q.y,q.z,q.w]));tr.push(new THREE.VectorKeyframeTrack(n+'.position',[0,.25],[p.x,p.y,p.z,p.x,p.y,p.z]))}return new THREE.AnimationClip('AG_RestPose',.25,tr)}
+
+const rod=new THREE.Group();rod.visible=false;const rodMesh=new THREE.Mesh(new THREE.CylinderGeometry(.012,.018,1.55,8),new THREE.MeshStandardMaterial({color:0x6b4b32}));rodMesh.rotation.z=Math.PI/2;rodMesh.position.x=.75;rod.add(rodMesh);const lineGeom=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(1.52,0,0),new THREE.Vector3(2.1,-1.35,-.1)]);const line=new THREE.Line(lineGeom,new THREE.LineBasicMaterial({color:0x7f8b8a}));rod.add(line);
+const bed=new THREE.Group();bed.visible=false;const mattress=new THREE.Mesh(new THREE.BoxGeometry(2.75,.22,1.25),new THREE.MeshStandardMaterial({color:0xd9e6f5}));mattress.position.set(0,.22,0);bed.add(mattress);const pillow=new THREE.Mesh(new THREE.BoxGeometry(.55,.16,.65),new THREE.MeshStandardMaterial({color:0xffffff}));pillow.position.set(-.95,.42,0);bed.add(pillow);bed.position.set(0,0,0);scene.add(bed);
+function attachRod(){const hand=model?.getObjectByName('hand_r');if(!hand)return false;if(rod.parent!==hand)hand.add(rod);rod.position.set(.02,.02,.02);rod.rotation.set(0,0,-.35);rod.visible=true;return true}
+function hideRefs(){rod.visible=false;bed.visible=false}
+function setButtons(k){document.querySelectorAll('[data-key]').forEach(b=>b.classList.toggle('on',b.dataset.key===k))}
+function playClip(clip,{loop=true,key=''}={}){if(action)action.fadeOut(.12);const a=mixer.clipAction(clip,model);a.reset();a.setLoop(loop?THREE.LoopRepeat:THREE.LoopOnce,loop?Infinity:1);a.clampWhenFinished=!loop;a.fadeIn(.12).play();action=a;activeKey=key||clip.name;setButtons(key);const d=sourceDiagnostics();status.textContent=`目前：${clip.name}\n來源：${clip.name.startsWith('AG_')?'AG 原生':'UAL1 Standard'}\nUAL1 軌道命中：${d.matched}/${d.tracks}（${d.pct.toFixed(1)}%）\n狀態：VISUAL_PENDING；實機看過前不得列正式 PASS`}
+function named(name,key,loop=true){const clip=clips.find(c=>c.name===name);if(!clip){status.textContent='FAIL：找不到 '+name;return}hideRefs();playClip(clip,{loop,key})}
+function playKey(key){if(!model)return;hideRefs();switch(key){case'run':named('Sprint_Loop','run',true);break;case'sit':named('Sitting_Idle_Loop','sit',true);break;case'swim':named('Swim_Fwd_Loop','swim',true);break;case'interact':named('Interact','interact',false);break;case'dodge':named('Roll','dodge',false);break;case'fish':attachRod();playClip(fishClip(),{loop:true,key:'fish'});break;case'sleep':bed.visible=true;playClip(sleepClip(),{loop:true,key:'sleep'});break;default:playClip(restClip(),{loop:false,key:'idle'})}}
+
+Promise.all([load(FEMALE),load(UAL1)]).then(([female,lib])=>{model=female.scene;scene.add(model);const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());model.position.sub(center);model.position.y+=size.y/2;model.scale.setScalar(2.5/Math.max(size.y,.001));model.traverse(o=>{if(o.name){restQ[o.name]=o.quaternion.clone();restP[o.name]=o.position.clone()}});mixer=new THREE.AnimationMixer(model);clips=lib.animations||[];const d=sourceDiagnostics();const required=['Sprint_Loop','Sitting_Idle_Loop','Swim_Fwd_Loop','Interact','Roll'],missing=required.filter(n=>!clips.some(c=>c.name===n));if(missing.length)throw new Error('UAL1 缺少：'+missing.join(', '));if(Math.abs(d.pct-100)>.001)throw new Error(`UAL1 軌道命中僅 ${d.pct.toFixed(1)}%`);playKey('run')}).catch(e=>status.textContent='FAIL：'+(e?.message||e));
+document.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>playKey(b.dataset.key));document.getElementById('spin').onclick=e=>{spinning=!spinning;e.currentTarget.classList.toggle('on',spinning)};document.getElementById('skel').onclick=e=>{if(!model)return;if(helper){scene.remove(helper);helper.dispose?.();helper=null;e.currentTarget.classList.remove('on')}else{helper=new THREE.SkeletonHelper(model);scene.add(helper);e.currentTarget.classList.add('on')}};document.getElementById('resetCam').onclick=()=>{camera.position.set(3.2,2.35,5.8);camera.lookAt(0,1.05,0);if(model)model.rotation.y=0};
+let drag=false,lx=0;renderer.domElement.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;renderer.domElement.setPointerCapture?.(e.pointerId)});renderer.domElement.addEventListener('pointermove',e=>{if(!drag||!model)return;model.rotation.y+=(e.clientX-lx)*.008;lx=e.clientX});renderer.domElement.addEventListener('pointerup',()=>drag=false);renderer.domElement.addEventListener('pointercancel',()=>drag=false);
+const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);mixer?.update(dt);if(model&&spinning)model.rotation.y+=dt*.55;renderer.render(scene,camera)}loop();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)})
+</script>
+</body>
+</html>
