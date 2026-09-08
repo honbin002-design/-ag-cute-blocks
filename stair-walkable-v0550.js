@@ -1,0 +1,12 @@
+import * as THREE from 'three';
+const VERSION='V0.5.50',STEP_TAG='agcbWalkableStairStep';
+const made=new Map();
+const live=()=>[...(globalThis.__AGCB_LIVE_AVATARS||[])].filter(x=>x?.parent).at(-1)||null;
+const world=()=>live()?.parent||null;
+function isStair(o){return !!(o?.isMesh&&o.userData?.kind==='block'&&(o.userData?.shape==='stair'||o.userData?.shape==='stairs')&&!o.userData?.[STEP_TAG])}
+function removeFor(parent){const list=made.get(parent.uuid)||[];for(const s of list){s.parent?.remove(s);s.geometry?.dispose?.()}made.delete(parent.uuid)}
+function build(parent){const w=world();if(!w||!isStair(parent))return false;removeFor(parent);parent.updateMatrixWorld(true);const mat=Array.isArray(parent.material)?parent.material[0]:parent.material;const steps=[];for(let i=0;i<4;i++){const h=.25*(i+1),d=.25;const g=new THREE.BoxGeometry(1,h,d);const s=new THREE.Mesh(g,mat?.clone?.()||new THREE.MeshStandardMaterial({color:0xb79a74,roughness:.8}));const local=new THREE.Vector3(0,-.5+h/2,-.375+i*.25);local.applyMatrix4(parent.matrixWorld);s.position.copy(local);s.quaternion.setFromRotationMatrix(parent.matrixWorld);s.userData={kind:'block',solid:true,shape:'stairStep',walkable:true,[STEP_TAG]:true,stairParent:parent.uuid,stairIndex:i,version:VERSION};w.add(s);steps.push(s);globalThis.__AGCB_COLLISION_CACHE?.invalidateGeometry?.(s);globalThis.__AGCB_WORLD_HOTPATH?.reindexSolid?.(s)}parent.visible=false;parent.userData.solid=false;parent.userData.agWalkableStair=VERSION;globalThis.__AGCB_COLLISION_CACHE?.invalidateGeometry?.(parent);made.set(parent.uuid,steps);return true}
+function scan(){const w=world();if(!w)return;const parents=w.children.filter(isStair);const ids=new Set(parents.map(p=>p.uuid));for(const [id,list] of [...made])if(!ids.has(id)){for(const s of list){s.parent?.remove(s);s.geometry?.dispose?.()}made.delete(id)}for(const p of parents)if(!made.has(p.uuid))build(p)}
+let frame=0;function loop(){requestAnimationFrame(loop);if(++frame%30===0)scan()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{scan();requestAnimationFrame(loop)},{once:true});else{scan();requestAnimationFrame(loop)}
+globalThis.__AGCB_WALKABLE_STAIRS={version:VERSION,scan,rebuild:build,get count(){return [...made.values()].reduce((n,a)=>n+a.length,0)}};
