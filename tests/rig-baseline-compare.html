@@ -8,9 +8,9 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dcecf6;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;color:#253844}canvas{display:block;width:100%;height:100%}.hud{position:fixed;z-index:5;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));background:#fffef3ef;border-radius:14px;padding:9px 10px;box-shadow:0 4px 18px #0003}.title{font-size:15px;font-weight:900}.sub{font-size:10px;line-height:1.4;opacity:.75;margin-top:2px}.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.row button{border:0;border-radius:10px;padding:7px 10px;background:#fff;font-weight:800;color:#253844}.row button.on{background:#ffe27a}.labels{position:fixed;z-index:5;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));display:flex;justify-content:space-around;pointer-events:none}.card{background:#fffef0e8;border-radius:12px;padding:7px 10px;font-size:11px;line-height:1.4;min-width:38vw;box-shadow:0 3px 12px #0002}.name{font-weight:900;font-size:13px}.fail{font-weight:900}.divider{position:fixed;z-index:3;left:50%;top:0;bottom:0;width:1px;background:#0002;pointer-events:none}
 </style>
 </head>
-<body>
+<body data-test="ag-rig-baseline-compare-v1">
 <div class="hud"><div class="title">AG 骨架基線｜Kenney vs Quaternius</div><div class="sub">同頁比較 Rig／Skinning／動畫穩定性；不替換 V0.5.10 正式角色。重點看肩、肘、手腕、髖、膝、腳踝是否分離、扭曲或漂移。</div><div class="row"><button id="prev">上一動作</button><button id="next">下一動作</button><button id="cycle">自動輪播</button><button id="rotate">自動旋轉</button><button id="skeleton">骨架線</button></div></div>
-<div class="divider"></div><div class="labels"><div class="card"><div class="name">左｜Kenney CC0</div><div id="leftStatus">載入中…</div></div><div class="card"><div class="name">右｜Quaternius CC0</div><div id="rightStatus">載入中…</div></div></div>
+<div class="divider"></div><div class="labels"><div class="card" data-rig="kenney"><div class="name">左｜Kenney CC0</div><div id="leftStatus">載入中…</div></div><div class="card" data-rig="quaternius"><div class="name">右｜Quaternius CC0</div><div id="rightStatus">載入中…</div></div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
