@@ -34,13 +34,11 @@ for(const patch of patches){
   source=source.replace(patch.from,patch.to);applied.push(patch.id);
 }
 
-// Third-person camera zoom + free orbit are layered as guarded feature patches so
-// the original recovery signatures and their CI contract stay unchanged.
 const cameraPatches=[
   {
     id:'third-camera-orbit-state',
     from:'THIRD_CAMERA_DISTANCE=3.8,CAMERA_TUNING_REVISION=1;',
-    to:'THIRD_CAMERA_DISTANCE_DEFAULT=3.8,THIRD_CAMERA_DISTANCE_MIN=0.28,THIRD_CAMERA_PITCH_DEFAULT=.24,THIRD_CAMERA_PITCH_MIN=-.72,THIRD_CAMERA_PITCH_MAX=1.16,CAMERA_TUNING_REVISION=4;'
+    to:'THIRD_CAMERA_DISTANCE_DEFAULT=3.8,THIRD_CAMERA_DISTANCE_MIN=0.28,THIRD_CAMERA_PITCH_DEFAULT=.24,THIRD_CAMERA_PITCH_MIN=-.72,THIRD_CAMERA_PITCH_MAX=1.16,CAMERA_TUNING_REVISION=5;'
   },
   {
     id:'third-camera-near-plane',
@@ -73,6 +71,11 @@ const cameraPatches=[
     to:"renderer.domElement.onwheel=e=>{if(cameraMode!=='farm'&&cameraMode!=='third'&&playerState.mode!=='lie')return;e.preventDefault();if(playerState.mode==='lie')sleepDistance=Math.max(2.4,Math.min(9.5,sleepDistance+e.deltaY*.01));else if(cameraMode==='third')thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,thirdDistance+e.deltaY*.01));else farmDistance=Math.max(FARM_DISTANCE_MIN,Math.min(15.5,farmDistance+e.deltaY*.01));saveSettings()};"
   },
   {
+    id:'third-camera-safe-clearance',
+    from:'function safeCamera(from,desired){cameraDelta.copy(desired).sub(from);const len=cameraDelta.length();if(len<.1)return desired;cameraDelta.normalize();camRay.set(from,cameraDelta);camRay.far=len;const h=camRay.intersectObjects(cameraTargets,false)[0];return h&&h.distance<len?cameraHitPos.copy(from).addScaledVector(cameraDelta,Math.max(.7,h.distance-.3)):desired}',
+    to:"function safeCamera(from,desired){cameraDelta.copy(desired).sub(from);const len=cameraDelta.length();if(len<.1)return desired;cameraDelta.normalize();camRay.set(from,cameraDelta);camRay.far=len;const h=camRay.intersectObjects(cameraTargets,false)[0];const clearance=cameraMode==='third'?.12:.7;return h&&h.distance<len?cameraHitPos.copy(from).addScaledVector(cameraDelta,Math.max(clearance,h.distance-.3)):desired}"
+  },
+  {
     id:'third-camera-render-orbit',
     from:'eye.x+Math.sin(yaw)*THIRD_CAMERA_DISTANCE,eye.y+1.85,eye.z+Math.cos(yaw)*THIRD_CAMERA_DISTANCE',
     to:'eye.x+Math.sin(yaw)*Math.cos(thirdPitch)*thirdDistance,eye.y+Math.sin(thirdPitch)*thirdDistance,eye.z+Math.cos(yaw)*Math.cos(thirdPitch)*thirdDistance'
@@ -85,13 +88,10 @@ for(const patch of cameraPatches){
   source=source.replace(patch.from,patch.to);cameraApplied.push(patch.id);
 }
 
-// Blob modules cannot resolve relative imports against the historical file URL.
-// Rewrite static relative JS imports only; all feature code stays byte-equivalent
-// apart from the guarded patches above.
 source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,prefix,spec,suffix)=>`${prefix}${new URL(spec,SOURCE_URL).href}${suffix}`);
 
 const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
 try{
   await import(blobUrl);
-  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
+  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
 }finally{URL.revokeObjectURL(blobUrl)}
