@@ -42,11 +42,11 @@ jobs:
             if token not in rt: failures.append('UAL runtime missing: '+token)
           for token in ["PROTECTED=new Set(['test3','ual3'", "id==='ual3'", "value=\"ual3\"", "release:'V0.5.65'"]:
             if token not in integ: failures.append('integration missing: '+token)
-          for token in ["TARGET='ual3'",'8385/8385','真 UAL Female Mannequin','release:RELEASE',"get('ual3')==='1'",'openValidation()',"auto:AUTO"]:
+          for token in ["TARGET='ual3'",'8385/8385','真 UAL Female Mannequin','release:RELEASE',"get('ual3')==='1'",'AUTO_ACTION',"PARAMS.get('action')",'VALID_ACTIONS',"setTimeout(()=>fire(AUTO_ACTION),1250)","autoAction:AUTO_ACTION"]:
             if token not in ui: failures.append('validation UI missing: '+token)
-          for token in ["ual-character3-game-runtime.js?v=0.5.67","test-character-game-integration.js?v=0.5.67","character3-gameplay-validation-ui.js?v=0.5.67","const release='V0.5.67'","version:'0.5.67'",'one-tap-ual3-validation-url']:
+          for token in ["ual-character3-game-runtime.js?v=0.5.68","test-character-game-integration.js?v=0.5.68","character3-gameplay-validation-ui.js?v=0.5.68","const release='V0.5.68'","version:'0.5.68'",'action-query-validation']:
             if token not in boot: failures.append('bootstrap missing: '+token)
-          for token in ['V0.5.67','bootstrap-v0510.js?v=0.5.67','wardrobe-runtime.js?v=0.5.67','const V="V0.5.67"']:
+          for token in ['V0.5.68','bootstrap-v0510.js?v=0.5.68','wardrobe-runtime.js?v=0.5.68','const V="V0.5.68"']:
             if token not in idx: failures.append('index release sync missing: '+token)
           if contract.get('missingRequiredActions')!=[]: failures.append('required action gap is no longer zero')
           if contract.get('visualPendingRequiredActions')!=['run','sit','swim','genericInteract','dodge','fish','sleep']:
@@ -55,6 +55,4 @@ jobs:
             failures.append('UAL1 frozen track-match contract changed')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('True UAL character-3 gameplay + forward-facing + one-tap validation contract passed; visual status remains pending.')
-
-# V0.5.67 rerun marker after release-chain index synchronization.
+          print('True UAL character-3 gameplay + forward-facing + one-tap action validation contract passed; visual status remains pending.')
