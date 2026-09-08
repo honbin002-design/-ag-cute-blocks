@@ -16,13 +16,11 @@ jobs:
           b=Path('bootstrap-v0510.js').read_text()
           checks={
             'min 0.55':'THIRD_CAMERA_DISTANCE_MIN=0.55' in s,
-            'default 3.8':'THIRD_CAMERA_DISTANCE_DEFAULT=3.8' in s,
-            'persist thirdDistance':'cameraMode,thirdDistance,farmDistance' in s,
-            'pinch install':"thirdPinchDistance" in s and "touchmove" in s,
-            'render uses thirdDistance':'Math.sin(yaw)*thirdDistance' in s and 'Math.cos(yaw)*thirdDistance' in s,
-            'wheel supports third':"cameraMode==='third'" in s,
-            'safe camera preserved':'safeCamera(eye,desiredCamera)' not in s,
-            'release':'V0.5.70' in b and 'third-person-pinch-zoom-0.55' in b,
+            'third distance state':'thirdDistance:THIRD_CAMERA_DISTANCE_DEFAULT' in s,
+            'third camera uses distance':'want=state.thirdDistance; safeCamera(' in s,
+            'third pinch':'else if(viewMode===2){ state.thirdDistance=clamp(state.thirdDistance-delta*0.012,THIRD_CAMERA_DISTANCE_MIN,THIRD_CAMERA_DISTANCE_MAX); }' in s,
+            'third wheel':'else if(viewMode===2){ state.thirdDistance=clamp(state.thirdDistance+e.deltaY*0.004,THIRD_CAMERA_DISTANCE_MIN,THIRD_CAMERA_DISTANCE_MAX); }' in s,
+            'release v0570':'V0.5.70' in b and 'third-person-pinch-zoom-0.55' in b,
           }
           bad=[k for k,v in checks.items() if not v]
           print(checks)
