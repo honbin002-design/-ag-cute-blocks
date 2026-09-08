@@ -1,24 +1,9 @@
-// AG Cute Blocks V0.4.85 — persist walk/run mode through the active settings store.
-const VERSION='V0.4.85';
+// AG Cute Blocks V0.5.60 — restore and persist walk/run mode safely.
+const VERSION='V0.5.60';
 const SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2';
 const run=document.getElementById('runToggle');
-
-function readSettings(){
-  try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{}}catch{return{}}
-}
-function writeMode(){
-  if(!run)return;
-  const settings=readSettings();
-  const movementMode=run.getAttribute('aria-pressed')==='true'?'run':'walk';
-  if(settings.movementMode===movementMode)return;
-  settings.movementMode=movementMode;
-  localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
-  globalThis.__AGCB_MOVEMENT_MODE_PERSISTENCE_STATE={version:VERSION,movementMode,settingsKey:SETTINGS_KEY};
-}
-
-if(run){
-  writeMode();
-  new MutationObserver(writeMode).observe(run,{attributes:true,attributeFilter:['aria-pressed']});
-}
-
-globalThis.__AGCB_MOVEMENT_MODE_PERSISTENCE={version:VERSION,activeSettingsKey:SETTINGS_KEY,persistsWalkRun:true};
+function readSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{}}catch{return{}}}
+function saveMode(){if(!run)return;const settings=readSettings();const movementMode=run.getAttribute('aria-pressed')==='true'?'run':'walk';if(settings.movementMode!==movementMode){settings.movementMode=movementMode;localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}globalThis.__AGCB_MOVEMENT_MODE_PERSISTENCE_STATE={version:VERSION,movementMode,settingsKey:SETTINGS_KEY}}
+function restoreMode(){if(!run)return;const mode=readSettings().movementMode;if(mode!=='run'&&mode!=='walk'){saveMode();return}const wantRun=mode==='run';run.setAttribute('aria-pressed',wantRun?'true':'false');run.classList.toggle('on',wantRun);run.dataset.movementMode=mode;const label=run.querySelector('small');if(label)label.textContent=wantRun?'跑步':'走路';else if(/走|跑/.test(run.textContent||''))run.textContent=wantRun?'跑步':'走路';globalThis.__AGCB_MOVEMENT_MODE_PERSISTENCE_STATE={version:VERSION,movementMode:mode,restored:true,settingsKey:SETTINGS_KEY}}
+if(run){restoreMode();new MutationObserver(saveMode).observe(run,{attributes:true,attributeFilter:['aria-pressed']});run.addEventListener('click',()=>setTimeout(saveMode,0),true);addEventListener('pageshow',()=>setTimeout(restoreMode,30),{passive:true})}
+globalThis.__AGCB_MOVEMENT_MODE_PERSISTENCE={version:VERSION,activeSettingsKey:SETTINGS_KEY,persistsWalkRun:true,restoresBeforePersist:true,restore:restoreMode};
