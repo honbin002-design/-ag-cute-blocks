@@ -1,49 +1,10 @@
-// AG Cute Blocks V0.4.84 — mode-aware aim reticle.
-// First-person: fixed visual-only center reticle.
-// Third/farm: restore the existing draggable build reticle handlers from app-v043.js.
-const VERSION='V0.4.84';
+// AG Cute Blocks V0.5.57 — mode-aware aim/build reticle.
+// First-person uses a subtle fixed sight; third/farm keep the draggable placement reticle.
+const VERSION='V0.5.57';
 const cross=document.getElementById('crosshair');
 const cam=document.getElementById('cam');
-let lastNonFirstLeft='50%',lastNonFirstTop='45%',previousMode='';
-
-function cameraModeFromLabel(){
-  const text=cam?.textContent||'';
-  if(text.includes('第一人稱'))return'first';
-  if(text.includes('牧場'))return'farm';
-  return'third';
-}
-
-function syncReticle(){
-  if(!cross||!cam)return;
-  const mode=cameraModeFromLabel();
-  if(mode==='first'){
-    if(previousMode&&previousMode!=='first'){
-      lastNonFirstLeft=cross.style.left||lastNonFirstLeft;
-      lastNonFirstTop=cross.style.top||lastNonFirstTop;
-    }
-    cross.style.setProperty('pointer-events','none','important');
-    cross.style.left='50%';
-    cross.style.top='50%';
-    cross.style.opacity='.42';
-    cross.setAttribute('aria-hidden','true');
-  }else{
-    if(previousMode==='first'||!previousMode){
-      cross.style.left=lastNonFirstLeft;
-      cross.style.top=lastNonFirstTop;
-    }
-    cross.style.setProperty('pointer-events','auto','important');
-    cross.style.setProperty('touch-action','none','important');
-    cross.style.opacity='.58';
-    cross.removeAttribute('aria-hidden');
-    cross.setAttribute('aria-label','拖曳調整放置準星');
-  }
-  previousMode=mode;
-  globalThis.__AGCB_AIM_RETICLE_STATE={version:VERSION,mode,firstPersonVisualOnly:mode==='first',draggableOutsideFirst:mode!=='first'};
-}
-
-syncReticle();
-const observer=new MutationObserver(syncReticle);
-if(cam)observer.observe(cam,{childList:true,subtree:true,characterData:true});
-addEventListener('pageshow',syncReticle,{passive:true});
-
-globalThis.__AGCB_AIM_RETICLE={version:VERSION,modeAware:true,firstPersonCentered:true,thirdFarmDraggable:true,observer,sync:syncReticle};
+let lastNonFirstLeft=localStorage.getItem('agcb.reticle.left')||'50%',lastNonFirstTop=localStorage.getItem('agcb.reticle.top')||'45%',previousMode='';
+function cameraModeFromLabel(){const text=cam?.textContent||'';if(text.includes('第一人稱'))return'first';if(text.includes('牧場'))return'farm';return'third'}
+function saveBuildPosition(){if(!cross||previousMode==='first')return;lastNonFirstLeft=cross.style.left||lastNonFirstLeft;lastNonFirstTop=cross.style.top||lastNonFirstTop;localStorage.setItem('agcb.reticle.left',lastNonFirstLeft);localStorage.setItem('agcb.reticle.top',lastNonFirstTop)}
+function syncReticle(){if(!cross||!cam)return;const mode=cameraModeFromLabel();if(mode==='first'){if(previousMode&&previousMode!=='first')saveBuildPosition();cross.style.setProperty('pointer-events','none','important');cross.style.left='50%';cross.style.top='50%';cross.style.opacity='.28';cross.style.transform='translate(-50%,-50%) scale(.78)';cross.style.filter='drop-shadow(0 0 1px rgba(0,0,0,.35))';cross.setAttribute('aria-hidden','true')}else{if(previousMode==='first'||!previousMode){cross.style.left=lastNonFirstLeft;cross.style.top=lastNonFirstTop}cross.style.setProperty('pointer-events','auto','important');cross.style.setProperty('touch-action','none','important');cross.style.opacity='.62';cross.style.transform='translate(-50%,-50%)';cross.style.filter='';cross.removeAttribute('aria-hidden');cross.setAttribute('aria-label','拖曳調整放置準星')}previousMode=mode;globalThis.__AGCB_AIM_RETICLE_STATE={version:VERSION,mode,firstPersonVisualOnly:mode==='first',draggableOutsideFirst:mode!=='first',saved:{left:lastNonFirstLeft,top:lastNonFirstTop}}}
+for(const type of ['pointerup','touchend'])cross?.addEventListener(type,()=>setTimeout(saveBuildPosition,0),{passive:true});syncReticle();const observer=new MutationObserver(syncReticle);if(cam)observer.observe(cam,{childList:true,subtree:true,characterData:true});addEventListener('pageshow',syncReticle,{passive:true});globalThis.__AGCB_AIM_RETICLE={version:VERSION,modeAware:true,firstPersonCentered:true,firstPersonSubtle:true,thirdFarmDraggable:true,persistentBuildPosition:true,observer,sync:syncReticle};
