@@ -1,0 +1,49 @@
+name: One-time sync index V0.5.65
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/one-time-sync-index-v0565.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Sync release tokens
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old='0.5.63'; new='0.5.65'
+          n=s.count(old)
+          if n < 5:
+              raise SystemExit(f'expected at least 5 V0.5.63 release tokens, found {n}')
+          s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+          print(f'synced {n} release tokens: {old} -> {new}')
+          PY
+          grep -F '<meta name="ag-runtime-version" content="V0.5.65">' index.html
+          grep -F 'AG Cute Blocks <small>V0.5.65</small>' index.html
+          grep -F 'bootstrap-v0510.js?v=0.5.65' index.html
+          grep -F 'wardrobe-runtime.js?v=0.5.65' index.html
+          grep -F 'const V="V0.5.65"' index.html
+      - name: Commit synchronized index
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'release: sync index to V0.5.65'
+          git push origin HEAD:dev-v0.1
