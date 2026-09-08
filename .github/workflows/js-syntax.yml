@@ -71,7 +71,9 @@ jobs:
             historical=re.search(r"new URL\(['\"]\./(app-v\d+\.js)['\"],import\.meta\.url\)",loader_src)
             if not historical: sys.exit('guarded loader historical core missing')
             core_name=historical.group(1)
-            if 'TDZ_SIGNATURE' not in loader_src or 'queueMicrotask(syncActionLabels)' not in loader_src: sys.exit('guarded TDZ repair contract missing')
+            required_loader=['syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)','await import(blobUrl)']
+            missing=[x for x in required_loader if x not in loader_src]
+            if missing: sys.exit('guarded loader patch-set contract missing: '+', '.join(missing))
           elif '__AGCB_RELEASE_OVERLAY' in wrapper:
             base=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",wrapper)
             if not base: sys.exit('additive app wrapper does not identify base app')
@@ -87,11 +89,15 @@ jobs:
           index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8')
           expected=f'V{v}';failures=[]
           if f'<meta name="ag-runtime-version" content="{expected}">' not in index: failures.append('index visible version does not match bootstrap')
+          if f'<small>{expected}</small>' not in index: failures.append('visible index version badge mismatch')
+          if f'bootstrap-v0510.js?v={v}' not in index: failures.append('bootstrap cache query mismatch')
+          if f'wardrobe-runtime.js?v={v}' not in index: failures.append('wardrobe cache query mismatch')
+          if f'const V="{expected}"' not in index: failures.append('index version sync script mismatch')
           if f"const release='{expected}'" not in boot or f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version owner mismatch')
           if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('wrapper must defer visible version ownership to bootstrap')
           if loader_name:
             loader=pathlib.Path(loader_name).read_text(encoding='utf-8')
-            for token in ['TDZ_SIGNATURE','queueMicrotask(syncActionLabels)','occurrences!==1','await import(blobUrl)']:
+            for token in ['syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)','legacyBlanketTouchBlockerSuppressed:true','legacyDoubleTapBlockerSuppressed:true','await import(blobUrl)']:
               if token not in loader: failures.append(f'guarded core loader missing {token}')
           for target,qv in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
             if qv!=v: failures.append(f'bootstrap query mismatch: {target}?v={qv} != {v}')
@@ -100,7 +106,7 @@ jobs:
             if name not in boot: failures.append(f'bootstrap missing {name}')
           if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime-v0499.js'): failures.append('asset resilience must load before character asset runtime')
           viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8');mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8');aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8');persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8');sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8');motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8');resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
-          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
+          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','controlAwareTouchGuard:true','multitouchGameplayPreserved:true','mixedTwoThumbGameplayPreserved:true','legacyBlanketTouchBlockerSuppressed:true','legacyDoubleTapBlockerSuppressed:true']:
             if token not in viewport: failures.append(f'viewport lock missing {token}')
           if 'crosshairVisualOnly:true' not in mobile: failures.append('mobile crosshair visual-only base marker missing')
           for token in ['firstPersonCentered:true','thirdFarmDraggable:true',"setProperty('pointer-events','auto','important')","cross.style.left='50%'","cross.style.top='50%'"]:
