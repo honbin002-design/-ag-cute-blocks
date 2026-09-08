@@ -1,0 +1,39 @@
+name: One-time V0.5.67 forward fix sync
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/one-time-v0567-forward-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Sync V0.5.67 release chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['bootstrap-v0510.js','index.html','.github/workflows/ual-character3-game-check.yml']:
+              p=Path(name)
+              s=p.read_text(encoding='utf-8')
+              s=s.replace('V0.5.66','V0.5.67').replace('v=0.5.66','v=0.5.67').replace("version:'0.5.66'","version:'0.5.67'").replace('version=0.5.66','version=0.5.67')
+              if name.endswith('ual-character3-game-check.yml') and "forwardYaw:Math.PI" not in s:
+                  s=s.replace("'STRUCTURAL_PASS_VISUAL_PENDING']", "'STRUCTURAL_PASS_VISUAL_PENDING','forwardYaw:Math.PI']")
+              p.write_text(s,encoding='utf-8')
+          PY
+          rm .github/workflows/one-time-v0567-forward-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bootstrap-v0510.js index.html .github/workflows/ual-character3-game-check.yml .github/workflows/one-time-v0567-forward-fix.yml
+          git commit -m 'chore: sync V0.5.67 forward-direction release chain'
+          git push origin HEAD:dev-v0.1
