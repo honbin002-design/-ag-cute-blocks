@@ -22,6 +22,7 @@ jobs:
           node --input-type=module --check < fishing-ecology-runtime-v0505.js
           node --input-type=module --check < fishing-forecast-runtime-v0506.js
           node --input-type=module --check < fishing-journal-runtime-v0510.js
+          node --input-type=module --check < app-v0504-fixed-loader.js
       - name: Verify ecology math and legacy bridge
         shell: bash
         run: |
@@ -90,6 +91,24 @@ jobs:
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('Current-condition hints use the single ecology source and remain economy-isolated.')
+      - name: Verify guarded V0.5.04 recovery
+        shell: python
+        run: |
+          import pathlib,sys
+          wrapper=pathlib.Path('app-v0510.js').read_text(encoding='utf-8')
+          loader=pathlib.Path('app-v0504-fixed-loader.js').read_text(encoding='utf-8')
+          core=pathlib.Path('app-v0504.js').read_text(encoding='utf-8')
+          failures=[]
+          for token in ["import './app-v0504-fixed-loader.js'","base:'0.5.04'","rollbackBase:'0.5.03'","versionOwner:'bootstrap-v0510.js'"]:
+            if token not in wrapper: failures.append(f'wrapper recovery contract missing: {token}')
+          for token in ["new URL('./app-v0504.js',import.meta.url)","TDZ_SIGNATURE","queueMicrotask(syncActionLabels)","occurrences!==1","await import(blobUrl)","__AGCB_V0504_FIXED"]:
+            if token not in loader: failures.append(f'guarded loader missing: {token}')
+          if "function syncActionLabels(){const addLabel=category==='農具'" not in core: failures.append('historical fishing label source changed')
+          if "['fishingRod','🎣','釣魚竿']" not in core: failures.append('historical core fishing rod missing')
+          if "function castFishing(p)" not in core: failures.append('historical core fishing action missing')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Guarded V0.5.04 TDZ recovery preserves fishing source and rollback contract.')
       - name: Verify current release wiring
         shell: python
         run: |
@@ -105,8 +124,8 @@ jobs:
           if f'AG Cute Blocks <small>{expected}</small>' not in index: failures.append('visible version does not match current release')
           for name in ['fishing-ecology-runtime-v0505.js','fishing-forecast-runtime-v0506.js','fishing-journal-runtime-v0510.js']:
             if f'{name}?v={v}' not in boot: failures.append(f'bootstrap wiring missing: {name}?v={v}')
-          if "import './app-v0504.js'" not in wrapper: failures.append('verified V0.5.04 core wrapper missing')
-          if f"const VERSION='{expected}'" not in wrapper: failures.append('wrapper version mismatch')
+          if f"const release='{expected}'" not in boot: failures.append('bootstrap release owner mismatch')
+          if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('wrapper must defer visible version ownership to bootstrap')
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print(f'Fishing ecology + forecast + journal wiring passed for {expected}.')
