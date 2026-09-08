@@ -2,7 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 import {createCropModel} from './crop-models.js';
 import {createCropCare,waterCrop,cropCareLabel,CROP_CARE_RULES} from './crop-care-system.js';
 
-const CARE_KEY='ag_cute_blocks_crop_care_v1',SETTINGS_KEY='ag_cute_blocks_settings_v03';
+const VERSION='V0.5.83',CARE_KEY='ag_cute_blocks_crop_care_v1',SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2';
 const read=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};
 const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let careStore=read(CARE_KEY,{}),target=null,lastScan=0;
@@ -34,15 +34,20 @@ function nearestCrop(){
 function rebuild(t,newGrowth){
   const {model,group}=t,kind=group.userData.crop;group.userData.growth=newGrowth;group.remove(model);const next=createCropModel(kind,newGrowth);group.add(next);group.userData.model=next;t.model=next;
 }
+function targetById(id){for(const model of crops()){const group=model.parent;if(String(group.userData.id||group.uuid)===String(id))return{model,group,d:0}}return null}
+function listNeedsWater(){const day=worldDay(),w=weather();if(naturalRain(w))return[];return crops().map(model=>({model,group:model.parent})).filter(t=>Number(t.group.userData.growth||0)<.95&&careFor(t.group).wateredDay!==day).map(t=>({id:t.group.userData.id||t.group.uuid,itemId:t.group.userData.crop,growth:Number(t.group.userData.growth||0)}))}
+function waterTarget(t,{visual=true}={}){
+  if(!t?.group)return{ok:false,reason:'missing-crop'};const day=worldDay(),w=weather(),group=t.group;if(Number(group.userData.growth||0)>=.95)return{ok:false,reason:'mature'};if(naturalRain(w))return{ok:false,reason:'rain-watered'};const care=careFor(group),r=waterCrop(care,day,Date.now());if(!r.ok)return r;const kind=group.userData.crop,rules=CROP_CARE_RULES[kind]||{waterBonus:.07},old=Number(group.userData.growth||0),next=Math.min(.94,old+rules.waterBonus*.48);rebuild(t,next);wetDisc(group,true);if(visual)splash(group);write(CARE_KEY,careStore);document.querySelector('#saveNow')?.click();scan();return{ok:true,id:group.userData.id||group.uuid,itemId:kind,growth:next,worldDay:day}}
+function waterCropById(id){return waterTarget(targetById(id),{visual:true})}
 function scan(){
   const day=worldDay(),w=weather(),p=player(),pp=p?.getWorldPosition(new THREE.Vector3());target=nearestCrop();
   for(const model of crops()){const group=model.parent,care=careFor(group),near=pp&&Math.hypot(group.position.x-pp.x,group.position.z-pp.z)<18;wetDisc(group,near&&(naturalRain(w)||care.wateredDay===day))}
   if(!target||Number(target.group.userData.growth||0)>=.95){btn.classList.remove('show');return}
   const care=careFor(target.group),label=cropCareLabel(care,day,w);btn.textContent=label;btn.disabled=naturalRain(w)||care.wateredDay===day;btn.classList.add('show');
 }
-btn.onclick=()=>{
-  if(!target)return;const day=worldDay(),w=weather(),group=target.group,care=careFor(group);if(naturalRain(w))return;
-  const r=waterCrop(care,day,Date.now());if(!r.ok)return;const kind=group.userData.crop,rules=CROP_CARE_RULES[kind]||{waterBonus:.07},old=Number(group.userData.growth||0),next=Math.min(.94,old+rules.waterBonus*.48);rebuild(target,next);wetDisc(group,true);splash(group);write(CARE_KEY,careStore);document.querySelector('#saveNow')?.click();document.querySelector('#status').textContent=`💧 ${kind} 澆好水了・成長稍微加快`;scan();
-};
+btn.onclick=()=>{if(!target)return;const r=waterTarget(target,{visual:true});if(r.ok){document.querySelector('#status').textContent=`💧 ${r.itemId} 澆好水了・成長稍微加快`}};
+function attachTaskApi(){const a=globalThis.__AGCB_WORLD_TASK_API;if(!a){setTimeout(attachTaskApi,250);return}a.listNeedsWater=listNeedsWater;a.waterCropById=waterCropById;a.cropCareOwner=CARE_KEY;a.cropCareSettingsKey=SETTINGS_KEY;a.cropCareVersion=VERSION}
+attachTaskApi();
 function loop(t){requestAnimationFrame(loop);if(t-lastScan>520){lastScan=t;scan()}}
 requestAnimationFrame(loop);
+globalThis.__AGCB_CROP_CARE_RUNTIME={version:VERSION,careKey:CARE_KEY,settingsKey:SETTINGS_KEY,listNeedsWater,waterCropById,status:'AUTHORITATIVE_SHARED_CARE_STORE'};
