@@ -12,9 +12,13 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           f=Path('ual-furniture-fit-runtime.js').read_text()
           b=Path('bootstrap-v0510.js').read_text()
           l=Path('app-v0504-fixed-loader.js').read_text()
+          m=re.search(r"const release='(V[0-9.]+)'",b)
+          release=m.group(1) if m else ''
+          version=release[1:] if release.startswith('V') else ''
           checks={
             'exact core bridge':'__AGCB_ACTIVE_FURNITURE_STATE' in l and "get anchor(){return playerState.anchor}" in l and "get mode(){return playerState.mode}" in l,
             'runtime consumes bridge':'__AGCB_ACTIVE_FURNITURE_STATE' in f and 's.anchor' in f and 's.mode' in f,
@@ -26,11 +30,12 @@ jobs:
             'bed exact anchor center':'player.position.x-c.x' in f and 'player.position.z-c.z' in f,
             'sit lie normal third camera':"source.split(legacyFurnitureCameraBranch).join(\"if(cameraMode==='farm')\")" in l and 'lieUsesNormalThirdCamera:true' in l,
             'movement still core locked':"active-furniture-state-bridge" in l,
-            'release':"const release='V0.5.78'" in b and 'ual3-exact-core-furniture-anchor' in b and 'sit-lie-normal-third-camera-orbit' in b,
-            'runtime wired':"await import('./ual-furniture-fit-runtime.js?v=0.5.78')" in b,
+            'release':bool(release) and f"const release='{release}'" in b and 'ual3-exact-core-furniture-anchor' in b and 'sit-lie-normal-third-camera-orbit' in b,
+            'runtime wired':bool(version) and f"await import('./ual-furniture-fit-runtime.js?v={version}')" in b,
           }
           bad=[k for k,v in checks.items() if not v]
+          print('release',release)
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS UAL3 exact active-furniture anchor, bed-axis fit and unlocked sit/lie camera contract')
+          print('PASS UAL3 exact active-furniture anchor, bed-axis fit and unlocked sit/lie camera contract for '+release)
           PY
