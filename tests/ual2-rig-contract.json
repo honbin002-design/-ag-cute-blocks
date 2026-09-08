@@ -1,0 +1,36 @@
+{
+  "contractVersion": 1,
+  "sourceProfileCommit": "c0b08170482eb2287a9fa05242af44223aadeee2",
+  "female": {
+    "nodes": 67,
+    "skins": 1,
+    "joints": 65,
+    "meshes": 1,
+    "jointNames": ["root","pelvis","spine_01","spine_02","spine_03","neck_01","Head","clavicle_l","upperarm_l","lowerarm_l","hand_l","index_01_l","index_02_l","index_03_l","index_04_leaf_l","middle_01_l","middle_02_l","middle_03_l","middle_04_leaf_l","pinky_01_l","pinky_02_l","pinky_03_l","pinky_04_leaf_l","ring_01_l","ring_02_l","ring_03_l","ring_04_leaf_l","thumb_01_l","thumb_02_l","thumb_03_l","thumb_04_leaf_l","clavicle_r","upperarm_r","lowerarm_r","hand_r","index_01_r","index_02_r","index_03_r","index_04_leaf_r","middle_01_r","middle_02_r","middle_03_r","middle_04_leaf_r","pinky_01_r","pinky_02_r","pinky_03_r","pinky_04_leaf_r","ring_01_r","ring_02_r","ring_03_r","ring_04_leaf_r","thumb_01_r","thumb_02_r","thumb_03_r","thumb_04_leaf_r","thigh_l","calf_l","foot_l","ball_l","ball_leaf_l","thigh_r","calf_r","foot_r","ball_r","ball_leaf_r"]
+  },
+  "ual2Standard": {
+    "nodes": 67,
+    "skins": 1,
+    "animationCount": 43,
+    "animationNames": ["A_TPose","Chest_Open","ClimbUp_1m_RM","Consume","Farm_Harvest","Farm_PlantSeed","Farm_Watering","Hit_Knockback","Hit_Knockback_RM","Idle_FoldArms_Loop","Idle_Lantern_Loop","Idle_No_Loop","Idle_Rail_Call","Idle_Rail_Loop","Idle_Shield_Break","Idle_Shield_Loop","Idle_TalkingPhone_Loop","LayToIdle","Melee_Hook","Melee_Hook_Rec","NinjaJump_Idle_Loop","NinjaJump_Land","NinjaJump_Start","OverhandThrow","Shield_Dash_RM","Shield_OneShot","Slide_Exit","Slide_Loop","Slide_Start","Sword_Block","Sword_Dash_RM","Sword_Regular_A","Sword_Regular_A_Rec","Sword_Regular_B","Sword_Regular_B_Rec","Sword_Regular_C","Sword_Regular_Combo","TreeChopping_Loop","Walk_Carry_Loop","Yes","Zombie_Idle_Loop","Zombie_Scratch","Zombie_Walk_Fwd_Loop"]
+  },
+  "agActionMap": {
+    "idle": ["Idle_No_Loop", "Idle_FoldArms_Loop"],
+    "walk": ["Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop"],
+    "jump": ["NinjaJump_Start", "NinjaJump_Idle_Loop", "NinjaJump_Land"],
+    "farmHarvest": ["Farm_Harvest"],
+    "farmPlant": ["Farm_PlantSeed"],
+    "farmWater": ["Farm_Watering"],
+    "chop": ["TreeChopping_Loop"],
+    "climb": ["ClimbUp_1m_RM"],
+    "carryWalk": ["Walk_Carry_Loop"],
+    "throw": ["OverhandThrow"],
+    "melee": ["Melee_Hook", "Sword_Regular_A", "Sword_Regular_B", "Sword_Regular_C", "Sword_Regular_Combo"]
+  },
+  "missingRequiredActions": ["run", "fish", "sit", "sleep", "swim", "dodge", "genericInteract"],
+  "rules": [
+    "Do not claim an AG action is supported unless it maps to an actual clip name in this contract.",
+    "Rig/track structural compatibility is not equivalent to visual deformation PASS.",
+    "Formal V0.5.10 characters must not be replaced until visual iPhone validation passes."
+  ]
+}
