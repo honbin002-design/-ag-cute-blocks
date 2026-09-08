@@ -1,0 +1,31 @@
+name: Third camera zoom check
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify guarded third-person zoom contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('app-v0504-fixed-loader.js').read_text()
+          b=Path('bootstrap-v0510.js').read_text()
+          checks={
+            'min 1.6':'THIRD_CAMERA_DISTANCE_MIN=1.6' in s,
+            'default 3.8':'THIRD_CAMERA_DISTANCE_DEFAULT=3.8' in s,
+            'persist thirdDistance':'cameraMode,thirdDistance,farmDistance' in s,
+            'pinch install':"thirdPinchDistance" in s and "touchmove" in s,
+            'render uses thirdDistance':'Math.sin(yaw)*thirdDistance' in s and 'Math.cos(yaw)*thirdDistance' in s,
+            'wheel supports third':"cameraMode==='third'" in s,
+            'safe camera preserved':'safeCamera(eye,desiredCamera)' not in s,
+            'release':'V0.5.69' in b and 'third-person-pinch-zoom-1.6' in b,
+          }
+          bad=[k for k,v in checks.items() if not v]
+          print(checks)
+          if bad: raise SystemExit('FAIL: '+', '.join(bad))
+          print('PASS third-person close zoom contract')
+          PY
