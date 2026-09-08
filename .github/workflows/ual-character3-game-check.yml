@@ -1,0 +1,58 @@
+name: UAL character 3 gameplay check
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'ual-character3-game-runtime.js'
+      - 'test-character-game-integration.js'
+      - 'character3-gameplay-validation-ui.js'
+      - 'bootstrap-v0510.js'
+      - 'index.html'
+      - 'tests/ual2-rig-contract.json'
+      - '.github/workflows/ual-character3-game-check.yml'
+
+jobs:
+  ual-character3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parse modules
+        run: |
+          set -euo pipefail
+          node --input-type=module --check < ual-character3-game-runtime.js
+          node --input-type=module --check < test-character-game-integration.js
+          node --input-type=module --check < character3-gameplay-validation-ui.js
+      - name: Verify true UAL gameplay contract
+        shell: python
+        run: |
+          import json,pathlib,sys
+          rt=pathlib.Path('ual-character3-game-runtime.js').read_text(encoding='utf-8')
+          integ=pathlib.Path('test-character-game-integration.js').read_text(encoding='utf-8')
+          ui=pathlib.Path('character3-gameplay-validation-ui.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          idx=pathlib.Path('index.html').read_text(encoding='utf-8')
+          contract=json.loads(pathlib.Path('tests/ual2-rig-contract.json').read_text(encoding='utf-8'))
+          failures=[]
+          required_rt=['Mannequin_F.glb','universal-animation-library.glb','UAL軌道不相容','matched!==tracks','Sprint_Loop','Sitting_Idle_Loop','Swim_Fwd_Loop','Interact','Roll','AG_Fish_Rod_Loop','AG_Sleep_Side_Loop',"agTestCharacter:'ual3'",'STRUCTURAL_PASS_VISUAL_PENDING']
+          for token in required_rt:
+            if token not in rt: failures.append('UAL runtime missing: '+token)
+          for token in ["PROTECTED=new Set(['test3','ual3'", "id==='ual3'", "value=\"ual3\"", "release:'V0.5.65'"]:
+            if token not in integ: failures.append('integration missing: '+token)
+          for token in ["TARGET='ual3'",'8385/8385','真 UAL Female Mannequin','release:RELEASE']:
+            if token not in ui: failures.append('validation UI missing: '+token)
+          for token in ["ual-character3-game-runtime.js?v=0.5.65","test-character-game-integration.js?v=0.5.65","character3-gameplay-validation-ui.js?v=0.5.65","const release='V0.5.65'","version:'0.5.65'"]:
+            if token not in boot: failures.append('bootstrap missing: '+token)
+          for token in ['V0.5.65','bootstrap-v0510.js?v=0.5.65','wardrobe-runtime.js?v=0.5.65','const V="V0.5.65"']:
+            if token not in idx: failures.append('index release sync missing: '+token)
+          if contract.get('missingRequiredActions')!=[]: failures.append('required action gap is no longer zero')
+          if contract.get('visualPendingRequiredActions')!=['run','sit','swim','genericInteract','dodge','fish','sleep']:
+            failures.append('visual-pending action set changed unexpectedly')
+          if contract.get('ual1Supplement',{}).get('animationChannelNodeMatch')!='8385/8385 (100.00%)':
+            failures.append('UAL1 frozen track-match contract changed')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('True UAL character-3 gameplay contract passed; visual status remains pending.')
