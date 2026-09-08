@@ -5,6 +5,9 @@ on:
     branches: [dev-v0.1]
     paths:
       - 'tests/ual2-rig-contract.json'
+      - 'tests/character3-final-visual-validation.html'
+      - 'tests/character-test-index.html'
+      - 'CHARACTER_TEST_REGISTRY.md'
       - '.github/workflows/ual2-rig-contract-check.yml'
   workflow_dispatch:
 
@@ -13,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Download verified UAL2 sources
         shell: bash
         run: |
@@ -53,8 +59,37 @@ jobs:
           if anim_names != u['animationNames']: failures.append('UAL2 animation names/order drifted')
           actual_set=set(anim_names)
           for action,names in contract['agActionMap'].items():
-              for name in names:
-                  if name not in actual_set: failures.append(f'action {action} points to missing clip {name}')
+              for ref in names:
+                  source,name=(ref.split(':',1)+[''])[:2] if ':' in ref else ('UAL2',ref)
+                  if source=='UAL2' and name not in actual_set: failures.append(f'action {action} points to missing UAL2 clip {name}')
+          expected_pending={'run','sit','swim','genericInteract','dodge','fish','sleep'}
+          if contract.get('missingRequiredActions') != []: failures.append('required action gap must remain zero')
+          if set(contract.get('visualPendingRequiredActions',[])) != expected_pending: failures.append('visual-pending action set drifted')
+          native=contract.get('agNativeCandidates',{})
+          if native.get('fish',{}).get('clipName')!='AG_Fish_Rod_Loop': failures.append('AG Fish candidate contract drifted')
+          if native.get('sleep',{}).get('clipName')!='AG_Sleep_Side_Loop': failures.append('AG Sleep candidate contract drifted')
           if failures:
               print('\n'.join(failures)); sys.exit(1)
-          print(f'PASS: female {len(joint_names)} joints; UAL2 {len(anim_names)} clips; AG mappings all resolve.')
+          print(f'PASS: female {len(joint_names)} joints; UAL2 {len(anim_names)} clips; missing actions 0; visual pending 7.')
+      - name: Validate concentrated visual-test module syntax and contract tokens
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib,re,sys
+          page=pathlib.Path('tests/character3-final-visual-validation.html').read_text(encoding='utf-8')
+          m=re.search(r'<script type="module">(.*?)</script>',page,re.S)
+          if not m: sys.exit('concentrated validation module script missing')
+          pathlib.Path('/tmp/character3-validation.mjs').write_text(m.group(1),encoding='utf-8')
+          required=['Sprint_Loop','Sitting_Idle_Loop','Swim_Fwd_Loop','Interact','Roll','AG_Fish_Rod_Loop','AG_Sleep_Side_Loop','attachRod()','bed.visible=true','VISUAL_PENDING','d.pct-100']
+          missing=[x for x in required if x not in page]
+          if missing: sys.exit('concentrated validation tokens missing: '+', '.join(missing))
+          index=pathlib.Path('tests/character-test-index.html').read_text(encoding='utf-8')
+          if 'character3-final-visual-validation.html' not in index: sys.exit('character test index missing final validation link')
+          registry=pathlib.Path('CHARACTER_TEST_REGISTRY.md').read_text(encoding='utf-8')
+          for token in ['missingRequiredActions`：0','visualPendingRequiredActions','Run、Sit、Swim、Generic Interact、Dodge、Fish、Sleep','character3-final-visual-validation.html']:
+              if token not in registry: sys.exit('registry state missing: '+token)
+          print('Validation page/index/registry contract tokens passed.')
+          PY
+          node --check /tmp/character3-validation.mjs
+          echo 'Concentrated character-3 validation module syntax passed.'
