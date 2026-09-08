@@ -56,6 +56,11 @@ const cameraPatches=[
     to:'cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season'
   },
   {
+    id:'furniture-camera-orbit-unlock',
+    from:"if((playerState.mode!=='free'&&playerState.mode!=='lie')||e.clientX<=innerWidth*.29)return;",
+    to:"if((playerState.mode!=='free'&&playerState.mode!=='sit'&&playerState.mode!=='lie')||e.clientX<=innerWidth*.29)return;"
+  },
+  {
     id:'third-camera-pointer-pinch-install',
     from:"renderer.domElement.style.touchAction='none';renderer.domElement.onpointerdown=",
     to:"renderer.domElement.style.touchAction='none';let thirdPinchDistance=0;const thirdPointers=new Map();const thirdPointerDistance=()=>{const a=[...thirdPointers.values()];return a.length<2?0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};renderer.domElement.addEventListener('pointerdown',e=>{if(cameraMode!=='third'||e.pointerType==='mouse'||e.clientX<=innerWidth*.29)return;thirdPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});renderer.domElement.setPointerCapture?.(e.pointerId);if(thirdPointers.size>=2){thirdPinchDistance=thirdPointerDistance();lookId=null;e.preventDefault()}},{capture:true,passive:false});renderer.domElement.addEventListener('pointermove',e=>{if(cameraMode!=='third'||!thirdPointers.has(e.pointerId))return;if(thirdPointers.size>=2){const before=thirdPointerDistance();const p=thirdPointers.get(e.pointerId);p.x=e.clientX;p.y=e.clientY;const after=thirdPointerDistance();if(before>0&&after>0){const ratio=Math.pow(before/after,1.45);thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,thirdDistance*ratio));thirdPinchDistance=after}e.preventDefault()}else{const p=thirdPointers.get(e.pointerId);p.x=e.clientX;p.y=e.clientY}},{capture:true,passive:false});const finishThirdPointer=e=>{if(!thirdPointers.has(e.pointerId))return;thirdPointers.delete(e.pointerId);if(thirdPointers.size===1){const [id,p]=thirdPointers.entries().next().value;lookId=id;lx=p.x;ly=p.y;thirdPinchDistance=0}else if(!thirdPointers.size){lookId=null;thirdPinchDistance=0;saveSettings()}};renderer.domElement.addEventListener('pointerup',finishThirdPointer,{capture:true,passive:true});renderer.domElement.addEventListener('pointercancel',finishThirdPointer,{capture:true,passive:true});renderer.domElement.onpointerdown="
@@ -93,5 +98,5 @@ source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,pref
 const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
 try{
   await import(blobUrl);
-  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
+  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,furnitureOrbit:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
 }finally{URL.revokeObjectURL(blobUrl)}
