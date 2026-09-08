@@ -1,5 +1,5 @@
 {
-  "contractVersion": 2,
+  "contractVersion": 3,
   "sourceProfileCommit": "c0b08170482eb2287a9fa05242af44223aadeee2",
   "female": {
     "nodes": 67,
@@ -15,15 +15,31 @@
     "animationNames": ["A_TPose","Chest_Open","ClimbUp_1m_RM","Consume","Farm_Harvest","Farm_PlantSeed","Farm_Watering","Hit_Knockback","Hit_Knockback_RM","Idle_FoldArms_Loop","Idle_Lantern_Loop","Idle_No_Loop","Idle_Rail_Call","Idle_Rail_Loop","Idle_Shield_Break","Idle_Shield_Loop","Idle_TalkingPhone_Loop","LayToIdle","Melee_Hook","Melee_Hook_Rec","NinjaJump_Idle_Loop","NinjaJump_Land","NinjaJump_Start","OverhandThrow","Shield_Dash_RM","Shield_OneShot","Slide_Exit","Slide_Loop","Slide_Start","Sword_Block","Sword_Dash_RM","Sword_Regular_A","Sword_Regular_A_Rec","Sword_Regular_B","Sword_Regular_B_Rec","Sword_Regular_C","Sword_Regular_Combo","TreeChopping_Loop","Walk_Carry_Loop","Yes","Zombie_Idle_Loop","Zombie_Scratch","Zombie_Walk_Fwd_Loop"]
   },
   "ual1Supplement": {
-    "verificationCommit": "8df9c56fa160a81bd5d54ca32aa9e6844cb525b1",
+    "verificationCommit": "9a638d0b1b3f543ced84b5eef4d764a1a16e8332",
     "nodes": 67,
     "skins": 1,
     "joints": 65,
     "agCoreRigOverlap": "21/21",
+    "animationChannelNodeMatch": "8385/8385 (100.00%)",
     "animationCount": 43,
     "animationNames": ["A_TPose","Crouch_Fwd_Loop","Crouch_Idle_Loop","Dance_Loop","Death01","Driving_Loop","Fixing_Kneeling","Hit_Chest","Hit_Head","Idle_Loop","Idle_Talking_Loop","Idle_Torch_Loop","Interact","Jog_Fwd_Loop","Jump_Land","Jump_Loop","Jump_Start","PickUp_Table","Pistol_Aim_Down","Pistol_Aim_Neutral","Pistol_Aim_Up","Pistol_Idle_Loop","Pistol_Reload","Pistol_Shoot","Punch_Cross","Punch_Jab","Push_Loop","Roll","Sitting_Enter","Sitting_Exit","Sitting_Idle_Loop","Sitting_Talking_Loop","Spell_Simple_Enter","Spell_Simple_Exit","Spell_Simple_Idle_Loop","Spell_Simple_Shoot","Sprint_Loop","Swim_Fwd_Loop","Swim_Idle_Loop","Sword_Attack","Sword_Idle","Walk_Formal_Loop","Walk_Loop"],
     "license": "CC0-1.0",
     "status": "STRUCTURAL_PASS_VISUAL_PENDING"
+  },
+  "agNativeCandidates": {
+    "verificationCommit": "4d280e84424739e14184a0dc83f11eb5dbdfc8d8",
+    "source": "AG-generated keyframe tracks on character-3 native joint names",
+    "licenseDependency": "none beyond character-3 base asset",
+    "fish": {
+      "clipName": "AG_Fish_Rod_Loop",
+      "phases": ["cast", "hold", "reel"],
+      "status": "VISUAL_PENDING"
+    },
+    "sleep": {
+      "clipName": "AG_Sleep_Side_Loop",
+      "pose": "side-lying relaxed",
+      "status": "VISUAL_PENDING"
+    }
   },
   "agActionMap": {
     "idle": ["UAL2:Idle_No_Loop", "UAL2:Idle_FoldArms_Loop", "UAL1:Idle_Loop"],
@@ -43,12 +59,16 @@
     "sit": ["UAL1:Sitting_Enter", "UAL1:Sitting_Idle_Loop", "UAL1:Sitting_Exit"],
     "swim": ["UAL1:Swim_Fwd_Loop", "UAL1:Swim_Idle_Loop"],
     "genericInteract": ["UAL1:Interact"],
-    "dodge": ["UAL1:Roll"]
+    "dodge": ["UAL1:Roll"],
+    "fish": ["AG:AG_Fish_Rod_Loop"],
+    "sleep": ["AG:AG_Sleep_Side_Loop"]
   },
-  "missingRequiredActions": ["fish", "sleep"],
+  "missingRequiredActions": [],
+  "visualPendingRequiredActions": ["run", "sit", "swim", "genericInteract", "dodge", "fish", "sleep"],
   "rules": [
-    "Do not claim an AG action is supported unless it maps to an actual clip name in this contract.",
-    "UAL1 supplement candidates are structurally compatible but remain visual-pending until the character-3 retarget test passes on iPhone.",
+    "Do not claim an AG action is supported unless it maps to an actual clip or AG-native generated clip name in this contract.",
+    "UAL1 supplement candidates are structurally compatible but remain visual-pending until the character-3 test passes on iPhone.",
+    "AG Fish and Sleep are original procedural/keyframed candidates and remain visual-pending until iPhone validation.",
     "Roll is only a dodge candidate; do not relabel it as a non-roll dodge animation.",
     "Rig/track structural compatibility is not equivalent to visual deformation PASS.",
     "Formal V0.5.10 characters must not be replaced until visual iPhone validation passes."
