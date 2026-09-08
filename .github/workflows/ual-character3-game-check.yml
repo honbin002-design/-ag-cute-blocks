@@ -42,11 +42,11 @@ jobs:
             if token not in rt: failures.append('UAL runtime missing: '+token)
           for token in ["PROTECTED=new Set(['test3','ual3'", "id==='ual3'", "value=\"ual3\"", "release:'V0.5.65'"]:
             if token not in integ: failures.append('integration missing: '+token)
-          for token in ["TARGET='ual3'",'8385/8385','真 UAL Female Mannequin','release:RELEASE']:
+          for token in ["TARGET='ual3'",'8385/8385','真 UAL Female Mannequin','release:RELEASE',"get('ual3')==='1'",'openValidation()',"auto:AUTO"]:
             if token not in ui: failures.append('validation UI missing: '+token)
-          for token in ["ual-character3-game-runtime.js?v=0.5.65","test-character-game-integration.js?v=0.5.65","character3-gameplay-validation-ui.js?v=0.5.65","const release='V0.5.65'","version:'0.5.65'"]:
+          for token in ["ual-character3-game-runtime.js?v=0.5.66","test-character-game-integration.js?v=0.5.66","character3-gameplay-validation-ui.js?v=0.5.66","const release='V0.5.66'","version:'0.5.66'",'one-tap-ual3-validation-url']:
             if token not in boot: failures.append('bootstrap missing: '+token)
-          for token in ['V0.5.65','bootstrap-v0510.js?v=0.5.65','wardrobe-runtime.js?v=0.5.65','const V="V0.5.65"']:
+          for token in ['V0.5.66','bootstrap-v0510.js?v=0.5.66','wardrobe-runtime.js?v=0.5.66','const V="V0.5.66"']:
             if token not in idx: failures.append('index release sync missing: '+token)
           if contract.get('missingRequiredActions')!=[]: failures.append('required action gap is no longer zero')
           if contract.get('visualPendingRequiredActions')!=['run','sit','swim','genericInteract','dodge','fish','sleep']:
@@ -55,4 +55,4 @@ jobs:
             failures.append('UAL1 frozen track-match contract changed')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('True UAL character-3 gameplay contract passed; visual status remains pending.')
+          print('True UAL character-3 gameplay + one-tap validation contract passed; visual status remains pending.')
