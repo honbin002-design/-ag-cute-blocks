@@ -16,18 +16,21 @@ jobs:
           b=Path('bootstrap-v0510.js').read_text()
           l=Path('app-v0504-fixed-loader.js').read_text()
           checks={
-            'seat surfaces':"chair:.71" in f and "sofa:.695" in f and "swingGarden:1.005" in f,
-            'forced furniture pose':'forcePose(a,mode)' in f and "wanted=mode==='sleep'?'sleep':'sit'" in f,
-            'bed surfaces':"bed:.80" in f and "starBed:.80" in f,
-            'mattress centering':'targetX=Number(f.x)' in f and 'worldDelta' in f and 'box.min.y' in f,
-            'static final sleep pose':'freezeSleep(candidate)' in f and 'action.paused=true' in f,
-            'furniture state only':"life.includes('起身')" in f,
-            'sit camera unlocked':"playerState.mode!=='sit'" in l and 'furnitureOrbit:true' in l,
-            'release':"const release='V0.5.77'" in b and 'ual3-real-furniture-forced-pose' in b and 'sit-sleep-camera-orbit' in b,
-            'runtime wired':"await import('./ual-furniture-fit-runtime.js?v=0.5.77')" in b,
+            'exact core bridge':'__AGCB_ACTIVE_FURNITURE_STATE' in l and "get anchor(){return playerState.anchor}" in l and "get mode(){return playerState.mode}" in l,
+            'runtime consumes bridge':'__AGCB_ACTIVE_FURNITURE_STATE' in f and 's.anchor' in f and 's.mode' in f,
+            'no nearest furniture guess':'nearestFurniture' not in f and 'readWorld' not in f and 'localStorage' not in f,
+            'core xz preserved sit':'Preserve X/Z and yaw exactly' in f and 'candidate.root.position.copy(base.position)' in f,
+            'forced furniture pose':"wanted=mode==='lie'?'sleep':'sit'" in f and 'forcePose(a,mode)' in f,
+            'static sleep pose':'freezeSleep(candidate)' in f and 'action.paused=true' in f,
+            'bed long axis':'candidate.root.rotation.y+=Math.PI/2' in f,
+            'bed exact anchor center':'player.position.x-c.x' in f and 'player.position.z-c.z' in f,
+            'sit lie normal third camera':"source.split(legacyFurnitureCameraBranch).join(\"if(cameraMode==='farm')\")" in l and 'lieUsesNormalThirdCamera:true' in l,
+            'movement still core locked':"active-furniture-state-bridge" in l,
+            'release':"const release='V0.5.78'" in b and 'ual3-exact-core-furniture-anchor' in b and 'sit-lie-normal-third-camera-orbit' in b,
+            'runtime wired':"await import('./ual-furniture-fit-runtime.js?v=0.5.78')" in b,
           }
           bad=[k for k,v in checks.items() if not v]
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS UAL3 forced sit/sleep pose, mattress centering and furniture camera orbit contract')
+          print('PASS UAL3 exact active-furniture anchor, bed-axis fit and unlocked sit/lie camera contract')
           PY
