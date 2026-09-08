@@ -2,7 +2,7 @@ name: Release chain sync
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev-v0.1]
     paths:
       - 'bootstrap-v0510.js'
       - 'index.html'
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: agcb-release-chain-main
+  group: agcb-release-chain-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -83,12 +83,14 @@ jobs:
           if git push; then
             exit 0
           fi
-          echo 'push raced with another main update; verifying remote main before deciding failure'
-          git fetch origin main
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "push raced with another ${BRANCH} update; verifying remote branch before deciding failure"
+          git fetch origin "${BRANCH}"
           python - <<'PY'
-          import re,subprocess,sys
-          boot=subprocess.check_output(['git','show','origin/main:bootstrap-v0510.js'],text=True)
-          index=subprocess.check_output(['git','show','origin/main:index.html'],text=True)
+          import os,re,subprocess,sys
+          branch=os.environ['GITHUB_REF_NAME']
+          boot=subprocess.check_output(['git','show',f'origin/{branch}:bootstrap-v0510.js'],text=True)
+          index=subprocess.check_output(['git','show',f'origin/{branch}:index.html'],text=True)
           m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
           if not m: sys.exit('remote bootstrap version missing')
           v=m.group(1); vv='V'+v
@@ -100,7 +102,7 @@ jobs:
             f'const V="{vv}"' in index,
           ]
           if all(checks):
-            print(f'remote main is already synchronized to {vv}; concurrent push is safe')
+            print(f'remote {branch} is already synchronized to {vv}; concurrent push is safe')
             sys.exit(0)
-          sys.exit(f'remote main is not synchronized to {vv}; refusing to hide push race')
+          sys.exit(f'remote {branch} is not synchronized to {vv}; refusing to hide push race')
           PY
