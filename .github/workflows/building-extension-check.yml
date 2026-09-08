@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in building-extension-runtime.js procedural-material-runtime.js collision-cache-runtime.js raycast-budget-runtime.js character-polish-runtime.js character-motion-fix-runtime.js mobile-viewport-lock-runtime.js mobile-controls-runtime.js mobile-input-runtime.js ag-original-character-runtime.js ag-original-animal-runtime.js pet-grounding-runtime.js animal-models.js weather-visual-runtime.js daily-progression-system.js crop-care-runtime.js sleep-routine-v0499.js fishing-ecology-system.js fishing-ecology-runtime-v0505.js; do
+          for file in building-extension-runtime.js procedural-material-runtime.js collision-cache-runtime.js raycast-budget-runtime.js character-polish-runtime.js character-motion-fix-runtime.js mobile-viewport-lock-runtime.js mobile-controls-runtime.js mobile-input-runtime.js ag-original-character-runtime.js ag-original-animal-runtime.js pet-grounding-runtime.js animal-models.js weather-visual-runtime.js daily-progression-system.js crop-care-runtime.js sleep-routine-v0499.js fishing-ecology-system.js fishing-ecology-runtime-v0505.js app-v0504-fixed-loader.js; do
             echo "Checking $file"
             node --input-type=module --check < "$file"
           done
@@ -34,22 +34,30 @@ jobs:
           boot_name,v=m.groups();boot=pathlib.Path(boot_name).read_text(encoding='utf-8')
           a=re.search(r"import ['\"]\./(app-v\d+\.js)(?:\?v=[^'\"]+)?['\"]",boot)
           if not a: sys.exit('current app import missing from bootstrap')
-          wrapper_name=a.group(1);wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8');core_name=wrapper_name
-          if '__AGCB_RELEASE_OVERLAY' in wrapper:
+          wrapper_name=a.group(1);wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8');core_name=wrapper_name;loader_name=''
+          loader=re.search(r"import ['\"]\./(app-v\d+-fixed-loader\.js)['\"]",wrapper)
+          if loader:
+            loader_name=loader.group(1);loader_src=pathlib.Path(loader_name).read_text(encoding='utf-8')
+            historical=re.search(r"new URL\(['\"]\./(app-v\d+\.js)['\"],import\.meta\.url\)",loader_src)
+            if not historical: sys.exit('guarded loader historical core missing')
+            core_name=historical.group(1)
+            if 'TDZ_SIGNATURE' not in loader_src or 'queueMicrotask(syncActionLabels)' not in loader_src: sys.exit('guarded loader TDZ repair contract missing')
+          elif '__AGCB_RELEASE_OVERLAY' in wrapper:
             b=re.search(r"import ['\"]\./(app-v\d+\.js)['\"]",wrapper)
             if not b: sys.exit('additive wrapper base app missing')
             core_name=b.group(1)
-          pathlib.Path('/tmp/agcb-current').write_text(f'{boot_name}\n{wrapper_name}\n{core_name}\n{v}\n',encoding='utf-8')
-          print(f'current release: {v} / {boot_name} / wrapper {wrapper_name} / core {core_name}')
+          pathlib.Path('/tmp/agcb-current').write_text(f'{boot_name}\n{wrapper_name}\n{core_name}\n{v}\n{loader_name}\n',encoding='utf-8')
+          print(f'current release: {v} / {boot_name} / wrapper {wrapper_name} / loader {loader_name or "direct"} / core {core_name}')
 
       - name: Verify current building and collision invariants
         shell: python
         run: |
           import pathlib,sys
-          boot_name,wrapper_name,core_name,v=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8');mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8');collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8');ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8');failures=[]
+          boot_name,wrapper_name,core_name,v,loader_name=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8');mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8');collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8');ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8');failures=[]
           required_app=["['stair','🪜','樓梯']","function stairSurfaceY","function standSurfaceY","'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","registerSolid","unregisterSolid","reindexSolid","SOLID_CELL=4","solidGrid=new Map()","buildAimTargets","registerBuildAimTarget","unregisterBuildAimTarget","globalThis.__AGCB_GAME_ACTIONS"]
           for token in required_app:
             if token not in app: failures.append(f'{core_name} missing {token}')
+          if "['fishingRod','🎣','釣魚竿']" not in app: failures.append(f'{core_name} missing fishing rod regression recovery')
           for token in ['duplicateStairRemoved:true','directMobileMaterialFix:true','created.userData.mat=STATE.material','stairsGeometry','upgradeStairs','schema:5']:
             if token not in ext: failures.append(f'extension missing {token}')
           if 'data-agcb-build-value="stairs"' in ext: failures.append('duplicate stairs UI still present')
@@ -62,6 +70,10 @@ jobs:
             if token not in ray: failures.append(f'raycast budget missing {token}')
           for name in ['building-extension-runtime.js','procedural-material-runtime.js','collision-cache-runtime.js','raycast-budget-runtime.js']:
             if name not in boot: failures.append(f'{boot_name} missing {name}')
+          if loader_name:
+            loader=pathlib.Path(loader_name).read_text(encoding='utf-8')
+            for token in ['TDZ_SIGNATURE','queueMicrotask(syncActionLabels)','occurrences!==1','await import(blobUrl)']:
+              if token not in loader: failures.append(f'guarded loader missing {token}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print(f'Building, stair, material and collision checks passed for core {core_name}.')
@@ -70,7 +82,7 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
-          _,_,core_name,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8');inputjs=pathlib.Path('mobile-input-runtime.js').read_text(encoding='utf-8');controls=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8');css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8');sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8');failures=[]
+          _,_,core_name,_,_=pathlib.Path('/tmp/agcb-current').read_text().splitlines();app=pathlib.Path(core_name).read_text(encoding='utf-8');viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8');inputjs=pathlib.Path('mobile-input-runtime.js').read_text(encoding='utf-8');controls=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8');css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8');sleep=pathlib.Path('sleep-routine-v0499.js').read_text(encoding='utf-8');failures=[]
           for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','touchIsGameplayControl','CONTROL_SELECTOR','controlAwareTouchGuard:true','multitouchGameplayPreserved:true']:
             if token not in viewport: failures.append(f'viewport runtime missing {token}')
           legacy="document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()" in app
@@ -87,13 +99,13 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
-          boot_name,wrapper_name,core_name,v=pathlib.Path('/tmp/agcb-current').read_text().splitlines();index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8');failures=[]
+          boot_name,wrapper_name,core_name,v,loader_name=pathlib.Path('/tmp/agcb-current').read_text().splitlines();index=pathlib.Path('index.html').read_text(encoding='utf-8');boot=pathlib.Path(boot_name).read_text(encoding='utf-8');wrapper=pathlib.Path(wrapper_name).read_text(encoding='utf-8');failures=[]
           if v.startswith('0.4.'): failures.append(f'current release unexpectedly points to legacy {v}')
           if f'<meta name="ag-runtime-version" content="V{v}">' not in index: failures.append('index meta version mismatch')
-          if f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version mismatch')
-          if f"const VERSION='V{v}'" not in wrapper: failures.append('release wrapper version mismatch')
+          if f"const release='V{v}'" not in boot or f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version owner mismatch')
+          if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('release wrapper version ownership mismatch')
           if wrapper_name not in boot: failures.append('current app wrapper not imported by bootstrap')
-          if v=='0.5.05' and 'fishing-ecology-runtime-v0505.js?v=0.5.05' not in boot: failures.append('fishing ecology runtime not wired into V0.5.05')
+          if loader_name and "rollbackBase:'0.5.03'" not in wrapper: failures.append('guarded recovery rollback base missing')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print(f'Current additive release chain accepted at V{v}; core={core_name}.')
+          print(f'Current guarded additive release chain accepted at V{v}; core={core_name}.')
