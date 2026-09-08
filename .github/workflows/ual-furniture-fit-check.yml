@@ -1,0 +1,31 @@
+name: UAL furniture fit check
+on:
+  push:
+    branches: [dev-v0.1, main]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify UAL furniture fitting contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          f=Path('ual-furniture-fit-runtime.js').read_text()
+          b=Path('bootstrap-v0510.js').read_text()
+          checks={
+            'seat surfaces':"chair:.71" in f and "sofa:.695" in f and "swingGarden:1.005" in f,
+            'bed surfaces':"bed:.80" in f and "starBed:.80" in f,
+            'pelvis fitting':"n==='pelvis'" in f and 'fitSit(candidate,f)' in f,
+            'posed bbox sleep fitting':'fitSleep(candidate,f)' in f and 'box.min.y' in f,
+            'furniture state only':"life.includes('起身')" in f,
+            'pose preserved':"POSE_PRESERVED_FURNITURE_ALIGNMENT" in f,
+            'release':'V0.5.75' in b and 'ual3-furniture-seat-sleep-fit' in b,
+            'runtime wired':"await import('./ual-furniture-fit-runtime.js?v=0.5.75')" in b,
+          }
+          bad=[k for k,v in checks.items() if not v]
+          print(checks)
+          if bad: raise SystemExit('FAIL: '+', '.join(bad))
+          print('PASS UAL3 pose-preserving chair/sofa/bed fitting contract')
+          PY
