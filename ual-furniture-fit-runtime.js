@@ -1,26 +1,54 @@
-// AG Cute Blocks V0.5.77 - UAL3 real furniture fitting layer.
-// Actual iPhone furniture interaction in V0.5.76 proved the former height-only fit insufficient.
-// This revision forces the correct UAL pose, waits for it to settle, then fits the visual to the real furniture centre/surface.
+// AG Cute Blocks V0.5.78 - UAL3 exact active-furniture fitting layer.
+// Core enterFurniture() already owns the authoritative anchor + furniture yaw.
+// Never search/guess a nearest furniture object here: the UAL visual is a child of
+// the already-positioned player and only receives pose-specific local fitting.
 import * as THREE from 'three';
-const VERSION='V0.5.77',WORLD_KEY='ag_cute_blocks_world_v04';
-const SEAT_TOP={chair:.71,sofa:.695,swingGarden:1.005};
-const SEAT_PELVIS_LIFT={chair:.18,sofa:.18,swingGarden:.17};
-const BED_TOP={bed:.80,starBed:.80};
-const FURNITURE=new Set([...Object.keys(SEAT_TOP),...Object.keys(BED_TOP)]);
-const tmp=new THREE.Vector3(),box=new THREE.Box3();
-let active=null,base=null,lastMode='',lastFurnitureId='',settleUntil=0,poseForced='';
-function readWorld(){try{return JSON.parse(localStorage.getItem(WORLD_KEY)||'null')}catch{return null}}
+const VERSION='V0.5.78';
+const SEAT_SURFACE_LOCAL={chair:.71,sofa:.695,swingGarden:1.005};
+const SEAT_PELVIS_CLEARANCE={chair:.10,sofa:.10,swingGarden:.10};
+const BED_SURFACE_LOCAL={bed:.79,starBed:.79};
+const tmp=new THREE.Vector3(),box=new THREE.Box3(),delta=new THREE.Vector3(),parentQ=new THREE.Quaternion();
+let active=null,base=null,lastMode='',lastAnchor=null,settleUntil=0,poseForced='';
 function api(){return globalThis.__AGCB_TEST_CHARACTER_INTEGRATION}
-function furnitureMode(){const life=document.getElementById('lifeInteract')?.textContent||'',status=document.getElementById('status')?.textContent||'';if(!life.includes('起身'))return'';if(/躺下|睡/.test(status)||/躺下休息/.test(status))return'sleep';if(/坐下休息|放鬆中|舒服坐|休息中/.test(status))return'sit';return''}
-function nearestFurniture(player){if(!player)return null;const w=readWorld();let best=null,bestD=3.2;for(const o of w?.objects||[]){if(!FURNITURE.has(o.type))continue;const d=Math.hypot((o.x||0)-player.position.x,(o.z||0)-player.position.z);if(d<bestD){bestD=d;best=o}}return best}
+function state(){return globalThis.__AGCB_ACTIVE_FURNITURE_STATE}
 function pelvis(root){let found=null;root?.traverse?.(o=>{if(found||!o.name)return;const n=o.name.toLowerCase();if(n==='pelvis'||n==='hips'||n==='hip'||n.endsWith('_pelvis'))found=o});return found}
-function remember(candidate){if(active===candidate&&base)return;active=candidate;base={position:candidate.root.position.clone(),rotation:candidate.root.rotation.clone()};lastMode='';lastFurnitureId='';poseForced=''}
-function reset(candidate){if(candidate?.root&&base&&active===candidate){candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation)}active=null;base=null;lastMode='';lastFurnitureId='';poseForced='';settleUntil=0}
-function forcePose(a,mode){const wanted=mode==='sleep'?'sleep':'sit';if(poseForced===wanted&&a.candidate?.action===wanted)return;poseForced=wanted;a.force?.(wanted,mode==='sleep'?0:86400000);settleUntil=performance.now()+(mode==='sleep'?380:180)}
-function freezeSleep(candidate){const action=candidate.actions?.sleep;if(!action)return;const dur=action.getClip?.().duration||4.4;action.enabled=true;action.paused=false;action.time=Math.max(0,dur-.10);candidate.mixer?.update?.(0);action.paused=true}
-function targetSeatWorldY(f){return (SEAT_TOP[f.type]??.72)+(SEAT_PELVIS_LIFT[f.type]??.18)}
-function fitSit(candidate,f){const p=pelvis(candidate.root);if(!p)return;candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation);candidate.root.updateMatrixWorld(true);p.updateMatrixWorld(true);const pp=p.getWorldPosition(tmp);const dy=targetSeatWorldY(f)-pp.y;candidate.root.position.y+=Math.max(-1.25,Math.min(1.25,dy));candidate.root.updateMatrixWorld(true)}
-function fitSleep(candidate,f){freezeSleep(candidate);candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation);candidate.root.updateMatrixWorld(true);box.setFromObject(candidate.root);if(box.isEmpty())return;const c=box.getCenter(tmp);const targetX=Number(f.x)||0,targetZ=Number(f.z)||0;const worldDelta=new THREE.Vector3(targetX-c.x,0,targetZ-c.z);const parent=candidate.root.parent;if(parent){const q=new THREE.Quaternion();parent.getWorldQuaternion(q);worldDelta.applyQuaternion(q.invert())}candidate.root.position.x+=worldDelta.x;candidate.root.position.z+=worldDelta.z;candidate.root.updateMatrixWorld(true);box.setFromObject(candidate.root);const top=(BED_TOP[f.type]??.80)+.025;const dy=top-box.min.y;candidate.root.position.y+=Math.max(-1.8,Math.min(1.8,dy));candidate.root.updateMatrixWorld(true)}
-function tick(){requestAnimationFrame(tick);const a=api(),candidate=a?.candidate,player=a?.player;if(!candidate?.root||a?.selected!=='ual3'||!player){if(active)reset(active);return}const mode=furnitureMode();if(!mode){if(active)reset(candidate);return}const f=nearestFurniture(player);if(!f)return;remember(candidate);const fid=`${f.id||f.type}:${f.x}:${f.z}:${f.rot||0}`;if(lastMode!==mode||lastFurnitureId!==fid){candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation);lastMode=mode;lastFurnitureId=fid;poseForced='';forcePose(a,mode)}else forcePose(a,mode);if(performance.now()<settleUntil)return;if(mode==='sleep'){if(candidate.action!=='sleep')return;fitSleep(candidate,f)}else{if(candidate.action!=='sit')return;fitSit(candidate,f)}}
+function remember(candidate){if(active===candidate&&base)return;active=candidate;base={position:candidate.root.position.clone(),rotation:candidate.root.rotation.clone()};lastMode='';lastAnchor=null;poseForced=''}
+function reset(candidate){if(candidate?.root&&base&&active===candidate){candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation);candidate.root.updateMatrixWorld(true)}active=null;base=null;lastMode='';lastAnchor=null;poseForced='';settleUntil=0}
+function forcePose(a,mode){const wanted=mode==='lie'?'sleep':'sit';if(poseForced===wanted&&a.candidate?.action===wanted)return;poseForced=wanted;a.force?.(wanted,mode==='lie'?0:86400000);settleUntil=performance.now()+(mode==='lie'?420:220)}
+function freezeSleep(candidate){const action=candidate.actions?.sleep;if(!action)return false;const dur=action.getClip?.().duration||4.4;action.enabled=true;action.paused=false;action.time=Math.max(0,dur-.10);candidate.mixer?.update?.(0);action.paused=true;return true}
+function worldToLocalDelta(root,worldDelta){const parent=root.parent;if(!parent)return worldDelta;parent.getWorldQuaternion(parentQ);return worldDelta.applyQuaternion(parentQ.invert())}
+function seatWorldY(anchor,type){const y=SEAT_SURFACE_LOCAL[type];if(!Number.isFinite(y))return null;anchor.updateMatrixWorld(true);return anchor.localToWorld(new THREE.Vector3(0,y,0)).y}
+function bedWorldY(anchor,type){const y=BED_SURFACE_LOCAL[type];if(!Number.isFinite(y))return null;anchor.updateMatrixWorld(true);return anchor.localToWorld(new THREE.Vector3(0,y,0)).y+.018}
+function fitSit(candidate,player,anchor,type){
+  const p=pelvis(candidate.root),surface=seatWorldY(anchor,type);if(!p||surface===null)return;
+  // Core already placed/rotated player at furnitureAnchorWorld/furnitureYaw.
+  // Preserve X/Z and yaw exactly; only solve the UAL pelvis height for this pose.
+  candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation);candidate.root.updateMatrixWorld(true);p.updateMatrixWorld(true);
+  const pp=p.getWorldPosition(tmp),target=surface+(SEAT_PELVIS_CLEARANCE[type]??.10),dy=target-pp.y;
+  delta.set(0,dy,0);worldToLocalDelta(candidate.root,delta);candidate.root.position.add(delta);candidate.root.updateMatrixWorld(true);
+}
+function fitSleep(candidate,player,anchor,type){
+  const surface=bedWorldY(anchor,type);if(surface===null||!freezeSleep(candidate))return;
+  candidate.root.position.copy(base.position);
+  // AG sleep clip rotates the body from upright into its local X axis. Bed depth/long
+  // axis is local Z, so add 90° around Y while retaining the core furniture yaw.
+  candidate.root.rotation.copy(base.rotation);candidate.root.rotation.y+=Math.PI/2;candidate.root.updateMatrixWorld(true);
+  box.setFromObject(candidate.root);if(box.isEmpty())return;
+  const c=box.getCenter(tmp);
+  // The player's world position IS the authoritative core furniture anchor.
+  // Center the settled lying body on that exact anchor, never on a guessed object.
+  delta.set(player.position.x-c.x,surface-box.min.y,player.position.z-c.z);
+  worldToLocalDelta(candidate.root,delta);candidate.root.position.add(delta);candidate.root.updateMatrixWorld(true);
+}
+function tick(){
+  requestAnimationFrame(tick);const a=api(),candidate=a?.candidate,player=a?.player,s=state();
+  if(!candidate?.root||a?.selected!=='ual3'||!player||!s?.active){if(active)reset(active);return}
+  const mode=s.mode,anchor=s.anchor,type=s.type;if((mode!=='sit'&&mode!=='lie')||!anchor)return;
+  remember(candidate);
+  if(lastMode!==mode||lastAnchor!==anchor){candidate.root.position.copy(base.position);candidate.root.rotation.copy(base.rotation);lastMode=mode;lastAnchor=anchor;poseForced='';forcePose(a,mode)}else forcePose(a,mode);
+  if(performance.now()<settleUntil)return;
+  if(mode==='lie'){if(candidate.action!=='sleep'){poseForced='';forcePose(a,mode);return}fitSleep(candidate,player,anchor,type)}
+  else{if(candidate.action!=='sit'){poseForced='';forcePose(a,mode);return}fitSit(candidate,player,anchor,type)}
+}
 requestAnimationFrame(tick);
-globalThis.__AGCB_UAL_FURNITURE_FIT={version:VERSION,seatTop:SEAT_TOP,bedTop:BED_TOP,status:'ACTUAL_IPHONE_FAIL_REWORK+FORCED_POSE+CENTERED_MATTRESS_FIT'};
+globalThis.__AGCB_UAL_FURNITURE_FIT={version:VERSION,status:'EXACT_CORE_ACTIVE_FURNITURE_ANCHOR+POSE_ONLY_LOCAL_FIT+BED_LONG_AXIS+VISUAL_PENDING',seatSurface:SEAT_SURFACE_LOCAL,bedSurface:BED_SURFACE_LOCAL};
