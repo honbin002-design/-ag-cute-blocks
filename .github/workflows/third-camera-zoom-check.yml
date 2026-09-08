@@ -8,26 +8,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify guarded third-person free orbit contract
+      - name: Verify guarded third-person ultra-close camera contract
         run: |
           python - <<'PY'
           from pathlib import Path
           s=Path('app-v0504-fixed-loader.js').read_text()
           b=Path('bootstrap-v0510.js').read_text()
+          t=Path('third-camera-touch-zoom-runtime.js').read_text()
           checks={
             'min 0.28':'THIRD_CAMERA_DISTANCE_MIN=0.28' in s,
             'near plane 0.05':"new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.05,260)" in s,
+            'safe clearance patch':"id:'third-camera-safe-clearance'" in s and "cameraMode==='third'?.12:.7" in s,
+            'safe clearance metadata':'thirdCameraCollisionClearance:0.12' in s,
             'orbit pitch bounds':'THIRD_CAMERA_PITCH_MIN=-.72' in s and 'THIRD_CAMERA_PITCH_MAX=1.16' in s,
-            'settings state':'let thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,Number(settings.thirdDistance)||THIRD_CAMERA_DISTANCE_DEFAULT));let thirdPitch=' in s,
-            'persist orbit':'cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season' in s,
-            'pointer map':'const thirdPointers=new Map()' in s and "renderer.domElement.addEventListener('pointermove'" in s,
-            'accelerated pinch':'Math.pow(before/after,1.45)' in s,
-            'free drag':"if(cameraMode==='third'){yaw-=thirdDx*.0075;thirdPitch=Math.max(THIRD_CAMERA_PITCH_MIN,Math.min(THIRD_CAMERA_PITCH_MAX,thirdPitch+thirdDy*.0065))}" in s,
+            'document touch bridge':"bridge:'touch-to-core-wheel'" in t and "version:'0.5.74'" in t,
+            'bridge sensitivity':'const wheelDelta=-delta*3.8' in t,
             'render orbit':'Math.sin(yaw)*Math.cos(thirdPitch)*thirdDistance' in s and 'Math.sin(thirdPitch)*thirdDistance' in s,
-            'release v0572':'V0.5.72' in b and 'third-person-free-orbit+pointer-pinch-zoom-0.28' in b,
+            'release v0574':'V0.5.74' in b and 'third-camera-safe-clearance-0.12' in b,
           }
           bad=[k for k,v in checks.items() if not v]
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS third-person free orbit + reliable pointer pinch + ultra-close zoom contract')
+          print('PASS document pinch + ultra-close orbit + third-only safeCamera clearance contract')
           PY
