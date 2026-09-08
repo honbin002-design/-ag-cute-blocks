@@ -29,6 +29,11 @@ const patches=[
     id:'active-furniture-state-bridge',
     from:"const playerState={mode:'free',anchor:null,previousCamera:null};",
     to:"const playerState={mode:'free',anchor:null,previousCamera:null};globalThis.__AGCB_ACTIVE_FURNITURE_STATE={version:1,get mode(){return playerState.mode},get anchor(){return playerState.anchor},get type(){return playerState.anchor?.userData?.type||''},get active(){return playerState.mode!=='free'&&!!playerState.anchor}};"
+  },
+  {
+    id:'authoritative-world-task-bridge',
+    from:"}lifeUI.interact.onclick=interact;",
+    to:"}lifeUI.interact.onclick=interact;function taskObjectById(id){return objects.find(o=>String(o.userData?.id||'')===String(id||''))||null}function listMatureCrops(){return objects.filter(o=>o.userData?.crop&&Number(o.userData.growth||0)>=.95).map(o=>({id:o.userData.id,itemId:o.userData.crop,x:o.position.x,z:o.position.z,growth:Number(o.userData.growth||0)}))}function harvestMatureCropById(id){const o=taskObjectById(id);if(!o||!o.userData?.crop)return{ok:false,reason:'missing-crop'};if(Number(o.userData.growth||0)<.95)return{ok:false,reason:'not-ready'};const itemId=o.userData.crop;addInventory(economy,itemId,1);o.userData.growth=.15;rebuildCrop(o);changed=true;renderLife();saveSettings();saveWorld();return{ok:true,id:o.userData.id,itemId,qty:1,inventory:Number(economy.inventory[itemId]||0)}}globalThis.__AGCB_WORLD_TASK_API={version:1,status:'AUTHORITATIVE_CORE_ONLY',inventoryOwner:'economy-system/addInventory',listMatureCrops,harvestMatureCropById};"
   }
 ];
 
