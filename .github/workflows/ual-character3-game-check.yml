@@ -56,3 +56,5 @@ jobs:
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print('True UAL character-3 gameplay + forward-facing + one-tap validation contract passed; visual status remains pending.')
+
+# V0.5.67 rerun marker after release-chain index synchronization.
