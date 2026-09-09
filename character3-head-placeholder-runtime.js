@@ -1,4 +1,4 @@
-// AG Character 3 - Head placeholder attachment scaffold
+// AG Character 3 - Adult female geometric head attachment scaffold
 // Scope: test-only structural scaffold. Does not replace the production head art or UAL3 rig.
 import * as THREE from 'three';
 
@@ -9,14 +9,58 @@ function findHead(root){
 }
 
 function makePlaceholderGeometry(){
-  const g=new THREE.SphereGeometry(0.12,24,16);
-  g.translate(0,0.02,0);
-  const count=g.attributes.position.count;
+  // Start from a sphere, then reshape it into a simple adult-female stylized head.
+  // This stage intentionally contains no eyes, mouth, nose or hair.
+  const g=new THREE.SphereGeometry(0.12,32,24);
+  const p=g.attributes.position;
+  for(let i=0;i<p.count;i++){
+    let x=p.getX(i), y=p.getY(i), z=p.getZ(i);
+
+    // Overall adult-female head proportions: slightly narrower than tall,
+    // with reduced depth versus a pure sphere.
+    x*=0.92;
+    y*=1.08;
+    z*=0.90;
+
+    // Lower-face taper. Keep cheeks softer, then narrow progressively into chin.
+    const ny=(y/0.1296); // normalized against post-scale vertical radius
+    if(ny<0){
+      const lower=Math.min(1,Math.max(0,-ny));
+      const taper=1-(0.22*lower*lower);
+      x*=taper;
+
+      // Slightly flatten the lower front/back volume so the jaw reads less spherical.
+      z*=1-(0.08*lower);
+
+      // Gentle chin extension without making it pointy.
+      if(ny<-0.55) y-=0.008*((-ny-0.55)/0.45);
+    }
+
+    // Soft cheek fullness around the lower-middle face.
+    if(ny>-0.45 && ny<0.15){
+      const cheek=1-Math.min(1,Math.abs(ny+0.12)/0.33);
+      x*=1+(0.035*cheek);
+    }
+
+    p.setXYZ(i,x,y+0.022,z);
+  }
+  p.needsUpdate=true;
+  g.computeVertexNormals();
+  g.computeBoundingBox();
+  g.computeBoundingSphere();
+
+  const count=p.count;
   const skinIndex=new Uint16Array(count*4);
   const skinWeight=new Float32Array(count*4);
   for(let i=0;i<count;i++){ skinIndex[i*4]=0; skinWeight[i*4]=1; }
   g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(skinIndex,4));
   g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(skinWeight,4));
+  g.userData={
+    stage:'ADULT_FEMALE_GEOMETRIC_TEST_HEAD',
+    containsFaceFeatures:false,
+    containsHair:false,
+    intent:'silhouette-only'
+  };
   return g;
 }
 
@@ -40,7 +84,7 @@ function attachHeadPlaceholder(root,{visible=true}={}){
   for(let i=0;i<si.count;i++) si.setX(i,headIndex);
   si.needsUpdate=true;
 
-  const material=new THREE.MeshStandardMaterial({transparent:true,opacity:.28,roughness:.55,metalness:0});
+  const material=new THREE.MeshStandardMaterial({transparent:true,opacity:.32,roughness:.55,metalness:0});
   const mesh=new THREE.SkinnedMesh(geometry,material);
   mesh.name='ag-c3-head-placeholder';
   mesh.frustumCulled=false;
@@ -57,9 +101,10 @@ function attachHeadPlaceholder(root,{visible=true}={}){
     skeleton:sourceSkinned.skeleton,
     placeholder:mesh,
     sourceSkinnedMesh:sourceSkinned,
+    stage:'ADULT_FEMALE_GEOMETRIC_TEST_HEAD',
     strategy:'SAME_SKELETON_SKINNED_HEAD_PLACEHOLDER'
   };
 }
 
-globalThis.__AGCB_C3_HEAD_PLACEHOLDER={version:1,findHead,attachHeadPlaceholder};
+globalThis.__AGCB_C3_HEAD_PLACEHOLDER={version:2,findHead,attachHeadPlaceholder};
 export{findHead,attachHeadPlaceholder};
