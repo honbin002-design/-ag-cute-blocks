@@ -31,19 +31,20 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check numpy pillow
           python render-qa.py
+          python relabel-v0497.py
       - name: Keep candidate detached from live game
         working-directory: .
         run: |
           set -euo pipefail
           ! grep -Fq "model003-adult-female-candidate" bootstrap-v045.js
           grep -Fq "INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED" model-authoring/model003-adult-female-candidate/build-adult-female.mjs
-          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-003-eight-view.png
+          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-004-eight-view.png
       - uses: actions/upload-artifact@v4
         with:
-          name: model003-adult-female-candidate-003-v0.4.96
+          name: model003-adult-female-candidate-004-v0.4.97
           path: |
-            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_003.glb
+            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_004.glb
             model-authoring/model003-adult-female-candidate/output/*report.json
             model-authoring/model003-adult-female-candidate/output/*manifest.json
-            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-003-*.png
+            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-004-*.png
           retention-days: 7
