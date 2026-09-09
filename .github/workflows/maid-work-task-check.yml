@@ -25,7 +25,7 @@ jobs:
           node --input-type=module --check < maid-work-runtime-v0582.js
           node --input-type=module --check < crop-care-runtime.js
           node --input-type=module --check < app-v0504-fixed-loader.js
-      - name: Verify authoritative harvest, watering, maid tree and player axe contracts
+      - name: Verify authoritative harvest, watering, player axe and persistent tree regrowth contracts
         shell: python
         run: |
           from pathlib import Path
@@ -35,10 +35,15 @@ jobs:
           maid=Path('maid-work-runtime-v0582.js').read_text(encoding='utf-8')
           boot=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           bad=[]
-          for token in ["id:'authoritative-world-task-bridge'",'__AGCB_WORLD_TASK_API','addInventory(economy,itemId,1)','Number(o.userData.growth||0)<.95','o.userData.growth=.15','rebuildCrop(o)','saveSettings();saveWorld()','AUTHORITATIVE_CORE_ONLY','listHarvestableTrees','chopTreeById',"o.userData?.type==='tree'","addInventory(economy,'wood',1)",'unregisterSolid(o)','unregisterCameraTarget(o)','unregisterInteractionTarget(o)','unregisterBuildAimTarget(o)','unregisterWorldEntity(o)','world.remove(o)','objects.splice(oi,1)']:
+          for token in ["id:'authoritative-world-task-bridge'",'__AGCB_WORLD_TASK_API','addInventory(economy,itemId,1)','Number(o.userData.growth||0)<.95','o.userData.growth=.15','rebuildCrop(o)','saveSettings();saveWorld()','listHarvestableTrees','chopTreeById',"o.userData?.type==='tree'","addInventory(economy,'wood',1)"]:
             if token not in loader: bad.append('loader missing '+token)
           for token in ["id:'player-axe-action-label'","id:'player-axe-catalog'","id:'player-axe-authoritative-use'","['axe','🪓','斧頭']","selected==='axe'?['🪓','砍樹']","globalThis.__AGCB_WORLD_TASK_API?.chopTreeById?.(o.userData.id)","Math.hypot(o.position.x-player.position.x,o.position.z-player.position.z)>5.5",'playerAxeAuthoritative:true']:
             if token not in loader: bad.append('player axe missing '+token)
+          for token in ["id:'wild-tree-regrowth-state'","id:'wild-tree-stump-model'","id:'wild-tree-regrowth-snapshot'","id:'wild-tree-regrowth-day-hook'",'TREE_REGROW_DAYS=3',"treeState:r.treeState||'grown'",'regrowDay:Number(r.regrowDay||0)',"treeState:o.userData.treeState",'regrowDay:o.userData.regrowDay',"o.userData.treeState='stump'",'o.userData.regrowDay=worldDay+TREE_REGROW_DAYS','processTreeRegrowth','AUTHORITATIVE_CORE_WITH_PERSISTENT_TREE_REGROWTH','persistentTreeRegrowth:true','treeRegrowDays:3']:
+            if token not in loader: bad.append('tree regrowth missing '+token)
+          bridge=loader.split("id:'authoritative-world-task-bridge'",1)[1] if "id:'authoritative-world-task-bridge'" in loader else ''
+          if 'world.remove(o)' in bridge or 'objects.splice(oi,1)' in bridge:
+            bad.append('persistent tree chop must not delete the tree object from world/objects')
           for token in ["CARE_KEY='ag_cute_blocks_crop_care_v1'","SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2'",'listNeedsWater','waterCropById','waterCrop(care,day,Date.now())','write(CARE_KEY,careStore)',"a.listNeedsWater=listNeedsWater","a.waterCropById=waterCropById",'AUTHORITATIVE_SHARED_CARE_STORE']:
             if token not in care: bad.append('care missing '+token)
           if 'ag_cute_blocks_settings_v03' in care: bad.append('care still reads legacy settings key')
@@ -55,8 +60,9 @@ jobs:
             required=[f"maid-work-runtime-v0582.js?v={v}",f"crop-care-runtime.js?v={v}",'authoritative-maid-harvest-work','authoritative-maid-watering-work']
             if m.group(1)>='V0.5.84': required.append('authoritative-maid-tree-chop-wood-loop')
             if m.group(1)>='V0.5.85': required.append('authoritative-player-axe-tree-chop')
+            if m.group(1)>='V0.5.86': required.append('persistent-tree-stump-regrowth')
             for token in required:
               if token not in boot: bad.append('bootstrap missing '+token)
           if bad:
             print('\n'.join(bad));sys.exit(1)
-          print('PASS shared harvest/watering/tree contracts + authoritative player axe; no second inventory/care/world store')
+          print('PASS shared harvest/watering/tree contracts + authoritative player axe + persistent stump regrowth; no second inventory/care/world store')
