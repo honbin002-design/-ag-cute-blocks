@@ -1,0 +1,77 @@
+name: Manus5 Run Jump Retarget Check
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'GENERAL_CHARACTER_RIG_BASELINE.md'
+      - 'MANUS5_CHARACTER_CANDIDATE_BASELINE.md'
+      - 'MANUS5_SHOULDER_RETARGET_RULE.md'
+      - '.github/workflows/manus5-run-jump-retarget-check.yml'
+  workflow_dispatch:
+
+jobs:
+  retarget-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source locomotion and target retarget contract
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          src = Path('GENERAL_CHARACTER_RIG_BASELINE.md').read_text(encoding='utf-8')
+          dst = Path('MANUS5_CHARACTER_CANDIDATE_BASELINE.md').read_text(encoding='utf-8')
+          rule = Path('MANUS5_SHOULDER_RETARGET_RULE.md').read_text(encoding='utf-8')
+
+          errors = []
+
+          # Source v052 must actually contain Run and Jump clips.
+          if not re.search(r'\bRun\b', src):
+              errors.append('v052 source Run clip not confirmed')
+          if not re.search(r'\bJump\b', src):
+              errors.append('v052 source Jump clip not confirmed')
+
+          # Manus5 candidate must retain the shared 49-joint rig and the known missing clips.
+          if '49 joints' not in dst:
+              errors.append('Manus5 49-joint rig not confirmed')
+          if '- Run: False' not in dst or '- Jump: False' not in dst:
+              errors.append('Manus5 missing Run/Jump state changed; re-review required')
+
+          # Shoulder compensation must keep left/right independent and not collapse both into spine_02.
+          required_rule_tokens = [
+              'LeftShoulder rotation is composed into target upperarm_L',
+              'RightShoulder rotation is composed into target upperarm_R',
+              'must NOT both be mapped directly to `spine_02`',
+              'Preserve target Manus5 bind-pose offsets',
+              'rotational deltas'
+          ]
+          for token in required_rule_tokens:
+              if token not in rule:
+                  errors.append(f'missing shoulder compensation contract: {token}')
+
+          # Core bilateral limb/finger target joints must exist in the Manus5 baseline.
+          target_required = [
+              'upperarm_L','lowerarm_L','hand_L','upperarm_R','lowerarm_R','hand_R',
+              'thigh_L','shin_L','foot_L','thigh_R','shin_R','foot_R',
+              'thumb_01_L','index_01_L','middle_01_L','ring_01_L','pinky_01_L',
+              'thumb_01_R','index_01_R','middle_01_R','ring_01_R','pinky_01_R',
+              'pelvis','spine_01','spine_02','chest','neck','head'
+          ]
+          for joint in target_required:
+              if f'`{joint}`' not in dst and joint not in dst:
+                  errors.append(f'missing Manus5 target joint: {joint}')
+
+          if errors:
+              print('RETARGET CONTRACT: FAIL')
+              for e in errors:
+                  print('-', e)
+              raise SystemExit(1)
+
+          print('RETARGET CONTRACT: PASS')
+          print('Source Run/Jump: confirmed in v052 baseline')
+          print('Target rig: Manus5 49-joint baseline confirmed')
+          print('Shoulder compensation: left/right independent')
+          print('Important target joints: present')
+          print('NOTE: this is structural/offline validation only; visual motion is not yet PASS')
