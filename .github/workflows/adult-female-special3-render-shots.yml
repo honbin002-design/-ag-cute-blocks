@@ -1,0 +1,56 @@
+name: Adult female Special3 render shots
+on:
+  push:
+    paths:
+      - 'adult-female-special3-visual-review.js'
+      - 'adult-female-special3-visual-review.html'
+      - '.github/workflows/adult-female-special3-render-shots.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render-shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm --prefix /tmp/ag-shot init -y
+          npm --prefix /tmp/ag-shot install playwright@1.55.0
+          cd /tmp/ag-shot && npx playwright install --with-deps chromium
+      - name: Serve review page
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/ag-review-server.log 2>&1 &
+          echo $! > /tmp/ag-review-server.pid
+          sleep 2
+          curl -fsS http://127.0.0.1:4173/adult-female-special3-visual-review.html >/dev/null
+      - name: Capture eight directions
+        shell: bash
+        run: |
+          mkdir -p review-shots
+          cat > /tmp/ag-shot/capture.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:900,height:1200},deviceScaleFactor:1});
+          await page.goto('http://127.0.0.1:4173/adult-female-special3-visual-review.html',{waitUntil:'domcontentloaded',timeout:120000});
+          await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('八方向驗收'),null,{timeout:120000});
+          const views=[['front',0],['front-right',-45],['right',-90],['back-right',-135],['back',180],['back-left',135],['left',90],['front-left',45]];
+          for(const [name,deg] of views){
+            await page.locator(`[data-view="${deg}"]`).click();
+            await page.waitForTimeout(500);
+            await page.screenshot({path:`${process.env.GITHUB_WORKSPACE}/review-shots/${name}.png`,fullPage:true});
+          }
+          await browser.close();
+          NODE
+          cd /tmp/ag-shot && node capture.mjs
+          test "$(find "$GITHUB_WORKSPACE/review-shots" -name '*.png' | wc -l)" -eq 8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adult-female-special3-eight-view-v0479
+          path: review-shots/*.png
+          if-no-files-found: error
+          retention-days: 14
