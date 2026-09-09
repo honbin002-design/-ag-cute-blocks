@@ -1,0 +1,92 @@
+name: General character rig check
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'assets/characters/general/**'
+      - 'character-asset-runtime-v0499.js'
+      - '.github/workflows/general-character-rig-check.yml'
+  pull_request:
+    branches: [main]
+
+jobs:
+  inspect-general-rigs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect reconstructed boy/girl GLB contracts
+        shell: python
+        run: |
+          import json, pathlib, struct, sys
+
+          ROOT=pathlib.Path('assets/characters/general')
+          SPECS={
+            'boy':('boy.v052.glb.part',2,983248),
+            'girl':('girl.v052.glb.part',2,1070664),
+          }
+          REQUIRED_ANIMS={'idle','walk','run','jump'}
+          failures=[]
+
+          def parse_glb(data,label):
+            if len(data)<20 or data[:4]!=b'glTF':
+              failures.append(f'{label}: invalid GLB header'); return None
+            version,total=struct.unpack_from('<II',data,4)
+            if version!=2: failures.append(f'{label}: expected GLB v2, got {version}')
+            if total!=len(data): failures.append(f'{label}: header length {total} != reconstructed {len(data)}')
+            off=12; doc=None
+            while off+8<=len(data):
+              length,ctype=struct.unpack_from('<I4s',data,off);off+=8
+              chunk=data[off:off+length];off+=length
+              if ctype==b'JSON':
+                doc=json.loads(chunk.rstrip(b' \t\r\n\x00').decode('utf-8'))
+                break
+            if not doc: failures.append(f'{label}: JSON chunk missing')
+            return doc
+
+          for label,(base,count,total) in SPECS.items():
+            parts=[]
+            for i in range(count):
+              p=ROOT/f'{base}{i:03d}'
+              if not p.exists(): failures.append(f'{label}: missing {p}'); continue
+              parts.append(p.read_bytes())
+            data=b''.join(parts)
+            if len(data)!=total: failures.append(f'{label}: reconstructed bytes {len(data)} != runtime contract {total}')
+            doc=parse_glb(data,label)
+            if not doc: continue
+            nodes=doc.get('nodes',[]); skins=doc.get('skins',[]); meshes=doc.get('meshes',[]); anims=doc.get('animations',[])
+            names=[str(a.get('name','')).strip() for a in anims]
+            normalized={n.lower() for n in names}
+            joints=sum(len(s.get('joints',[])) for s in skins)
+            skinned_nodes=sum(1 for n in nodes if 'skin' in n)
+            print(f'{label}: bytes={len(data)} nodes={len(nodes)} meshes={len(meshes)} skins={len(skins)} joints={joints} skinnedNodes={skinned_nodes} animations={names}')
+            if not skins: failures.append(f'{label}: no skin')
+            if joints<12: failures.append(f'{label}: suspiciously small rig ({joints} joints)')
+            if skinned_nodes<1: failures.append(f'{label}: no node references a skin')
+            if len(meshes)<1: failures.append(f'{label}: no meshes')
+            missing=sorted(a for a in REQUIRED_ANIMS if not any(a in n for n in normalized))
+            if missing: failures.append(f'{label}: missing required animation names {missing}; found {names}')
+            # General runtime requires arm/hand lookup candidates for procedural tool/work fallback.
+            node_names={str(n.get('name','')) for n in nodes}
+            left=bool(node_names & {'upperarm_L','LeftUpperArm'}) and bool(node_names & {'hand_L','LeftHand'})
+            right=bool(node_names & {'upperarm_R','RightUpperArm'}) and bool(node_names & {'hand_R','RightHand'})
+            if not left or not right: failures.append(f'{label}: runtime arm/hand bone lookup contract not satisfied')
+
+          runtime=pathlib.Path('character-asset-runtime-v0499.js').read_text(encoding='utf-8')
+          for token in [
+            "GENERAL_BOY_BASE='./assets/characters/general/boy.v052.glb.part'",
+            "GENERAL_GIRL_BASE='./assets/characters/general/girl.v052.glb.part'",
+            "girl:GENERAL_GIRL_BASE",
+            "boy:GENERAL_BOY_BASE",
+            "idle:findClip(clips,/idle|stand|breath|rest/i)",
+            "walk:findClip(clips,/walk|move/i)",
+            "run:findClip(clips,/run|sprint/i)",
+            "jump:findClip(clips,/jump|fall/i)",
+          ]:
+            if token not in runtime: failures.append('runtime missing '+token)
+
+          if failures:
+            print('\nFAILURES:')
+            print('\n'.join('- '+x for x in failures))
+            sys.exit(1)
+          print('General boy/girl rig structural contract passed.')
