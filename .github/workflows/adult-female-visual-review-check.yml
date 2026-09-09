@@ -1,0 +1,39 @@
+name: Adult female visual review check
+on:
+  push:
+    paths:
+      - 'adult-female-visual-review.js'
+      - 'adult-female-visual-review.html'
+      - '.github/workflows/adult-female-visual-review-check.yml'
+  workflow_dispatch:
+jobs:
+  visual-review-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate adult female visual review v1
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f adult-female-visual-review.js
+          test -f adult-female-visual-review.html
+          grep -Fq "scope:'adult-female-visual-review-only'" adult-female-visual-review.js
+          grep -Fq "views:{front:0,threeQuarter:-45,side:-90}" adult-female-visual-review.js
+          grep -Fq "gender:'girl',age:'adult'" adult-female-visual-review.js
+          for f in \
+            adult-female-eye-runtime.js \
+            adult-female-brow-runtime.js \
+            adult-female-nose-runtime.js \
+            adult-female-mouth-runtime.js \
+            adult-female-face-contour-runtime.js \
+            adult-female-eyelash-runtime.js \
+            adult-female-hair-runtime.js \
+            adult-female-face-integration-runtime.js \
+            adult-female-body-proportion-runtime.js \
+            adult-female-full-silhouette-runtime.js; do
+            grep -Fq "import './${f}?v=0.4.92';" adult-female-visual-review.js
+          done
+          grep -Fq 'data-view="0"' adult-female-visual-review.html
+          grep -Fq 'data-view="-45"' adult-female-visual-review.html
+          grep -Fq 'data-view="-90"' adult-female-visual-review.html
+          grep -Fq 'maximum-scale=1,user-scalable=no' adult-female-visual-review.html
