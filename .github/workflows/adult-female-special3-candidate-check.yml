@@ -24,6 +24,14 @@ jobs:
           grep -Fq "age.value='adult'" adult-female-special3-candidate-runtime.js
           grep -Fq "u?.assetVariant!=='special3'||u?.assetAge!=='adult'" adult-female-special3-candidate-runtime.js
           grep -Fq "adultFemaleCandidateBase='special3-glb'" adult-female-special3-candidate-runtime.js
+          grep -Fq "STYLE_REV='adult-female-reference-20260902-v1'" adult-female-special3-candidate-runtime.js
+          grep -Fq "hair:'long-wavy'" adult-female-special3-candidate-runtime.js
+          grep -Fq "top:'white'" adult-female-special3-candidate-runtime.js
+          grep -Fq "bottom:'light-long-trousers'" adult-female-special3-candidate-runtime.js
+          grep -Fq "proportion:'adult-defined'" adult-female-special3-candidate-runtime.js
+          grep -Fq "agcb-adult-female-long-wavy-hair" adult-female-special3-candidate-runtime.js
+          grep -Fq "0xf8f6f1" adult-female-special3-candidate-runtime.js
+          grep -Fq "0xe8e1d8" adult-female-special3-candidate-runtime.js
           grep -Fq "import './character-asset-runtime.js?v=0.4.92';" bootstrap-v045.js
           grep -Fq "import './adult-female-special3-candidate-runtime.js?v=0.4.92';" bootstrap-v045.js
           asset_line=$(grep -nF "import './character-asset-runtime.js?v=0.4.92';" bootstrap-v045.js | cut -d: -f1)
