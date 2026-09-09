@@ -1,4 +1,4 @@
-// AG Cute Blocks V0.4.91 — resilient character asset fetch layer.
+// AG Cute Blocks V0.4.92 — resilient character asset fetch layer.
 // Applies only to same-origin character asset GET requests; gameplay/network requests are untouched.
 const nativeFetch=globalThis.fetch.bind(globalThis);
 const RETRY_DELAYS=[220,650];
@@ -41,7 +41,7 @@ async function verifyOfflineGroup(key){
   const group=OFFLINE_GROUPS[key];if(!group||!('caches'in globalThis))return false;
   const checks=await Promise.all(Array.from({length:group.count},(_,i)=>caches.match(new URL(group.base+String(i).padStart(3,'0'),location.href).href,{ignoreSearch:true})));
   const ready=checks.every(Boolean);offlineReady[key]=ready;
-  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.91',groups:{...offlineReady},verifiedAt:Date.now()};
+  globalThis.__AGCB_CHARACTER_OFFLINE_READY={version:'V0.4.92',groups:{...offlineReady},verifiedAt:Date.now()};
   return ready;
 }
 function scheduleOfflineVerify(input){
@@ -78,4 +78,4 @@ if(!globalThis.__AGCB_NATIVE_FETCH){
   globalThis.fetch=resilientFetch;
 }
 globalThis.__AGCB_VERIFY_CHARACTER_OFFLINE=verifyOfflineGroup;
-globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.91',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true,directPersistentCache:true,offlineCacheFallback:true};
+globalThis.__AGCB_ASSET_FETCH_RESILIENCE={version:'V0.4.92',characterOnly:true,retryCount:RETRY_DELAYS.length,cacheReloadOnRetry:true,offlineIntegrity:true,scopeAwareUrls:true,directPersistentCache:true,offlineCacheFallback:true};
