@@ -1,4 +1,4 @@
-// AG Cute Blocks V0.4.92 — resilient character asset fetch layer.
+// AG Cute Blocks V0.4.92 — resilient character asset fetch layer (release-chain synchronized).
 // Applies only to same-origin character asset GET requests; gameplay/network requests are untouched.
 const nativeFetch=globalThis.fetch.bind(globalThis);
 const RETRY_DELAYS=[220,650];
