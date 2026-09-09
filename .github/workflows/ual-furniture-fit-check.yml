@@ -30,6 +30,8 @@ jobs:
             'bed exact anchor center':'player.position.x-c.x' in f and 'player.position.z-c.z' in f,
             'sit lie normal third camera':"source.split(legacyFurnitureCameraBranch).join(\"if(cameraMode==='farm')\")" in l and 'lieUsesNormalThirdCamera:true' in l,
             'movement still core locked':"active-furniture-state-bridge" in l,
+            'acceptance thresholds':'SIT_MAX_Y_ERROR=0.03' in f and 'SLEEP_MAX_Y_ERROR=0.03' in f and 'SLEEP_MAX_CENTER_ERROR_XZ=0.05' in f,
+            'acceptance api':'getAcceptance' in f and 'SIT_Y_OUT_OF_RANGE' in f and 'SLEEP_ALIGNMENT_OUT_OF_RANGE' in f and "status:'PASS'" in f,
             'release':bool(release) and f"const release='{release}'" in b and 'ual3-exact-core-furniture-anchor' in b and 'sit-lie-normal-third-camera-orbit' in b,
             'runtime wired':bool(version) and f"await import('./ual-furniture-fit-runtime.js?v={version}')" in b,
           }
@@ -37,5 +39,5 @@ jobs:
           print('release',release)
           print(checks)
           if bad: raise SystemExit('FAIL: '+', '.join(bad))
-          print('PASS UAL3 exact active-furniture anchor, bed-axis fit and unlocked sit/lie camera contract for '+release)
+          print('PASS UAL3 exact active-furniture anchor, numeric acceptance thresholds, bed-axis fit and unlocked sit/lie camera contract for '+release)
           PY
