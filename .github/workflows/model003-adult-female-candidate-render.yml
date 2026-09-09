@@ -40,7 +40,7 @@ jobs:
           test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-001-eight-view.png
       - uses: actions/upload-artifact@v4
         with:
-          name: model003-adult-female-candidate-001-v0.4.93
+          name: model003-adult-female-candidate-001-v0.4.94
           path: |
             model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_001.glb
             model-authoring/model003-adult-female-candidate/output/*report.json
