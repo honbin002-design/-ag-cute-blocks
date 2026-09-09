@@ -1,0 +1,30 @@
+name: Adult female eyelash check
+on:
+  push:
+    paths:
+      - 'adult-female-eyelash-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-eyelash-check.yml'
+  workflow_dispatch:
+
+jobs:
+  eyelash-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate adult female eyelash v1 scope and structure
+        run: |
+          set -euo pipefail
+          f='adult-female-eyelash-runtime.js'
+          b='bootstrap-v045.js'
+          test -f "$f"
+          grep -Fq "c?.gender==='girl'&&c?.age==='adult'" "$f"
+          grep -Fq "agcb-adult-female-eyelash-l-" "$f"
+          grep -Fq "agcb-adult-female-eyelash-r-" "$f"
+          grep -Fq "countPerEye:3" "$f"
+          grep -Fq "adult-female-fanned-lashes-v1" "$f"
+          grep -Fq "scope:'adult-female-eyelashes-only'" "$f"
+          grep -Fq "geometry:'fanned-lashes-v1'" "$f"
+          grep -Fq "version:1" "$f"
+          grep -Fq "adult-female-eyelash-runtime.js?v=0.4.92" "$b"
+          ! grep -Eq "gender==='boy'.*replaceAdultFemaleLashes|age==='child'.*replaceAdultFemaleLashes" "$f"
