@@ -20,32 +20,23 @@ jobs:
       - name: Inspect reconstructed Manus5 GLB bundle
         shell: python
         run: |
-          import json, pathlib, struct, sys, datetime, re
-
+          import json, pathlib, struct, datetime, re
           ROOT=pathlib.Path('assets/characters/manus5')
-          base='chibi_8_variants_rigged.glb.part'
-          expected_parts=16
-          failures=[]
-          parts=[]
-          sizes=[]
+          base='chibi_8_variants_rigged.glb.part'; expected_parts=16
+          failures=[]; parts=[]; sizes=[]
           for i in range(expected_parts):
             p=ROOT/f'{base}{i:03d}'
-            if not p.exists():
-              failures.append(f'missing {p}')
-              continue
+            if not p.exists(): failures.append(f'missing {p}'); continue
             b=p.read_bytes(); parts.append(b); sizes.append(len(b))
           data=b''.join(parts)
-
-          if len(parts)!=expected_parts:
-            failures.append(f'expected {expected_parts} parts, got {len(parts)}')
-          if len(data)<20 or data[:4]!=b'glTF':
-            failures.append('invalid GLB header')
-            doc=None
+          if len(parts)!=expected_parts: failures.append(f'expected {expected_parts} parts, got {len(parts)}')
+          doc=None
+          if len(data)<20 or data[:4]!=b'glTF': failures.append('invalid GLB header')
           else:
             version,total=struct.unpack_from('<II',data,4)
             if version!=2: failures.append(f'expected GLB v2, got {version}')
             if total!=len(data): failures.append(f'header length {total} != reconstructed {len(data)}')
-            off=12; doc=None
+            off=12
             while off+8<=len(data):
               length,ctype=struct.unpack_from('<I4s',data,off); off+=8
               chunk=data[off:off+length]; off+=length
@@ -55,51 +46,21 @@ jobs:
                 break
             if doc is None: failures.append('JSON chunk missing')
 
-          report=[]
+          report=['# Manus5 Character Candidate Baseline','',f'Generated: {datetime.datetime.now(datetime.timezone.utc).isoformat()}','Source: `assets/characters/manus5/chibi_8_variants_rigged.glb.part000..015`','', '> Candidate-only inspection. This does NOT activate or approve these models for gameplay and is NOT a Final Character Art PASS.','', '## Raw reconstruction','', f'- Reconstructed bytes: {len(data)}',f'- MiB: {len(data)/1024/1024:.2f}',f'- Parts: {len(parts)} / {expected_parts}',f'- Part sizes: {sizes}']
           if doc:
-            scenes=doc.get('scenes',[])
-            nodes=doc.get('nodes',[])
-            meshes=doc.get('meshes',[])
-            skins=doc.get('skins',[])
-            anims=doc.get('animations',[])
-            materials=doc.get('materials',[])
-            textures=doc.get('textures',[])
-            images=doc.get('images',[])
-            accessors=doc.get('accessors',[])
-            buffers=doc.get('buffers',[])
-            bufferViews=doc.get('bufferViews',[])
-
-            joint_indices=[]
-            skin_rows=[]
+            scenes=doc.get('scenes',[]); nodes=doc.get('nodes',[]); meshes=doc.get('meshes',[]); skins=doc.get('skins',[]); anims=doc.get('animations',[]); materials=doc.get('materials',[]); textures=doc.get('textures',[]); images=doc.get('images',[]); accessors=doc.get('accessors',[]); buffers=doc.get('buffers',[]); bufferViews=doc.get('bufferViews',[])
+            joint_indices=[]; skin_rows=[]
             for si,skin in enumerate(skins):
-              js=skin.get('joints',[]); joint_indices.extend(js)
-              skin_rows.append((si,skin.get('name',''),len(js),skin.get('skeleton')))
-            unique_joints=sorted(set(joint_indices))
-            joint_names=[str(nodes[i].get('name',f'node_{i}')) for i in unique_joints if 0<=i<len(nodes)]
+              js=skin.get('joints',[]); joint_indices.extend(js); skin_rows.append((si,skin.get('name',''),len(js),skin.get('skeleton')))
+            unique_joints=sorted(set(joint_indices)); joint_names=[str(nodes[i].get('name',f'node_{i}')) for i in unique_joints if 0<=i<len(nodes)]
             skinned_nodes=[(i,n.get('name',''),n.get('skin'),n.get('mesh')) for i,n in enumerate(nodes) if 'skin' in n]
-            anim_names=[str(a.get('name','')).strip() for a in anims]
-            mesh_names=[str(m.get('name','')).strip() for m in meshes]
-            node_names=[str(n.get('name','')).strip() for n in nodes]
-            scene_names=[str(s.get('name','')).strip() for s in scenes]
-
-            all_names=[x for x in scene_names+node_names+mesh_names if x]
-            variant_terms=[]
-            patterns=[r'variant[_\- ]?\d+',r'character[_\- ]?\d+',r'chibi[_\- ]?\d+',r'male[_\- ]?\d+',r'female[_\- ]?\d+',r'boy[_\- ]?\d+',r'girl[_\- ]?\d+']
-            for name in all_names:
-              low=name.lower()
-              if any(re.search(p,low) for p in patterns): variant_terms.append(name)
-            roots=[]
-            child_ids={c for n in nodes for c in n.get('children',[])}
-            for i,n in enumerate(nodes):
-              if i not in child_ids: roots.append((i,n.get('name',''),n.get('mesh'),n.get('skin'),len(n.get('children',[]))))
-
-            finger_tokens=['thumb','index','middle','ring','little','pinky']
-            handish=[n for n in joint_names if 'hand' in n.lower() or any(t in n.lower() for t in finger_tokens)]
-            side_left=[n for n in joint_names if n.lower().startswith('left') or n.endswith('_L') or '.L' in n]
-            side_right=[n for n in joint_names if n.lower().startswith('right') or n.endswith('_R') or '.R' in n]
-            norm_anim=[n.lower() for n in anim_names]
-            required={'idle':any('idle' in n for n in norm_anim),'walk':any('walk' in n for n in norm_anim),'run':any('run' in n for n in norm_anim),'jump':any('jump' in n for n in norm_anim)}
-
+            anim_names=[str(a.get('name','')).strip() for a in anims]; mesh_names=[str(m.get('name','')).strip() for m in meshes]; node_names=[str(n.get('name','')).strip() for n in nodes]; scene_names=[str(s.get('name','')).strip() for s in scenes]
+            variant_terms=[]; patterns=[r'variant[_\- ]?\d+',r'character[_\- ]?\d+',r'chibi[_\- ]?\d+',r'male[_\- ]?\d+',r'female[_\- ]?\d+',r'boy[_\- ]?\d+',r'girl[_\- ]?\d+']
+            for name in [x for x in scene_names+node_names+mesh_names if x]:
+              if any(re.search(p,name.lower()) for p in patterns): variant_terms.append(name)
+            child_ids={c for n in nodes for c in n.get('children',[])}; roots=[(i,n.get('name',''),n.get('mesh'),n.get('skin'),len(n.get('children',[]))) for i,n in enumerate(nodes) if i not in child_ids]
+            finger_tokens=['thumb','index','middle','ring','little','pinky']; handish=[n for n in joint_names if 'hand' in n.lower() or any(t in n.lower() for t in finger_tokens)]
+            norm_anim=[n.lower() for n in anim_names]; required={'idle':any('idle' in n for n in norm_anim),'walk':any('walk' in n for n in norm_anim),'run':any('run' in n for n in norm_anim),'jump':any('jump' in n for n in norm_anim)}
             if not skins: failures.append('no skins')
             if not meshes: failures.append('no meshes')
             if not skinned_nodes: failures.append('no skinned nodes')
@@ -107,55 +68,17 @@ jobs:
             for k,v in required.items():
               if not v: failures.append(f'missing required animation: {k}')
             if not handish: failures.append('no recognizable hand/finger joints')
-
-            report=[
-              '# Manus5 Character Candidate Baseline','',
-              f'Generated: {datetime.datetime.now(datetime.timezone.utc).isoformat()}',
-              'Source: `assets/characters/manus5/chibi_8_variants_rigged.glb.part000..015`',
-              '',
-              '> Candidate-only inspection. This report does NOT activate or approve these models for gameplay and is NOT a Final Character Art PASS.','',
-              '## Bundle summary','',
-              f'- Reconstructed bytes: {len(data)}',
-              f'- MiB: {len(data)/1024/1024:.2f}',
-              f'- Parts: {len(parts)} / {expected_parts}',
-              f'- Part sizes: {sizes}',
-              f'- Scenes: {len(scenes)}',
-              f'- Nodes: {len(nodes)}',
-              f'- Meshes: {len(meshes)}',
-              f'- Skins: {len(skins)}',
-              f'- Unique joints across skins: {len(unique_joints)}',
-              f'- Skinned nodes: {len(skinned_nodes)}',
-              f'- Animations: {len(anims)}',
-              f'- Materials: {len(materials)}',
-              f'- Textures: {len(textures)}',
-              f'- Images: {len(images)}',
-              f'- Accessors: {len(accessors)}',
-              f'- BufferViews: {len(bufferViews)}',
-              f'- Buffers: {len(buffers)}','',
-              '## Animation clips','',
-              '`'+('`, `'.join(anim_names) if anim_names else '(none)')+'`','',
-              '## Required locomotion discovery','',
-              f'- Idle: {required["idle"]}',f'- Walk: {required["walk"]}',f'- Run: {required["run"]}',f'- Jump: {required["jump"]}','',
-              '## Skins','',
-              '| Index | Name | Joint count | Skeleton node |','|---:|---|---:|---:|'
-            ]
-            for si,name,jc,skel in skin_rows: report.append(f'| {si} | {name} | {jc} | {skel} |')
+            report += ['', '## Bundle summary','',f'- Scenes: {len(scenes)}',f'- Nodes: {len(nodes)}',f'- Meshes: {len(meshes)}',f'- Skins: {len(skins)}',f'- Unique joints across skins: {len(unique_joints)}',f'- Skinned nodes: {len(skinned_nodes)}',f'- Animations: {len(anims)}',f'- Materials: {len(materials)}',f'- Textures: {len(textures)}',f'- Images: {len(images)}',f'- Accessors: {len(accessors)}',f'- BufferViews: {len(bufferViews)}',f'- Buffers: {len(buffers)}','', '## Animation clips','', '`'+('`, `'.join(anim_names) if anim_names else '(none)')+'`','', '## Required locomotion discovery','',f'- Idle: {required["idle"]}',f'- Walk: {required["walk"]}',f'- Run: {required["run"]}',f'- Jump: {required["jump"]}','', '## Skins','', '| Index | Name | Joint count | Skeleton node |','|---:|---|---:|---:|']
+            for r in skin_rows: report.append(f'| {r[0]} | {r[1]} | {r[2]} | {r[3]} |')
             report += ['', '## Root nodes (possible variant containers)','', '| Node | Name | Mesh | Skin | Child count |','|---:|---|---:|---:|---:|']
             for r in roots: report.append(f'| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} |')
-            report += ['', '## Names suggesting variant separation','', '`'+('`, `'.join(variant_terms[:200]) if variant_terms else '(none detected by common naming patterns)')+'`','',
-                       '## Joint names','', '`'+'`, `'.join(joint_names)+'`','',
-                       '## Hand/finger-related joints','', '`'+'`, `'.join(handish)+'`','',
-                       '## Mesh names','', '`'+'`, `'.join(mesh_names[:300])+'`','',
-                       '## Candidate assessment','']
-            if failures:
-              report += ['CANDIDATE STRUCTURAL: FAIL','', 'Failures:'] + [f'- {x}' for x in failures]
-            else:
-              report += ['CANDIDATE STRUCTURAL: PASS','', '- Rig/animation structure is technically inspectable.','- Production suitability is still undecided.','- The monolithic bundle size is large for iPhone-first runtime; do not replace the current general character path without per-variant extraction/size review.','- Visual quality still requires a dedicated in-game candidate validation step.']
-
+            report += ['', '## Names suggesting variant separation','', '`'+('`, `'.join(variant_terms[:200]) if variant_terms else '(none detected by common naming patterns)')+'`','', '## Joint names','', '`'+'`, `'.join(joint_names)+'`','', '## Hand/finger-related joints','', '`'+'`, `'.join(handish)+'`','', '## Mesh names','', '`'+'`, `'.join(mesh_names[:300])+'`']
+          report += ['', '## Candidate assessment','', 'CANDIDATE STRUCTURAL: '+('FAIL' if failures else 'PASS')]
+          if failures: report += ['', 'Failures:']+[f'- {x}' for x in failures]
+          else: report += ['', '- Rig/animation structure is technically inspectable.','- Production suitability is still undecided.','- The monolithic bundle is large for iPhone-first runtime; do not replace current general characters without per-variant extraction/size review.','- Visual quality still requires dedicated in-game candidate validation.']
           pathlib.Path('MANUS5_CHARACTER_CANDIDATE_BASELINE.md').write_text('\n'.join(report)+'\n',encoding='utf-8')
-          if failures:
-            print('\n'.join(failures)); sys.exit(1)
-          print('Manus5 candidate structural inspection passed.')
+          pathlib.Path('.manus5_candidate_failures').write_text('\n'.join(failures),encoding='utf-8')
+          print('\n'.join(failures) if failures else 'Manus5 candidate structural inspection passed.')
       - name: Commit candidate report
         if: github.event_name == 'push'
         shell: bash
@@ -163,6 +86,13 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add MANUS5_CHARACTER_CANDIDATE_BASELINE.md
-          git diff --cached --quiet && exit 0
-          git commit -m 'docs: refresh manus5 character candidate baseline'
-          git push origin HEAD:dev-v0.1
+          git diff --cached --quiet || (git commit -m 'docs: refresh manus5 character candidate baseline' && git push origin HEAD:dev-v0.1)
+      - name: Enforce candidate structural gate
+        shell: bash
+        run: |
+          if [ -s .manus5_candidate_failures ]; then
+            echo 'Manus5 candidate structural failures:'
+            cat .manus5_candidate_failures
+            exit 1
+          fi
+          echo 'Manus5 candidate structural gate passed.'
