@@ -10,6 +10,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   inspect-general-rigs:
     runs-on: ubuntu-latest
@@ -18,7 +21,7 @@ jobs:
       - name: Inspect reconstructed boy/girl GLB contracts
         shell: python
         run: |
-          import json, pathlib, struct, sys
+          import json, pathlib, struct, sys, datetime
 
           ROOT=pathlib.Path('assets/characters/general')
           SPECS={
@@ -26,7 +29,7 @@ jobs:
             'girl':('girl.v052.glb.part',2,1070664),
           }
           REQUIRED_ANIMS={'idle','walk','run','jump'}
-          failures=[]
+          failures=[]; rows=[]; bone_sections=[]
 
           def parse_glb(data,label):
             if len(data)<20 or data[:4]!=b'glTF':
@@ -57,20 +60,24 @@ jobs:
             nodes=doc.get('nodes',[]); skins=doc.get('skins',[]); meshes=doc.get('meshes',[]); anims=doc.get('animations',[])
             names=[str(a.get('name','')).strip() for a in anims]
             normalized={n.lower() for n in names}
-            joints=sum(len(s.get('joints',[])) for s in skins)
+            joint_indices=[]
+            for skin in skins: joint_indices.extend(skin.get('joints',[]))
+            unique_joints=sorted(set(joint_indices))
+            joint_names=[str(nodes[i].get('name',f'node_{i}')) for i in unique_joints if 0<=i<len(nodes)]
             skinned_nodes=sum(1 for n in nodes if 'skin' in n)
-            print(f'{label}: bytes={len(data)} nodes={len(nodes)} meshes={len(meshes)} skins={len(skins)} joints={joints} skinnedNodes={skinned_nodes} animations={names}')
+            print(f'{label}: bytes={len(data)} nodes={len(nodes)} meshes={len(meshes)} skins={len(skins)} joints={len(unique_joints)} skinnedNodes={skinned_nodes} animations={names}')
             if not skins: failures.append(f'{label}: no skin')
-            if joints<12: failures.append(f'{label}: suspiciously small rig ({joints} joints)')
+            if len(unique_joints)<12: failures.append(f'{label}: suspiciously small rig ({len(unique_joints)} joints)')
             if skinned_nodes<1: failures.append(f'{label}: no node references a skin')
             if len(meshes)<1: failures.append(f'{label}: no meshes')
             missing=sorted(a for a in REQUIRED_ANIMS if not any(a in n for n in normalized))
             if missing: failures.append(f'{label}: missing required animation names {missing}; found {names}')
-            # General runtime requires arm/hand lookup candidates for procedural tool/work fallback.
             node_names={str(n.get('name','')) for n in nodes}
             left=bool(node_names & {'upperarm_L','LeftUpperArm'}) and bool(node_names & {'hand_L','LeftHand'})
             right=bool(node_names & {'upperarm_R','RightUpperArm'}) and bool(node_names & {'hand_R','RightHand'})
             if not left or not right: failures.append(f'{label}: runtime arm/hand bone lookup contract not satisfied')
+            rows.append((label,len(data),len(nodes),len(meshes),len(skins),len(unique_joints),skinned_nodes,', '.join(names)))
+            bone_sections.append((label,joint_names))
 
           runtime=pathlib.Path('character-asset-runtime-v0499.js').read_text(encoding='utf-8')
           for token in [
@@ -89,4 +96,30 @@ jobs:
             print('\nFAILURES:')
             print('\n'.join('- '+x for x in failures))
             sys.exit(1)
-          print('General boy/girl rig structural contract passed.')
+
+          lines=[
+            '# AG General Character Rig Baseline', '',
+            f'Generated: {datetime.datetime.now(datetime.timezone.utc).isoformat()}',
+            'Scope: current gameplay general boy/girl v052 assets reconstructed from the exact runtime parts.',
+            '',
+            '> This is a structural/animation contract baseline, not a Final Character Art PASS.', '',
+            '| Character | Bytes | Nodes | Meshes | Skins | Unique joints | Skinned nodes | Animation clips |',
+            '|---|---:|---:|---:|---:|---:|---:|---|'
+          ]
+          for r in rows: lines.append(f'| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | {r[5]} | {r[6]} | {r[7]} |')
+          lines += ['', '## Required runtime contract', '', '- Idle / Walk / Run / Jump clip names are discoverable by the current runtime.', '- Both left and right upper-arm/hand lookup chains are present.', '- At least one skin and one skinned node must exist.', '- Asset byte totals must match the runtime reconstruction contract.', '', '## Joint names']
+          for label,names in bone_sections:
+            lines += ['', f'### {label}', '', '`'+'`, `'.join(names)+'`']
+          lines += ['', '## Status', '', 'STRUCTURAL BASELINE: PASS', 'FINAL CHARACTER ART: NOT CLAIMED / still requires visual in-game approval.']
+          pathlib.Path('GENERAL_CHARACTER_RIG_BASELINE.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+          print('General boy/girl rig structural contract passed and baseline report generated.')
+      - name: Commit baseline report
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add GENERAL_CHARACTER_RIG_BASELINE.md
+          git diff --cached --quiet && exit 0
+          git commit -m 'docs: refresh general character rig baseline'
+          git push origin HEAD:dev-v0.1
