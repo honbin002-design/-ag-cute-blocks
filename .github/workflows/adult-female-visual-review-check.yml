@@ -5,6 +5,7 @@ on:
       - 'adult-female-visual-review.js'
       - 'adult-female-visual-review.html'
       - 'adult-female-visual-refinement-runtime.js'
+      - 'adult-female-visual-refinement-v2-runtime.js'
       - '.github/workflows/adult-female-visual-review-check.yml'
   workflow_dispatch:
 jobs:
@@ -12,19 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate adult female visual review v2
+      - name: Validate adult female visual review v3
         shell: bash
         run: |
           set -euo pipefail
           test -f adult-female-visual-review.js
           test -f adult-female-visual-review.html
           test -f adult-female-visual-refinement-runtime.js
+          test -f adult-female-visual-refinement-v2-runtime.js
           grep -Fq "scope:'adult-female-visual-review-only'" adult-female-visual-review.js
-          grep -Fq "version:2" adult-female-visual-review.js
+          grep -Fq "version:3" adult-female-visual-review.js
           grep -Fq "views:{front:0,threeQuarter:-45,side:-90}" adult-female-visual-review.js
           grep -Fq "gender:'girl',age:'adult'" adult-female-visual-review.js
           grep -Fq "scope:'adult-female-visual-refinement-only'" adult-female-visual-refinement-runtime.js
           grep -Fq "geometry:'refined-visual-v1'" adult-female-visual-refinement-runtime.js
+          grep -Fq "scope:'adult-female-front-three-quarter-refinement-only'" adult-female-visual-refinement-v2-runtime.js
+          grep -Fq "geometry:'front-three-quarter-v2'" adult-female-visual-refinement-v2-runtime.js
           for f in \
             adult-female-eye-runtime.js \
             adult-female-brow-runtime.js \
@@ -36,10 +40,13 @@ jobs:
             adult-female-face-integration-runtime.js \
             adult-female-body-proportion-runtime.js \
             adult-female-full-silhouette-runtime.js \
-            adult-female-visual-refinement-runtime.js; do
+            adult-female-visual-refinement-runtime.js \
+            adult-female-visual-refinement-v2-runtime.js; do
             grep -Fq "import './${f}?v=0.4.92';" adult-female-visual-review.js
           done
           grep -Fq "import './adult-female-visual-refinement-runtime.js?v=0.4.92';" bootstrap-v045.js
+          grep -Fq "import './adult-female-visual-refinement-v2-runtime.js?v=0.4.92';" bootstrap-v045.js
+          grep -Fq '__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT_V2' adult-female-visual-review.js
           grep -Fq 'data-view="0"' adult-female-visual-review.html
           grep -Fq 'data-view="-45"' adult-female-visual-review.html
           grep -Fq 'data-view="-90"' adult-female-visual-review.html
