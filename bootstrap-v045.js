@@ -35,6 +35,7 @@ import './character-polish-runtime.js';
 // V0.4.92 keeps first-load-safe persistent asset caching before any GLB character-part fetch begins.
 import './asset-fetch-resilience-runtime.js?v=0.4.92';
 import './character-asset-runtime.js?v=0.4.92';
+import './adult-female-special3-candidate-runtime.js?v=0.4.92';
 import './character-motion-fix-runtime.js?v=0.4.92';
 import './pet-grounding-runtime.js';
 
