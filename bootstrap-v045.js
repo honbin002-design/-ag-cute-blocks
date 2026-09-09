@@ -1,4 +1,5 @@
 // AG Cute Blocks deterministic runtime bootstrap.
+// V0.4.92 release-alignment nudge: runtime versions are synchronized before release-chain validation.
 // Performance/collision/mobile safety patches must be active before the main world creates its renderer.
 import './render-performance-runtime.js';
 import './collision-cache-runtime.js';
