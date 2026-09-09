@@ -30,8 +30,8 @@ jobs:
             'bed exact anchor center':'player.position.x-c.x' in f and 'player.position.z-c.z' in f,
             'sit lie normal third camera':"source.split(legacyFurnitureCameraBranch).join(\"if(cameraMode==='farm')\")" in l and 'lieUsesNormalThirdCamera:true' in l,
             'movement still core locked':"active-furniture-state-bridge" in l,
-            'acceptance thresholds':'SIT_MAX_Y_ERROR=0.03' in f and 'SLEEP_MAX_Y_ERROR=0.03' in f and 'SLEEP_MAX_CENTER_ERROR_XZ=0.05' in f,
-            'acceptance api':'getAcceptance' in f and 'SIT_Y_OUT_OF_RANGE' in f and 'SLEEP_ALIGNMENT_OUT_OF_RANGE' in f and "status:'PASS'" in f,
+            'acceptance thresholds':"const ACCEPTANCE={sitErrorY:.03,sleepErrorY:.03,sleepCenterXZ:.05};" in f,
+            'acceptance api':'getAcceptance' in f and 'acceptanceFor' in f and 'SIT_Y_OUT_OF_RANGE' in f and 'SLEEP_ALIGNMENT_OUT_OF_RANGE' in f and "reason:Math.abs(y)<=ACCEPTANCE.sitErrorY?'PASS':'SIT_Y_OUT_OF_RANGE'" in f and "reason:pass?'PASS':'SLEEP_ALIGNMENT_OUT_OF_RANGE'" in f,
             'release':bool(release) and f"const release='{release}'" in b and 'ual3-exact-core-furniture-anchor' in b and 'sit-lie-normal-third-camera-orbit' in b,
             'runtime wired':bool(version) and f"await import('./ual-furniture-fit-runtime.js?v={version}')" in b,
           }
