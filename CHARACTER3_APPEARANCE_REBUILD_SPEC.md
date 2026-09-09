@@ -30,6 +30,23 @@ Manus5 and other historical candidates are reference assets only. They must not 
 - shoes, hats, glasses and accessories
 - materials, textures and shading
 
+## UAL3 mesh / skin structure decision
+Validated UAL3 technical structure is one skinned character mesh driven by the validated 65-joint skeleton. The current runtime clones the Female Mannequin scene with `SkeletonUtils.clone`, keeps the skeleton intact, and binds all animation clips against the same root. Therefore the appearance rebuild must not replace the whole character with an unrelated unskinned mesh.
+
+Replacement strategy is locked as follows:
+- Skeleton / joint hierarchy: KEEP exactly as Technical Base.
+- Existing skinning relationship: KEEP as the deformation contract until a new visual mesh has been explicitly rebound to the same skeleton.
+- Body silhouette changes: rebuild or reshape a visual body mesh around the same skeleton, then transfer / author skin weights to the existing 65-joint rig. Do not move the established gameplay skeleton merely to make the mesh fit.
+- Head / face: may be rebuilt as a new visual mesh, but it must attach to the existing head / neck rig and remain stable during head motion. If separated from the body for production, it must still follow the same skeleton rather than creating a second character rig.
+- Hair: should be a separate visual attachment where practical. Rigid sections may follow Head; long wavy sections may use compatible weighted helpers only if they do not change the Technical Base skeleton contract.
+- Clothing: blouse, trousers and future wardrobe pieces should be separate skinned visual layers fitted to the same body / skeleton. Do not permanently bake the first outfit into a new unrelated body that blocks wardrobe replacement.
+- Shoes: may be separate fitted / skinned pieces driven by the existing foot / toe bones. High-heel visual shape must be adapted without changing locomotion joint positions or breaking Sit / Sleep fitting.
+- Belt / glasses / small accessories: separate attachments are preferred when they do not require deformation.
+- Materials / textures: freely replaceable; no rig impact.
+
+### Forbidden shortcut
+Do not hide the UAL3 mesh and place a static pretty model on top. A replacement is valid only when the visible body follows the existing skeleton through idle, walk, run, jump and gameplay interactions without tearing, floating parts or duplicate-body artifacts.
+
 ## Locked adult-female appearance target
 The first rebuilt playable character must match the adult-female row of the user's reference board, using all available front / 45-degree / side / back / 45-degree-back and detail views.
 
