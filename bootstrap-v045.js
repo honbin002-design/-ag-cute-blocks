@@ -35,7 +35,10 @@ import './character-polish-runtime.js';
 // V0.4.92 keeps first-load-safe persistent asset caching before any GLB character-part fetch begins.
 import './asset-fetch-resilience-runtime.js?v=0.4.92';
 import './character-asset-runtime.js?v=0.4.92';
-import './adult-female-special3-candidate-runtime.js?v=0.4.92';
+// The prior Special3-based adult-female candidate is intentionally NOT imported here.
+// V0.4.80 automated eight-view renders proved Special3 is an anthropomorphic animal,
+// not the AG Model003 human study the user selected as the shape base. The diagnostic
+// runtime/review files are retained only as evidence; the playable route is detached.
 import './character-motion-fix-runtime.js?v=0.4.92';
 import './pet-grounding-runtime.js';
 
