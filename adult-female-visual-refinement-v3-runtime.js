@@ -44,14 +44,14 @@ function refineAdultFemaleVisualV3(character){
   fringeNames.forEach((name,i)=>{
     const o=hair.getObjectByName(name);if(!o)return;
     const outer=i===0||i===3;
-    scale(o,outer?.975:.985,1.012,.982);
-    move(o,(i<2?-1:1)*(outer?.0025:.0015),outer?-.001:.001,.001);
+    scale(o,outer ? .975 : .985,1.012,.982);
+    move(o,(i<2?-1:1)*(outer ? .0025 : .0015),outer ? -.001 : .001,.001);
   });
   for(const name of['agcb-adult-female-side-lock-l-v1','agcb-adult-female-side-lock-r-v1']){
-    const o=hair.getObjectByName(name);if(o){scale(o,.965,1.015,.972);move(o,name.includes('-l-')?.0025:-.0025,-.001,.002);}
+    const o=hair.getObjectByName(name);if(o){scale(o,.965,1.015,.972);move(o,name.includes('-l-') ? .0025 : -.0025,-.001,.002);}
   }
   for(const name of['agcb-adult-female-back-lock-l-v1','agcb-adult-female-back-lock-r-v1']){
-    const o=hair.getObjectByName(name);if(o){scale(o,.955,1.008,.970);move(o,name.includes('-l-')?.003:-.003,0,-.002);}
+    const o=hair.getObjectByName(name);if(o){scale(o,.955,1.008,.970);move(o,name.includes('-l-') ? .003 : -.003,0,-.002);}
   }
   const crown=hair.getObjectByName('agcb-adult-female-hair-crown-v1');
   if(crown){scale(crown,.994,1.004,.985);move(crown,0,.001,-.001);}
