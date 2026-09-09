@@ -38,7 +38,7 @@ function balanceAdultFemaleFace(character){
   // and reduce crown width very slightly for a cleaner 3/4 silhouette.
   for(const name of['agcb-adult-female-side-lock-l-v1','agcb-adult-female-side-lock-r-v1']){
     const o=hair.getObjectByName(name);
-    if(o)o.position.x+=name.includes('-l-')?.008:-.008;
+    if(o)o.position.x+=name.includes('-l-') ? .008 : -.008;
   }
   shiftNamed(hair,'agcb-adult-female-fringe-',0,-.010,-.002);
   const crown=hair.getObjectByName('agcb-adult-female-hair-crown-v1');
