@@ -1,0 +1,110 @@
+name: Install V0.5.88 tree resource integrity
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/install-v0588-tree-resource-integrity.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Patch guarded tree provenance and release
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('app-v0504-fixed-loader.js')
+          s=p.read_text()
+          reps=[]
+          reps.append((
+            "to:\"if(category==='農具'&&selected==='fishingRod'){castFishing(p);return;}if(category==='農具'&&selected==='axe'){let o=h.object;while(o.parent&&o.parent!==world)o=o.parent;if(o.userData?.type!=='tree')return toast('請把準星對準樹木');if(Math.hypot(o.position.x-player.position.x,o.position.z-player.position.z)>5.5)return toast('距離太遠，請靠近樹木');const r=globalThis.__AGCB_WORLD_TASK_API?.chopTreeById?.(o.userData.id);if(r?.ok){toast('🪓 砍下樹木，木材 +1');return}return toast(r?.reason==='stump-regrowing'?'樹樁正在重新生長':'這棵樹目前不能砍')}if(category==='農具'&&selected==='hoe'){\"",
+            "to:\"if(category==='農具'&&selected==='fishingRod'){castFishing(p);return;}if(category==='農具'&&selected==='axe'){let o=h.object;while(o.parent&&o.parent!==world)o=o.parent;if(o.userData?.type!=='tree')return toast('請把準星對準樹木');if(Math.hypot(o.position.x-player.position.x,o.position.z-player.position.z)>5.5)return toast('距離太遠，請靠近樹木');const r=globalThis.__AGCB_WORLD_TASK_API?.chopTreeById?.(o.userData.id);if(r?.ok){toast('🪓 砍下樹木，木材 +1');return}return toast(r?.reason==='stump-regrowing'?'樹樁正在重新生長':r?.reason==='player-placed-tree'?'玩家放置的樹是裝飾樹，不產木材':'這棵樹目前不能砍')}if(category==='農具'&&selected==='hoe'){\""
+          ))
+          reps.append((
+            "to:\"g.userData={kind:'object',id:r.id||id(),type:r.type,solid:true,growth:r.growth??.2,affection:r.affection??0,lastProductDay:r.lastProductDay??0,productReady:r.productReady,treeState:r.treeState||'grown',regrowDay:Number(r.regrowDay||0)};\"",
+            "to:\"g.userData={kind:'object',id:r.id||id(),type:r.type,solid:true,growth:r.growth??.2,affection:r.affection??0,lastProductDay:r.lastProductDay??0,productReady:r.productReady,treeState:r.treeState||'grown',regrowDay:Number(r.regrowDay||0),playerPlaced:!!r.playerPlaced};\""
+          ))
+          reps.append((
+            "to:\"objects:objects.map(o=>({id:o.userData.id,type:o.userData.type,x:o.position.x,z:o.position.z,rot:o.rotation.y,growth:o.userData.growth,affection:o.userData.affection,lastProductDay:o.userData.lastProductDay,productReady:o.userData.productReady,treeState:o.userData.treeState,regrowDay:o.userData.regrowDay}))\"",
+            "to:\"objects:objects.map(o=>({id:o.userData.id,type:o.userData.type,x:o.position.x,z:o.position.z,rot:o.rotation.y,growth:o.userData.growth,affection:o.userData.affection,lastProductDay:o.userData.lastProductDay,productReady:o.userData.productReady,treeState:o.userData.treeState,regrowDay:o.userData.regrowDay,playerPlaced:!!o.userData.playerPlaced}))\""
+          ))
+          marker="  {\n    id:'legacy-doubletap-blocker-suppress',"
+          insert="""  {
+    id:'player-placed-tree-provenance',
+    from:\"}else if(!inWater(p.x,p.z))addObject({type:selected,x:Math.round(p.x),z:Math.round(p.z),rot:objRot,growth:.18})}\",
+    to:\"}else if(!inWater(p.x,p.z))addObject({type:selected,x:Math.round(p.x),z:Math.round(p.z),rot:objRot,growth:.18,playerPlaced:selected==='tree'})}\"
+  },
+"""
+          if s.count(marker)!=1:
+              raise SystemExit(f'marker mismatch: {s.count(marker)}')
+          s=s.replace(marker,insert+marker)
+          for old,new in reps:
+              c=s.count(old)
+              if c!=1: raise SystemExit(f'replacement mismatch {c}: {old[:80]}')
+              s=s.replace(old,new)
+          old="function listHarvestableTrees(){return objects.filter(o=>o.userData?.type==='tree'&&o.userData.treeState!=='stump').map(o=>({id:o.userData.id,itemId:'wood',x:o.position.x,z:o.position.z}))}function chopTreeById(id){const o=taskObjectById(id);if(!o||o.userData?.type!=='tree')return{ok:false,reason:'missing-tree'};if(o.userData.treeState==='stump')"
+          new="function listHarvestableTrees(){return objects.filter(o=>o.userData?.type==='tree'&&o.userData.treeState!=='stump'&&!o.userData.playerPlaced).map(o=>({id:o.userData.id,itemId:'wood',x:o.position.x,z:o.position.z}))}function chopTreeById(id){const o=taskObjectById(id);if(!o||o.userData?.type!=='tree')return{ok:false,reason:'missing-tree'};if(o.userData.playerPlaced)return{ok:false,reason:'player-placed-tree'};if(o.userData.treeState==='stump')"
+          if s.count(old)!=1: raise SystemExit(f'authority mismatch: {s.count(old)}')
+          s=s.replace(old,new)
+          old="globalThis.__AGCB_WORLD_TASK_API={version:3,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_TREE_REGROWTH'"
+          new="globalThis.__AGCB_WORLD_TASK_API={version:4,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_TREE_REGROWTH_AND_RESOURCE_PROVENANCE'"
+          if s.count(old)!=1: raise SystemExit(f'api version mismatch: {s.count(old)}')
+          s=s.replace(old,new)
+          old="persistentTreeRegrowth:true,treeRegrowDays:3};"
+          new="persistentTreeRegrowth:true,treeRegrowDays:3,treeResourceProvenance:true,playerPlacedTreeWoodExploitBlocked:true};"
+          if s.count(old)!=1: raise SystemExit(f'metadata mismatch: {s.count(old)}')
+          s=s.replace(old,new)
+          p.write_text(s)
+
+          p=Path('bootstrap-v0510.js')
+          s=p.read_text()
+          if s.count('V0.5.87')!=2: raise SystemExit(f'bootstrap V count {s.count("V0.5.87")}')
+          s=s.replace('V0.5.87','V0.5.88')
+          s=s.replace("version:'0.5.87'","version:'0.5.88'")
+          s=s.replace('persistent-tree-stump-regrowth+read-only-forest-regrowth-status','persistent-tree-stump-regrowth+read-only-forest-regrowth-status+tree-resource-provenance-no-free-wood-exploit')
+          s=s.replace('?v=0.5.87','?v=0.5.88')
+          p.write_text(s)
+
+          p=Path('index.html')
+          s=p.read_text()
+          if 'V0.5.87' not in s: raise SystemExit('index release marker missing')
+          s=s.replace('V0.5.87','V0.5.88').replace('v=0.5.87','v=0.5.88')
+          p.write_text(s)
+          PY
+      - name: Verify patch contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('app-v0504-fixed-loader.js').read_text()
+          checks=[
+            "id:'player-placed-tree-provenance'",
+            "playerPlaced:!!r.playerPlaced",
+            "playerPlaced:!!o.userData.playerPlaced",
+            "playerPlaced:selected==='tree'",
+            "!o.userData.playerPlaced",
+            "reason:'player-placed-tree'",
+            "version:4,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_TREE_REGROWTH_AND_RESOURCE_PROVENANCE'",
+            "playerPlacedTreeWoodExploitBlocked:true"
+          ]
+          for x in checks:
+              if x not in s: raise SystemExit('missing '+x)
+          b=Path('bootstrap-v0510.js').read_text(); i=Path('index.html').read_text()
+          if 'V0.5.88' not in b or 'V0.5.88' not in i: raise SystemExit('release not bumped')
+          PY
+      - name: Commit V0.5.88
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v0504-fixed-loader.js bootstrap-v0510.js index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: block free placed-tree wood exploit V0.5.88'
+          git push origin HEAD:dev-v0.1
