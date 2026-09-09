@@ -30,7 +30,8 @@ jobs:
             ['placeholder weights target existing Head index', /si\.setX\(i,headIndex\)/.test(src)],
             ['no second Skeleton allocation', !/new\s+THREE\.Skeleton\s*\(/.test(src)],
             ['no new Bone allocation', !/new\s+THREE\.Bone\s*\(/.test(src)],
-            ['explicit same-skeleton strategy', /SAME_SKELETON_SKINNED_HEAD_PLACEHOLDER/.test(src)]
+            ['explicit same-skeleton strategy', /SAME_SKELETON_SKINNED_HEAD_PLACEHOLDER/.test(src)],
+            ['adult female geometric head marker', /ADULT_FEMALE_GEOMETRIC_TEST_HEAD/.test(src)]
           ];
           let failed=false;
           for(const [name,ok] of checks){
