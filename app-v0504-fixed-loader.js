@@ -16,6 +16,21 @@ const patches=[
     to:"document.head.appendChild(st)};queueMicrotask(syncActionLabels);\n\nconst scene=new THREE.Scene()"
   },
   {
+    id:'player-axe-action-label',
+    from:"const addLabel=category==='農具'?(selected==='fishingRod'?['🎣','釣魚']:['⛏️','使用']):['＋','放置'];",
+    to:"const addLabel=category==='農具'?(selected==='fishingRod'?['🎣','釣魚']:selected==='axe'?['🪓','砍樹']:['⛏️','使用']):['＋','放置'];"
+  },
+  {
+    id:'player-axe-catalog',
+    from:"'農具':[['hoe','⛏️','鋤頭'],['fishingRod','🎣','釣魚竿']]",
+    to:"'農具':[['hoe','⛏️','鋤頭'],['axe','🪓','斧頭'],['fishingRod','🎣','釣魚竿']]"
+  },
+  {
+    id:'player-axe-authoritative-use',
+    from:"if(category==='農具'&&selected==='fishingRod'){castFishing(p);return;}if(category==='農具'&&selected==='hoe'){",
+    to:"if(category==='農具'&&selected==='fishingRod'){castFishing(p);return;}if(category==='農具'&&selected==='axe'){let o=h.object;while(o.parent&&o.parent!==world)o=o.parent;if(o.userData?.type!=='tree')return toast('請把準星對準樹木');if(Math.hypot(o.position.x-player.position.x,o.position.z-player.position.z)>5.5)return toast('距離太遠，請靠近樹木');const r=globalThis.__AGCB_WORLD_TASK_API?.chopTreeById?.(o.userData.id);if(r?.ok){toast('🪓 砍下樹木，木材 +1');return}return toast('這棵樹目前不能砍')}if(category==='農具'&&selected==='hoe'){"
+  },
+  {
     id:'legacy-doubletap-blocker-suppress',
     from:"let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<=350)e.preventDefault();lastTouchEnd=now},{passive:false});",
     to:"let lastTouchEnd=0;/* AG guarded recovery: double-tap policy is owned by mobile-viewport-lock-runtime.js */"
@@ -116,5 +131,5 @@ source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,pref
 const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
 try{
   await import(blobUrl);
-  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,furnitureOrbit:true,furnitureStateBridge:true,lieUsesNormalThirdCamera:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true};
+  globalThis.__AGCB_V0504_FIXED={loaded:true,source:'app-v0504.js',patches:applied,signatureCount:applied.length,cameraPatches:cameraApplied,cameraPatchCount:cameraApplied.length,thirdCameraMin:0.28,thirdCameraDefault:3.8,thirdCameraPitchMin:-0.72,thirdCameraPitchMax:1.16,freeOrbit:true,furnitureOrbit:true,furnitureStateBridge:true,lieUsesNormalThirdCamera:true,pointerPinch:true,pinchExponent:1.45,cameraNear:0.05,thirdCameraCollisionClearance:0.12,legacyBlanketTouchBlockerSuppressed:true,legacyDoubleTapBlockerSuppressed:true,playerAxeAuthoritative:true};
 }finally{URL.revokeObjectURL(blobUrl)}
