@@ -13,6 +13,7 @@ import './adult-female-mouth-runtime.js?v=0.4.92';
 import './adult-female-face-contour-runtime.js?v=0.4.92';
 import './adult-female-eyelash-runtime.js?v=0.4.92';
 import './adult-female-hair-runtime.js?v=0.4.92';
+import './adult-female-face-integration-runtime.js?v=0.4.92';
 import './ag-original-animal-runtime.js';
 
 // Main world establishes the live scene/player/object registries used by extension runtimes.
