@@ -1,0 +1,32 @@
+name: Adult female Special3 candidate check
+on:
+  push:
+    paths:
+      - 'adult-female-special3-candidate-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-special3-candidate-check.yml'
+  workflow_dispatch:
+jobs:
+  candidate-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Special3 adult female candidate route
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f adult-female-special3-candidate-runtime.js
+          grep -Fq "scope:'special3-glb-adult-female-candidate-only'" adult-female-special3-candidate-runtime.js
+          grep -Fq "base:'Meshy_AI_Meshy_Merged_Animations.glb'" adult-female-special3-candidate-runtime.js
+          grep -Fq "preservesOriginalSpecial3:true" adult-female-special3-candidate-runtime.js
+          grep -Fq "option.value='adultFemaleCandidate'" adult-female-special3-candidate-runtime.js
+          grep -Fq "avatar.value='special3'" adult-female-special3-candidate-runtime.js
+          grep -Fq "age.value='adult'" adult-female-special3-candidate-runtime.js
+          grep -Fq "u?.assetVariant!=='special3'||u?.assetAge!=='adult'" adult-female-special3-candidate-runtime.js
+          grep -Fq "adultFemaleCandidateBase='special3-glb'" adult-female-special3-candidate-runtime.js
+          grep -Fq "import './character-asset-runtime.js?v=0.4.92';" bootstrap-v045.js
+          grep -Fq "import './adult-female-special3-candidate-runtime.js?v=0.4.92';" bootstrap-v045.js
+          asset_line=$(grep -nF "import './character-asset-runtime.js?v=0.4.92';" bootstrap-v045.js | cut -d: -f1)
+          candidate_line=$(grep -nF "import './adult-female-special3-candidate-runtime.js?v=0.4.92';" bootstrap-v045.js | cut -d: -f1)
+          test "$candidate_line" -gt "$asset_line"
+          ! grep -Fq "option.value='special3'" adult-female-special3-candidate-runtime.js
