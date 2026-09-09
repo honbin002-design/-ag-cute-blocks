@@ -1,0 +1,54 @@
+name: Adult female eye check
+
+on:
+  push:
+    branches: [main, dev-v0.1]
+    paths:
+      - 'adult-female-eye-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-eye-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'adult-female-eye-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-eye-check.yml'
+
+jobs:
+  adult-female-eye:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse eye runtime
+        shell: bash
+        run: node --input-type=module --check < adult-female-eye-runtime.js
+      - name: Verify adult female eye v2 scope
+        shell: python
+        run: |
+          import pathlib,sys
+          eye=pathlib.Path('adult-female-eye-runtime.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          failures=[]
+          required=[
+            "c?.gender==='girl'&&c?.age==='adult'",
+            "agcb-adult-female-eye-sclera-v2",
+            "agcb-adult-female-eye-iris-v2",
+            "agcb-adult-female-eye-pupil-v2",
+            "agcb-adult-female-eye-highlight-v2",
+            "adult-female-almond-v2",
+            "scope:'adult-female-eyes-only'",
+            "version:2"
+          ]
+          for token in required:
+            if token not in eye: failures.append(f'eye runtime missing {token}')
+          if "adult-female-eye-runtime.js?v=0.4.92" not in boot:
+            failures.append('bootstrap missing adult female eye runtime v0.4.92')
+          forbidden=["c?.gender==='boy'","c?.age==='child'","replaceChild","replaceAdultMale"]
+          for token in forbidden:
+            if token in eye: failures.append(f'eye runtime unexpectedly targets non-adult-female scope: {token}')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Adult female eye v2 scope and structure checks passed.')
