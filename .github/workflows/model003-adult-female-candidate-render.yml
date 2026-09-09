@@ -1,0 +1,49 @@
+name: Model003 adult female candidate render
+on:
+  push:
+    paths:
+      - 'model-authoring/model003-adult-female-candidate/**'
+      - '.github/workflows/model003-adult-female-candidate-render.yml'
+  workflow_dispatch:
+jobs:
+  build-validate-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: model-authoring/model003-adult-female-candidate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: model-authoring/model003-adult-female-candidate/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: node --check build-adult-female.mjs
+      - name: Build independent GLB
+        run: node build-adult-female.mjs
+      - name: Khronos glTF Validator
+        run: node validate.mjs
+      - name: Reload exported GLB
+        run: node export-qa.mjs
+      - name: Render actual eight views
+        run: |
+          python -m pip install --disable-pip-version-check numpy pillow
+          python render-qa.py
+      - name: Keep candidate detached from live game
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ! grep -Fq "model003-adult-female-candidate" bootstrap-v045.js
+          grep -Fq "INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED" model-authoring/model003-adult-female-candidate/build-adult-female.mjs
+          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-001-eight-view.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model003-adult-female-candidate-001-v0.4.93
+          path: |
+            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_001.glb
+            model-authoring/model003-adult-female-candidate/output/*report.json
+            model-authoring/model003-adult-female-candidate/output/*manifest.json
+            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-*.png
+          retention-days: 7
