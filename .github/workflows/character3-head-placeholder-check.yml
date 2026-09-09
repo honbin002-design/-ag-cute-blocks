@@ -1,0 +1,41 @@
+name: Character 3 head placeholder check
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'character3-head-placeholder-runtime.js'
+      - '.github/workflows/character3-head-placeholder-check.yml'
+  workflow_dispatch:
+
+jobs:
+  structural-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate placeholder skeleton contract
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='character3-head-placeholder-runtime.js';
+          const src=fs.readFileSync(path,'utf8');
+          const checks=[
+            ['find Head by exact bone name', /o\?\.name==='Head'/.test(src)],
+            ['derive neck from Head.parent', /const neck=head\.parent\|\|null/.test(src)],
+            ['reuse source skinned skeleton', /sourceSkinned\.skeleton\.bones/.test(src) && /mesh\.bind\(sourceSkinned\.skeleton,sourceSkinned\.bindMatrix\)/.test(src)],
+            ['verify Head belongs to skeleton', /const headIndex=bones\.indexOf\(head\)/.test(src) && /HEAD_NOT_IN_SKELETON/.test(src)],
+            ['placeholder weights target existing Head index', /si\.setX\(i,headIndex\)/.test(src)],
+            ['no second Skeleton allocation', !/new\s+THREE\.Skeleton\s*\(/.test(src)],
+            ['no new Bone allocation', !/new\s+THREE\.Bone\s*\(/.test(src)],
+            ['explicit same-skeleton strategy', /SAME_SKELETON_SKINNED_HEAD_PLACEHOLDER/.test(src)]
+          ];
+          let failed=false;
+          for(const [name,ok] of checks){
+            console.log(`${ok?'PASS':'FAIL'}: ${name}`);
+            if(!ok) failed=true;
+          }
+          if(failed) process.exit(1);
+          NODE
