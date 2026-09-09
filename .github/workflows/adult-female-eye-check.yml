@@ -33,22 +33,32 @@ jobs:
           boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
           failures=[]
           required=[
-            "c?.gender==='girl'&&c?.age==='adult'",
+            "function replaceAdultFemaleEyes(character)",
+            "return c?.gender==='girl'&&c?.age==='adult'?replaceAdultFemaleEyes(character):character;",
             "agcb-adult-female-eye-sclera-v2",
             "agcb-adult-female-eye-iris-v2",
             "agcb-adult-female-eye-pupil-v2",
             "agcb-adult-female-eye-highlight-v2",
-            "adult-female-almond-v2",
+            "adult-female-almond-face-fit-v2",
             "scope:'adult-female-eyes-only'",
+            "geometry:'almond-face-fit-v2'",
             "version:2"
           ]
           for token in required:
             if token not in eye: failures.append(f'eye runtime missing {token}')
           if "adult-female-eye-runtime.js?v=0.4.92" not in boot:
             failures.append('bootstrap missing adult female eye runtime v0.4.92')
-          forbidden=["c?.gender==='boy'","c?.age==='child'","replaceChild","replaceAdultMale"]
+          if eye.count('replaceAdultFemaleEyes(character)') != 2:
+            failures.append('adult-female eye replacement definition/routing count changed unexpectedly')
+          forbidden=[
+            "c?.gender==='boy'?replaceAdultFemaleEyes",
+            "c?.age==='child'?replaceAdultFemaleEyes",
+            "return replaceAdultFemaleEyes(character);",
+            "replaceChild",
+            "replaceAdultMale"
+          ]
           for token in forbidden:
             if token in eye: failures.append(f'eye runtime unexpectedly targets non-adult-female scope: {token}')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Adult female eye v2 scope and structure checks passed.')
+          print('Adult female eye v2 scope and structure checks passed; the other three character variants remain on base routing.')
