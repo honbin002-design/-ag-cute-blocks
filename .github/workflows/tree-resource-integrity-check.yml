@@ -1,0 +1,52 @@
+name: Tree resource integrity check
+
+on:
+  push:
+    branches: [dev-v0.1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tree-resource-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify V0.5.88 tree resource contract
+        shell: python
+        run: |
+          import pathlib,sys
+          preload=pathlib.Path('tree-resource-integrity-preload-v0588.js').read_text(encoding='utf-8')
+          wrapper=pathlib.Path('app-v0510.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          loader=pathlib.Path('app-v0504-fixed-loader.js').read_text(encoding='utf-8')
+          failures=[]
+          required_preload=[
+            "'appleTree','🍎','蘋果樹'",
+            "'orangeTree','🍊','橘子樹'",
+            "['tree','🌳','樹木']",
+            "const REPLACEMENT=\"'果樹':[['appleTree','🍎','蘋果樹'],['orangeTree','🍊','橘子樹']]\"",
+            "/(?:^|\\/)app-v0504\\.js(?:[?#]|$)/",
+            "if(count!==1)",
+            "globalThis.fetch=nativeFetch",
+            "status:'FREE_NORMAL_TREE_PLACEMENT_BLOCKED'",
+            "naturalTreeChopPreserved:true",
+            "fruitTreesPreserved:true",
+            "noNewStorage:true"
+          ]
+          for token in required_preload:
+            if token not in preload: failures.append('preload missing '+token)
+          if preload.find("const REPLACEMENT=")<0 or "['tree','🌳','樹木']" in preload.split('const REPLACEMENT=',1)[1].split(';',1)[0]:
+            failures.append('replacement must exclude free normal tree')
+          first=wrapper.find("import './tree-resource-integrity-preload-v0588.js';")
+          second=wrapper.find("import './app-v0504-fixed-loader.js';")
+          if first<0 or second<0 or first>second: failures.append('preload must load before guarded core loader')
+          for token in ["const release='V0.5.88'","__AGCB_BOOTSTRAP={version:'0.5.88'","tree-resource-integrity-no-free-normal-tree-placement"]:
+            if token not in boot: failures.append('bootstrap missing '+token)
+          for token in ["function chopTreeById","addInventory('wood',1)","treeState:'stump'","regrowDay:worldDay+TREE_REGROW_DAYS","const TREE_REGROW_DAYS=3"]:
+            if token not in loader: failures.append('authoritative chop/regrowth contract missing '+token)
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('V0.5.88 tree resource integrity contract passed.')
