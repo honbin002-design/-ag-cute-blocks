@@ -13,6 +13,7 @@ import './adult-female-full-silhouette-runtime.js?v=0.4.92';
 import './adult-female-visual-refinement-runtime.js?v=0.4.92';
 import './adult-female-visual-refinement-v2-runtime.js?v=0.4.92';
 import './adult-female-visual-refinement-v3-runtime.js?v=0.4.92';
+import './adult-female-outfit-refinement-runtime.js?v=0.4.92';
 
 const host=document.getElementById('viewer');
 const scene=new THREE.Scene();
@@ -51,7 +52,7 @@ new ResizeObserver(resize).observe(host);resize();setView(0);
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(Number(b.dataset.view))));
 
 const review={
-  version:4,
+  version:5,
   scope:'adult-female-visual-review-only',
   views:{front:0,threeQuarter:-45,side:-90},
   config:cfg,
@@ -59,7 +60,8 @@ const review={
     '__AGCB_ADULT_FEMALE_EYE','__AGCB_ADULT_FEMALE_BROW','__AGCB_ADULT_FEMALE_NOSE','__AGCB_ADULT_FEMALE_MOUTH',
     '__AGCB_ADULT_FEMALE_FACE_CONTOUR','__AGCB_ADULT_FEMALE_EYELASH','__AGCB_ADULT_FEMALE_HAIR',
     '__AGCB_ADULT_FEMALE_FACE_INTEGRATION','__AGCB_ADULT_FEMALE_BODY_PROPORTION','__AGCB_ADULT_FEMALE_FULL_SILHOUETTE',
-    '__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT','__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT_V2','__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT_V3'
+    '__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT','__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT_V2','__AGCB_ADULT_FEMALE_VISUAL_REFINEMENT_V3',
+    '__AGCB_ADULT_FEMALE_OUTFIT_REFINEMENT'
   ]
 };
 globalThis.__AGCB_ADULT_FEMALE_VISUAL_REVIEW=review;
