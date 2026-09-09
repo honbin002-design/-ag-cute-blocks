@@ -7,6 +7,10 @@ const VERSION='V0.5.80';
 const SEAT_SURFACE_LOCAL={chair:.71,sofa:.695,swingGarden:1.005};
 const SEAT_PELVIS_CLEARANCE={chair:.10,sofa:.10,swingGarden:.10};
 const BED_SURFACE_LOCAL={bed:.79,starBed:.79};
+// Conservative technical acceptance limits. The fitter solves these targets exactly;
+// these limits allow small floating-point / animation-settle variation without hiding
+// a visibly meaningful placement error.
+const ACCEPTANCE={sitErrorY:.03,sleepErrorY:.03,sleepCenterXZ:.05};
 const tmp=new THREE.Vector3(),box=new THREE.Box3(),delta=new THREE.Vector3(),parentQ=new THREE.Quaternion();
 let active=null,base=null,lastMode='',lastAnchor=null,settleUntil=0,poseForced='';
 let telemetry={version:VERSION,active:false,mode:'',type:'',action:'',settling:false,targetY:null,currentY:null,errorY:null,centerErrorXZ:null,status:'IDLE'};
@@ -21,6 +25,19 @@ function worldToLocalDelta(root,worldDelta){const parent=root.parent;if(!parent)
 function seatWorldY(anchor,type){const y=SEAT_SURFACE_LOCAL[type];if(!Number.isFinite(y))return null;anchor.updateMatrixWorld(true);return anchor.localToWorld(new THREE.Vector3(0,y,0)).y}
 function bedWorldY(anchor,type){const y=BED_SURFACE_LOCAL[type];if(!Number.isFinite(y))return null;anchor.updateMatrixWorld(true);return anchor.localToWorld(new THREE.Vector3(0,y,0)).y+.018}
 function n3(v){return Number.isFinite(v)?Math.round(v*1000)/1000:null}
+function acceptanceFor(t=telemetry){
+  if(!t?.active||t.settling)return {ready:false,pass:false,reason:'NOT_SETTLED'};
+  if(t.mode==='sit'){
+    const y=Number(t.errorY);if(!Number.isFinite(y))return {ready:false,pass:false,reason:'NO_SIT_ERROR'};
+    return {ready:true,pass:Math.abs(y)<=ACCEPTANCE.sitErrorY,reason:Math.abs(y)<=ACCEPTANCE.sitErrorY?'PASS':'SIT_Y_OUT_OF_RANGE',limits:{...ACCEPTANCE}};
+  }
+  if(t.mode==='lie'){
+    const y=Number(t.errorY),xz=Number(t.centerErrorXZ);if(!Number.isFinite(y)||!Number.isFinite(xz))return {ready:false,pass:false,reason:'NO_SLEEP_ERROR'};
+    const pass=Math.abs(y)<=ACCEPTANCE.sleepErrorY&&Math.abs(xz)<=ACCEPTANCE.sleepCenterXZ;
+    return {ready:true,pass,reason:pass?'PASS':'SLEEP_ALIGNMENT_OUT_OF_RANGE',limits:{...ACCEPTANCE}};
+  }
+  return {ready:false,pass:false,reason:'UNSUPPORTED_MODE'};
+}
 function fitSit(candidate,player,anchor,type){
   const p=pelvis(candidate.root),surface=seatWorldY(anchor,type);if(!p||surface===null){telemetry.status='SIT_TARGET_UNAVAILABLE';return}
   // Core already placed/rotated player at furnitureAnchorWorld/furnitureYaw.
@@ -58,4 +75,4 @@ function tick(){
   else{if(candidate.action!=='sit'){poseForced='';forcePose(a,mode);telemetry.status='WAIT_SIT_ACTION';return}fitSit(candidate,player,anchor,type)}
 }
 requestAnimationFrame(tick);
-globalThis.__AGCB_UAL_FURNITURE_FIT={version:VERSION,status:'EXACT_CORE_ACTIVE_FURNITURE_ANCHOR+POSE_ONLY_LOCAL_FIT+BED_LONG_AXIS+OBSERVABLE_TELEMETRY+VISUAL_PENDING',seatSurface:SEAT_SURFACE_LOCAL,bedSurface:BED_SURFACE_LOCAL,getTelemetry:()=>({...telemetry})};
+globalThis.__AGCB_UAL_FURNITURE_FIT={version:VERSION,status:'EXACT_CORE_ACTIVE_FURNITURE_ANCHOR+POSE_ONLY_LOCAL_FIT+BED_LONG_AXIS+OBSERVABLE_TELEMETRY+NUMERIC_ACCEPTANCE_READY+VISUAL_PENDING',seatSurface:SEAT_SURFACE_LOCAL,bedSurface:BED_SURFACE_LOCAL,acceptance:{...ACCEPTANCE},getTelemetry:()=>({...telemetry}),getAcceptance:()=>acceptanceFor()};
