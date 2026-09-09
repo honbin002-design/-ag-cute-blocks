@@ -19,8 +19,8 @@ jobs:
           b='bootstrap-v045.js'
           test -f "$f"
           grep -Fq "c?.gender==='girl'&&c?.age==='adult'" "$f"
-          grep -Fq "agcb-adult-female-eyelash-l-" "$f"
-          grep -Fq "agcb-adult-female-eyelash-r-" "$f"
+          grep -Fq "agcb-adult-female-eyelash-${side<0?'l':'r'}-${i+1}-v1" "$f"
+          grep -Fq "for(const side of[-1,1])" "$f"
           grep -Fq "countPerEye:3" "$f"
           grep -Fq "adult-female-fanned-lashes-v1" "$f"
           grep -Fq "scope:'adult-female-eyelashes-only'" "$f"
