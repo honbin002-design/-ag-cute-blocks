@@ -19,6 +19,7 @@ import './adult-female-full-silhouette-runtime.js?v=0.4.92';
 import './adult-female-visual-refinement-runtime.js?v=0.4.92';
 import './adult-female-visual-refinement-v2-runtime.js?v=0.4.92';
 import './adult-female-visual-refinement-v3-runtime.js?v=0.4.92';
+import './adult-female-outfit-refinement-runtime.js?v=0.4.92';
 import './ag-original-animal-runtime.js';
 
 // Main world establishes the live scene/player/object registries used by extension runtimes.
