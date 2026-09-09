@@ -19,9 +19,11 @@ jobs:
           node-version: '22'
       - name: Install Playwright Chromium
         run: |
-          npm --prefix /tmp/ag-shot init -y
-          npm --prefix /tmp/ag-shot install playwright@1.55.0
-          cd /tmp/ag-shot && npx playwright install --with-deps chromium
+          mkdir -p /tmp/ag-shot
+          cd /tmp/ag-shot
+          npm init -y
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
       - name: Serve review page
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/ag-review-server.log 2>&1 &
@@ -29,28 +31,59 @@ jobs:
           sleep 2
           curl -fsS http://127.0.0.1:4173/adult-female-special3-visual-review.html >/dev/null
       - name: Capture eight directions
+        id: capture
+        continue-on-error: true
         shell: bash
         run: |
           mkdir -p review-shots
           cat > /tmp/ag-shot/capture.mjs <<'NODE'
           import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const log=[];
+          const note=s=>{console.log(s);log.push(s)};
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:900,height:1200},deviceScaleFactor:1});
-          await page.goto('http://127.0.0.1:4173/adult-female-special3-visual-review.html',{waitUntil:'domcontentloaded',timeout:120000});
-          await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('八方向驗收'),null,{timeout:120000});
-          const views=[['front',0],['front-right',-45],['right',-90],['back-right',-135],['back',180],['back-left',135],['left',90],['front-left',45]];
-          for(const [name,deg] of views){
-            await page.locator(`[data-view="${deg}"]`).click();
-            await page.waitForTimeout(500);
-            await page.screenshot({path:`${process.env.GITHUB_WORKSPACE}/review-shots/${name}.png`,fullPage:true});
+          page.on('console',m=>note(`console ${m.type()}: ${m.text()}`));
+          page.on('pageerror',e=>note(`pageerror: ${e.message}`));
+          page.on('requestfailed',r=>note(`requestfailed: ${r.url()} :: ${r.failure()?.errorText||''}`));
+          try{
+            const resp=await page.goto('http://127.0.0.1:4173/adult-female-special3-visual-review.html',{waitUntil:'domcontentloaded',timeout:120000});
+            note(`document status: ${resp?.status()}`);
+            try{await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('八方向驗收'),null,{timeout:45000});}
+            catch(e){note(`ready-timeout: ${e.message}`);}
+            const status=await page.locator('#status').textContent().catch(()=>null);note(`ui-status: ${status}`);
+            await page.screenshot({path:`${process.env.GITHUB_WORKSPACE}/review-shots/diagnostic.png`,fullPage:true});
+            if(!status?.includes('八方向驗收'))throw new Error(`review not ready: ${status}`);
+            const views=[['front',0],['front-right',-45],['right',-90],['back-right',-135],['back',180],['back-left',135],['left',90],['front-left',45]];
+            for(const [name,deg] of views){
+              await page.locator(`[data-view="${deg}"]`).click();
+              await page.waitForTimeout(500);
+              await page.screenshot({path:`${process.env.GITHUB_WORKSPACE}/review-shots/${name}.png`,fullPage:true});
+            }
+          }finally{
+            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/review-shots/browser-log.txt`,log.join('\n'));
+            await browser.close();
           }
-          await browser.close();
           NODE
           cd /tmp/ag-shot && node capture.mjs
-          test "$(find "$GITHUB_WORKSPACE/review-shots" -name '*.png' | wc -l)" -eq 8
+      - name: Print diagnostics
+        if: always()
+        run: |
+          echo '--- browser log ---'
+          cat review-shots/browser-log.txt 2>/dev/null || true
+          echo '--- local server log ---'
+          tail -200 /tmp/ag-review-server.log 2>/dev/null || true
+          echo '--- files ---'
+          find review-shots -maxdepth 1 -type f -printf '%f %s bytes\n' || true
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: adult-female-special3-eight-view-v0479
-          path: review-shots/*.png
+          path: review-shots/*
           if-no-files-found: error
           retention-days: 14
+      - name: Require eight final views
+        if: always()
+        run: |
+          test "$(find review-shots -maxdepth 1 -name '*.png' ! -name 'diagnostic.png' | wc -l)" -eq 8
+          test '${{ steps.capture.outcome }}' = 'success'
