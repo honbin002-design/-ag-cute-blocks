@@ -31,7 +31,13 @@ jobs:
             ['no second Skeleton allocation', !/new\s+THREE\.Skeleton\s*\(/.test(src)],
             ['no new Bone allocation', !/new\s+THREE\.Bone\s*\(/.test(src)],
             ['explicit same-skeleton strategy', /SAME_SKELETON_SKINNED_HEAD_PLACEHOLDER/.test(src)],
-            ['adult female geometric head marker', /ADULT_FEMALE_GEOMETRIC_TEST_HEAD/.test(src)]
+            ['adult female geometric head marker', /ADULT_FEMALE_GEOMETRIC_TEST_HEAD/.test(src)],
+            ['face landmark guide stage marker', /ADULT_FEMALE_FACE_LANDMARK_GUIDES_V1/.test(src)],
+            ['eye landmark guide exists', /ag-c3-face-guide-eye-line/.test(src)],
+            ['nose landmark guide exists', /ag-c3-face-guide-nose-tip/.test(src)],
+            ['mouth landmark guide exists', /ag-c3-face-guide-mouth-line/.test(src)],
+            ['face guides reuse same skeleton', /makeFaceGuideMesh\(geometry,material,skeleton,bindMatrix,headIndex,name\)/.test(src) && /mesh\.bind\(skeleton,bindMatrix\)/.test(src)],
+            ['front direction remains configurable', /frontSign=1/.test(src) && /const sign=frontSign<0\?-1:1/.test(src)]
           ];
           let failed=false;
           for(const [name,ok] of checks){
