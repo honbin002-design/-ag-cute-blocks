@@ -4,19 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>AG 成年女性 Special3 八方向驗收</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f3f0ea;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;color:#2b2927}*{box-sizing:border-box}#app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}.top{padding:max(12px,env(safe-area-inset-top)) 14px 8px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid rgba(0,0,0,.08)}h1{font-size:18px;margin:0 0 4px}.sub{font-size:12px;line-height:1.4;opacity:.7}#status{font-size:12px;margin-top:4px;font-weight:650}#viewer{min-height:0;position:relative}.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 12px max(12px,env(safe-area-inset-bottom));background:rgba(255,255,255,.88);backdrop-filter:blur(14px);border-top:1px solid rgba(0,0,0,.08)}button{min-height:44px;border:1px solid rgba(0,0,0,.14);border-radius:12px;background:white;font-size:12px;font-weight:650;color:#2b2927}button.active{outline:2px solid #222;outline-offset:-3px;background:#f5f2ed}canvas{display:block;width:100%;height:100%;touch-action:none}
 </style>
 </head>
 <body>
 <div id="app">
-<div class="top"><h1>成年女性｜Special3 GLB 八方向驗收</h1><div class="sub">正式基底：測試角色3。比對長捲髮、白色上衣、淺色長褲、成年女性身形與八方向輪廓。</div><div id="status">準備載入…</div></div>
+<div class="top"><h1>成年女性｜Special3 GLB 八方向驗收</h1><div class="sub">V0.4.80｜正式基底：測試角色3。比對長捲髮、白色上衣、淺色長褲、成年女性身形與八方向輪廓。</div><div id="status">準備載入…</div></div>
 <div id="viewer"></div>
 <div class="controls">
 <button class="active" data-view="0">正面 0°</button><button data-view="-45">右前 45°</button><button data-view="-90">右側 90°</button><button data-view="-135">右後 135°</button>
 <button data-view="180">背面 180°</button><button data-view="135">左後 225°</button><button data-view="90">左側 270°</button><button data-view="45">左前 315°</button>
 </div>
 </div>
-<script type="module" src="./adult-female-special3-visual-review.js?v=0.4.79"></script>
+<script type="module" src="./adult-female-special3-visual-review.js?v=0.4.80"></script>
 </body>
 </html>
