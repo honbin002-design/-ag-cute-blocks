@@ -34,8 +34,12 @@ jobs:
               errors.append('v052 source Jump clip not confirmed')
 
           # Manus5 candidate must retain the shared 49-joint rig and the known missing clips.
-          if '49 joints' not in dst:
-              errors.append('Manus5 49-joint rig not confirmed')
+          unique_joints = re.search(r'- Unique joints across skins:\s*(\d+)', dst)
+          skin_joint_count = re.search(r'\|\s*0\s*\|\s*Chibi_49_Bone_Rig\s*\|\s*(\d+)\s*\|', dst)
+          if not unique_joints or int(unique_joints.group(1)) != 49:
+              errors.append('Manus5 unique joint count is not 49')
+          if not skin_joint_count or int(skin_joint_count.group(1)) != 49:
+              errors.append('Manus5 skin joint count is not 49')
           if '- Run: False' not in dst or '- Jump: False' not in dst:
               errors.append('Manus5 missing Run/Jump state changed; re-review required')
 
@@ -71,7 +75,7 @@ jobs:
 
           print('RETARGET CONTRACT: PASS')
           print('Source Run/Jump: confirmed in v052 baseline')
-          print('Target rig: Manus5 49-joint baseline confirmed')
+          print('Target rig: Manus5 49-joint baseline confirmed from report fields')
           print('Shoulder compensation: left/right independent')
           print('Important target joints: present')
           print('NOTE: this is structural/offline validation only; visual motion is not yet PASS')
