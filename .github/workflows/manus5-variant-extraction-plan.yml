@@ -1,0 +1,79 @@
+name: Manus5 variant extraction plan
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'assets/characters/manus5/**'
+      - '.github/workflows/manus5-variant-extraction-plan.yml'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build extraction feasibility report
+        shell: python
+        run: |
+          import json,pathlib,struct,datetime,collections
+          root=pathlib.Path('assets/characters/manus5')
+          data=b''.join((root/f'chibi_8_variants_rigged.glb.part{i:03d}').read_bytes() for i in range(16))
+          off=12; doc=None
+          while off+8<=len(data):
+            n,t=struct.unpack_from('<I4s',data,off); off+=8
+            chunk=data[off:off+n]; off+=n
+            if t==b'JSON': doc=json.loads(chunk.rstrip(b' \t\r\n\x00').decode()); break
+          assert doc
+          nodes=doc.get('nodes',[]); meshes=doc.get('meshes',[]); accessors=doc.get('accessors',[]); views=doc.get('bufferViews',[]); materials=doc.get('materials',[]); textures=doc.get('textures',[]); images=doc.get('images',[])
+          parents=collections.defaultdict(list)
+          for i,node in enumerate(nodes):
+            for c in node.get('children',[]): parents[c].append(i)
+          variants=[]
+          for i,n in enumerate(nodes):
+            name=str(n.get('name',''))
+            if name.startswith('CHARACTER_'):
+              descendants=[]; stack=list(n.get('children',[]))
+              while stack:
+                x=stack.pop(); descendants.append(x); stack.extend(nodes[x].get('children',[]))
+              mesh_ids=sorted({nodes[x]['mesh'] for x in descendants if 'mesh' in nodes[x]})
+              mesh_names=[meshes[m].get('name',f'mesh_{m}') for m in mesh_ids]
+              mat_ids=set(); accessor_ids=set(); view_ids=set()
+              for m in mesh_ids:
+                for prim in meshes[m].get('primitives',[]):
+                  if 'material' in prim: mat_ids.add(prim['material'])
+                  for a in prim.get('attributes',{}).values(): accessor_ids.add(a)
+                  if 'indices' in prim: accessor_ids.add(prim['indices'])
+                  for target in prim.get('targets',[]): accessor_ids.update(target.values())
+              for a in accessor_ids:
+                if 0<=a<len(accessors) and 'bufferView' in accessors[a]: view_ids.add(accessors[a]['bufferView'])
+              geom_bytes=sum(int(views[v].get('byteLength',0)) for v in view_ids if 0<=v<len(views))
+              variants.append((i,name,len(descendants),mesh_ids,mesh_names,sorted(mat_ids),geom_bytes))
+          lines=['# Manus5 Per-Variant Extraction Feasibility','',f'Generated: {datetime.datetime.now(datetime.timezone.utc).isoformat()}','', '> Analysis only. No runtime activation and no replacement of the current v052 characters.','',f'- Source bundle: {len(data)/1024/1024:.2f} MiB','- Shared skeleton: 49 joints (from candidate baseline)','- Shared animation clips: Idle_Breathing, Wave, Walk_Cycle','- Missing production locomotion: Run, Jump','', '## Variant containers','', '| Variant | Descendant nodes | Meshes | Materials | Approx referenced geometry bytes | Mesh parts |','|---|---:|---:|---:|---:|---|']
+          for _,name,nd,mids,mnames,mats,gbytes in variants:
+            lines.append(f'| {name} | {nd} | {len(mids)} | {len(mats)} | {gbytes} | '+', '.join(mnames)+' |')
+          all_mesh_sets=[set(v[3]) for v in variants]
+          overlap=[]
+          for a in range(len(all_mesh_sets)):
+            for b in range(a+1,len(all_mesh_sets)):
+              common=all_mesh_sets[a]&all_mesh_sets[b]
+              if common: overlap.append((a+1,b+1,sorted(common)))
+          lines += ['', '## Separation assessment','']
+          if len(variants)==8 and not overlap:
+            lines += ['EXTRACTION STRUCTURE: GOOD', '', '- Exactly 8 named top-level character containers were found.', '- Their character mesh sets do not overlap, so per-variant visual extraction is structurally clean.', '- All variants can continue to reference the one shared 49-joint skeleton and a shared animation library.', '- Do not ship the original 59.31 MiB showcase bundle to iPhone runtime. Build per-variant files and deduplicate/shared-compress textures/animations instead.']
+          else:
+            lines += ['EXTRACTION STRUCTURE: NEEDS REVIEW', '', f'- Named variant containers found: {len(variants)}', f'- Cross-variant mesh overlaps: {overlap}']
+          lines += ['', '## Production recommendation','', '1. Preserve current V0.5.88 runtime and v052 characters as rollback.', '2. Extract one Manus5 variant first as a candidate, not all eight at once.', '3. Retarget or add Run and Jump to the shared 49-joint rig before gameplay promotion.', '4. Measure the extracted candidate size and iPhone load/memory behavior.', '5. Only after one variant passes visual + locomotion + mobile performance validation should the remaining seven be batch-extracted.', '', 'FINAL CHARACTER ART: NOT CLAIMED.']
+          pathlib.Path('MANUS5_VARIANT_EXTRACTION_PLAN.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+      - name: Commit report
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add MANUS5_VARIANT_EXTRACTION_PLAN.md
+          git diff --cached --quiet || (git commit -m 'docs: refresh manus5 variant extraction plan' && git push origin HEAD:dev-v0.1)
