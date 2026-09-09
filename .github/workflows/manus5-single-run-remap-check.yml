@@ -1,0 +1,81 @@
+name: Manus5 Single Run Remap Check
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/manus5-single-run-remap-check.yml'
+      - 'assets/characters/general/**'
+      - 'assets/characters/manus5/**'
+  workflow_dispatch:
+
+jobs:
+  run-remap-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build single-character Run remap manifest
+        shell: python
+        run: |
+          import json, pathlib, struct
+
+          def glb_doc(data):
+            if data[:4] != b'glTF':
+              raise SystemExit('invalid GLB')
+            off=12
+            while off+8 <= len(data):
+              ln,typ=struct.unpack_from('<I4s',data,off); off+=8
+              chunk=data[off:off+ln]; off+=ln
+              if typ==b'JSON':
+                return json.loads(chunk.rstrip(b' \t\r\n\x00').decode())
+            raise SystemExit('missing JSON chunk')
+
+          boy=b''.join((pathlib.Path('assets/characters/general')/f'boy.v052.glb.part{i:03d}').read_bytes() for i in range(2))
+          manus=b''.join((pathlib.Path('assets/characters/manus5')/f'chibi_8_variants_rigged.glb.part{i:03d}').read_bytes() for i in range(16))
+          s=glb_doc(boy); t=glb_doc(manus)
+          sn=s.get('nodes',[]); tn=t.get('nodes',[])
+          anim=next((a for a in s.get('animations',[]) if str(a.get('name','')).lower()=='run'),None)
+          if not anim: raise SystemExit('Run clip missing in source')
+
+          mapn={
+            'Hips':'pelvis','Spine':'spine_01','Chest':'chest','Neck':'neck','Head':'head',
+            'LeftUpperArm':'upperarm_L','LeftLowerArm':'lowerarm_L','LeftHand':'hand_L',
+            'RightUpperArm':'upperarm_R','RightLowerArm':'lowerarm_R','RightHand':'hand_R',
+            'LeftUpperLeg':'thigh_L','LeftLowerLeg':'shin_L','LeftFoot':'foot_L',
+            'RightUpperLeg':'thigh_R','RightLowerLeg':'shin_R','RightFoot':'foot_R',
+          }
+          fingers={'Thumb':'thumb','Index':'index','Middle':'middle','Ring':'ring','Little':'pinky'}
+          for side_src,side_dst in [('Left','L'),('Right','R')]:
+            for src,dst in fingers.items():
+              for i in range(1,4): mapn[f'{side_src}Hand{src}{i}']=f'{dst}_{i:02d}_{side_dst}'
+
+          target_names={n.get('name','') for n in tn}
+          rows=[]; missing=[]; shoulders=[]
+          for ch in anim.get('channels',[]):
+            node=ch.get('target',{}).get('node')
+            path=ch.get('target',{}).get('path','')
+            if node is None or node>=len(sn): continue
+            src=sn[node].get('name',f'node_{node}')
+            if src=='LeftShoulder':
+              dst='upperarm_L'; mode='compose-rotation-into-upperarm'; shoulders.append(src)
+            elif src=='RightShoulder':
+              dst='upperarm_R'; mode='compose-rotation-into-upperarm'; shoulders.append(src)
+            else:
+              dst=mapn.get(src); mode='direct'
+            ok=bool(dst and dst in target_names)
+            rows.append((src,path,dst or '-',mode,ok))
+            if not ok: missing.append((src,path))
+
+          out=['# Manus5 Single Run Remap Manifest','','Target variant: `CHARACTER_01_01_Ruby_Ranger`','Source clip: `boy.v052 / Run`','','| Source track | Path | Target joint | Mode | Mapped |','|---|---|---|---|---|']
+          for r in rows: out.append(f'| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {"YES" if r[4] else "NO"} |')
+          out += ['',f'- Source channels: {len(rows)}',f'- Unmapped channels: {len(missing)}',f'- Shoulder compensation tracks seen: {len(set(shoulders))} / 2','', 'STATUS: '+('PASS' if not missing and len(set(shoulders))==2 else 'FAIL')]
+          pathlib.Path('MANUS5_SINGLE_RUN_REMAP_REPORT.md').write_text('\n'.join(out)+'\n',encoding='utf-8')
+          print('\n'.join(out[-5:]))
+          if missing or len(set(shoulders))!=2:
+            raise SystemExit(1)
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manus5-single-run-remap-report
+          path: MANUS5_SINGLE_RUN_REMAP_REPORT.md
