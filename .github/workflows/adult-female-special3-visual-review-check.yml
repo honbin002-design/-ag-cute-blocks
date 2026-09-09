@@ -22,6 +22,7 @@ jobs:
           grep -Fq "look:'chibi-long-curled-hair-white-top-light-pants-v1'" adult-female-special3-visual-review.js
           grep -Fq "views:[0,-45,-90,-135,180,135,90,45]" adult-female-special3-visual-review.js
           grep -Fq "agcb-adult-female-long-curled-hair-review-v1" adult-female-special3-visual-review.js
-          grep -Fq "V0.4.79｜Special3 GLB 成年女性候選｜八方向驗收" adult-female-special3-visual-review.js
-          grep -Fq "adult-female-special3-visual-review.js?v=0.4.79" adult-female-special3-visual-review.html
+          grep -Fq "V0.4.80｜Special3 GLB 成年女性候選｜八方向驗收" adult-female-special3-visual-review.js
+          grep -Fq "adult-female-special3-visual-review.js?v=0.4.80" adult-female-special3-visual-review.html
+          grep -Fq '"three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"' adult-female-special3-visual-review.html
           for deg in '0' '-45' '-90' '-135' '180' '135' '90' '45'; do grep -Fq "data-view=\"$deg\"" adult-female-special3-visual-review.html; done
