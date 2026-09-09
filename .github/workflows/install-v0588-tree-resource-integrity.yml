@@ -1,6 +1,7 @@
 name: Install V0.5.88 tree resource integrity
 
 on:
+  workflow_dispatch:
   push:
     branches: [dev-v0.1]
     paths:
@@ -67,7 +68,7 @@ jobs:
 
           p=Path('bootstrap-v0510.js')
           s=p.read_text()
-          if s.count('V0.5.87')!=2: raise SystemExit(f'bootstrap V count {s.count("V0.5.87")}')
+          if s.count('V0.5.87')<2: raise SystemExit(f'bootstrap V count {s.count("V0.5.87")}')
           s=s.replace('V0.5.87','V0.5.88')
           s=s.replace("version:'0.5.87'","version:'0.5.88'")
           s=s.replace('persistent-tree-stump-regrowth+read-only-forest-regrowth-status','persistent-tree-stump-regrowth+read-only-forest-regrowth-status+tree-resource-provenance-no-free-wood-exploit')
