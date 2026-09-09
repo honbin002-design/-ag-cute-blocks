@@ -8,6 +8,23 @@ Scope: first production stage only — Head + Face. Hair is explicitly excluded 
 ## Goal
 Replace the mannequin-like head/face appearance with the adult-female target while preserving the exact Technical Base rig, animation binding, gameplay wiring and third-person camera behavior.
 
+## Verified UAL3 structure decision
+- Runtime explicitly confirms the existing head animation target uses bone name `Head`.
+- The validated UAL3 asset contract is 1 skin / 65 joints / 1 mesh at the character level.
+- Because the current source is a single skinned character mesh rather than a known independent head mesh, direct runtime deletion/replacement of a standalone old-head object is NOT assumed safe.
+- Exact source-GLB neck bone spelling is not hard-coded here until binary node inspection can prove it; implementation must resolve the neck parent from the actual `Head` node hierarchy rather than guess a name.
+
+### First-version replacement route — LOCKED
+Use **local old-head masking/occlusion + a new true Skinned Head bound to the same UAL3 skeleton** as the first implementation route.
+
+This route is chosen because:
+1. it preserves the already-PASS Technical Base;
+2. it does not assume the old mannequin head exists as a removable independent mesh;
+3. it allows the new head to be genuinely driven by the existing `Head`/neck chain rather than acting as a rigid visual overlay;
+4. it can later be upgraded to direct geometry replacement if the source mesh is proven to expose a safe head-only primitive/material region.
+
+Direct replacement is allowed later only after source-mesh inspection proves a separable head region without damaging body skinning. Until then, do not delete vertices/material groups by guesswork.
+
 ## Hard constraints
 - Keep the existing UAL3 skeleton and current joint hierarchy unchanged.
 - Do not create a second character rig.
@@ -21,7 +38,7 @@ Replace the mannequin-like head/face appearance with the adult-female target whi
 Type: independent SkinnedMesh bound to the same UAL3 skeleton.
 Primary influences:
 - `Head`: dominant influence for cranium, face, ears and jaw surface.
-- existing neck joint(s): limited blending only around lower skull / neck seam.
+- actual parent neck joint resolved from `Head.parent`: limited blending only around lower skull / neck seam.
 
 Rules:
 - Keep a continuous, closed neck opening aligned to the Technical Base neck.
@@ -64,20 +81,22 @@ Rules:
 
 ## Coordinate / attachment contract
 1. Load/clone the existing UAL3 Technical Base exactly as today.
-2. Resolve the existing `Head` and neck joint(s) from that cloned skeleton.
-3. Bind the new head SkinnedMesh to that same skeleton instance (preferred) or a verified clone with identical bone names/order/transforms.
-4. Face child meshes, if separated, must live under the same head local coordinate space and inherit Head motion directly.
-5. Existing root normalization / forwardYaw / gameplay animation mixer remain untouched.
+2. Resolve the existing `Head` node by exact name.
+3. Resolve the neck joint from the real hierarchy (`Head.parent`) instead of guessing a fixed neck string.
+4. Bind the new head SkinnedMesh to that same skeleton instance (preferred) or a verified clone with identical bone names/order/transforms.
+5. Face child meshes, if separated, must live under the same head local coordinate space and inherit Head motion directly.
+6. Existing root normalization / forwardYaw / gameplay animation mixer remain untouched.
 
 ## Old-head handling
 - Do not delete the original Technical Base asset.
-- For the appearance test, the old mannequin head geometry may be hidden/masked only after the replacement head is confirmed bound to the same rig.
+- First version uses localized old-head masking/occlusion only after the replacement head is confirmed bound to the same rig.
 - Never hide the entire mannequin body and overlay a non-skinned decorative character.
-- If the source GLB exposes the head only as part of one combined SkinnedMesh, the first test may use a conservative visual mask/occlusion strategy, but the target remains a true replacement skinned head, not a permanent overlay cheat.
+- The mask must be restricted to the old visible head/face region; neck/body skinning remains active.
+- If later binary mesh inspection proves a separate head primitive/material/vertex region, a proper direct geometry replacement may supersede the mask.
 
 ## Weighting guidance
-- Cranium / face: approximately Head-dominant.
-- Lower skull / upper neck seam: smooth blend between Head and neck only where required.
+- Cranium / face: Head-dominant.
+- Lower skull / upper neck seam: smooth blend between Head and the actual parent neck joint only where required.
 - Do not assign spine/arm weights to the face.
 - Keep the neck seam topology dense enough to avoid tearing when looking up/down/left/right.
 
@@ -96,6 +115,7 @@ This Head + Face stage may advance to Hair only when all are true:
 5. No shoulder/arm/body technical behavior changes.
 6. Existing Interact / Fish / Sit / Sleep capability remains wired.
 7. Existing third-person close camera still works.
+8. Local old-head mask does not hide neck/body geometry or create a visible double-head silhouette.
 
 ## Explicit non-goals for this stage
 - no hair production
