@@ -60,7 +60,6 @@ function styleAdultFemale(root){
   if(chest)chest.scale.x*=1.035;
   if(hips)hips.scale.x*=1.055;
 
-  // Non-destructive curled-hair silhouette layer used by the playable candidate.
   const hair=new THREE.Group();hair.name='agcb-adult-female-long-curled-hair-review-v1';
   const mat=new THREE.MeshStandardMaterial({color:0x65463b,roughness:.82,metalness:0});
   const strands=[[-.26,1.36,.03,-.15],[-.31,1.16,.06,-.23],[-.27,.96,.10,-.31],[.26,1.36,.03,.15],[.31,1.16,.06,.23],[.27,.96,.10,.31]];
@@ -96,8 +95,8 @@ try{
   const gltf=await loadBase64Gltf();
   character=styleAdultFemale(gltf.scene);
   character.name='agcb-special3-adult-female-eight-view';
-  character.rotation.y=0;scene.add(character);fit();setView(0);status.textContent='V0.4.79｜Special3 GLB 成年女性候選｜八方向驗收';
+  character.rotation.y=0;scene.add(character);fit();setView(0);status.textContent='V0.4.80｜Special3 GLB 成年女性候選｜八方向驗收';
 }catch(err){console.error(err);status.textContent='模型載入失敗：'+err.message;}
 renderer.setAnimationLoop(()=>renderer.render(scene,camera));
 
-globalThis.__AGCB_ADULT_FEMALE_SPECIAL3_VISUAL_REVIEW={version:1,base:'Meshy_AI_Meshy_Merged_Animations.glb',views:[0,-45,-90,-135,180,135,90,45],look:'chibi-long-curled-hair-white-top-light-pants-v1',loaded:true};
+globalThis.__AGCB_ADULT_FEMALE_SPECIAL3_VISUAL_REVIEW={version:2,displayVersion:'V0.4.80',base:'Meshy_AI_Meshy_Merged_Animations.glb',views:[0,-45,-90,-135,180,135,90,45],look:'chibi-long-curled-hair-white-top-light-pants-v1',loaded:true};
