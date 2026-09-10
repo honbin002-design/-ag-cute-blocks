@@ -39,35 +39,21 @@ jobs:
             stage='goto';
             await page.addInitScript(()=>localStorage.setItem('ag_cute_blocks_test_character_v1','ual3'));
             await page.goto('http://127.0.0.1:8000/index.html?v=0.5.89',{waitUntil:'domcontentloaded',timeout:120000});
-            stage='bootstrap';
-            await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.89',{timeout:30000});
-            stage='runtime';
-            await page.waitForFunction(()=>globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate==='018',{timeout:30000});
-            stage='player';
-            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:30000});
-            stage='select';
-            await page.evaluate(async()=>{await globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select('ual3')});
-            stage='mappedBones';
-            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones>=48,{timeout:60000});
-            stage='thirdPerson';
-            await page.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.textContent||'').includes('第一人稱')); if(b)b.click()});
-            await page.waitForTimeout(700);
+            stage='bootstrap'; await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.89',{timeout:30000});
+            stage='runtime'; await page.waitForFunction(()=>globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate==='018',{timeout:30000});
+            stage='player'; await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:30000});
+            stage='select'; await page.evaluate(async()=>{await globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select('ual3')});
+            stage='mappedBones'; await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones>=48,{timeout:60000});
+            stage='thirdPerson'; await page.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.textContent||'').includes('第一人稱')); if(b)b.click()}); await page.waitForTimeout(700);
             stage='idle'; states.idle=await snap(); await shot('idle');
-            stage='walk';
-            for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.02});await page.waitForTimeout(35)}
-            states.walk=await snap(); await shot('walk');
+            stage='walk'; for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.02});await page.waitForTimeout(35)} states.walk=await snap(); await shot('walk');
             stage='stop'; await page.waitForTimeout(350); states.stop=await snap();
-            stage='run';
-            await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.userData.motion='run'});
-            for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.025});await page.waitForTimeout(35)}
-            states.run=await snap(); await shot('run');
-            stage='jump';
-            await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.userData.motion='';globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force('jump',850);p.position.y+=0.08});
-            await page.waitForTimeout(120); states.jumpEarly=await snap(); await shot('jump');
-            stage='jumpHold'; await page.waitForTimeout(450); states.jumpHold=await snap();
-            stage='land';
-            await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.y-=0.08});
-            await page.waitForTimeout(650); states.afterLand=await snap(); await shot('land');
+            stage='run'; await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.userData.motion='run'}); for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.025});await page.waitForTimeout(35)} states.run=await snap(); await shot('run');
+            stage='jump'; await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.userData.motion='';globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force('jump',850);p.position.y+=0.08});
+            await page.waitForTimeout(120); states.jumpEarly=await snap();
+            await page.waitForTimeout(220); states.jumpHold=await snap();
+            await shot('jump');
+            stage='land'; await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.y-=0.08}); await page.waitForTimeout(700); states.afterLand=await snap(); await shot('land');
             stage='done';
           }catch(e){fatal=`${stage}: ${String(e)}`;await shot(`fatal-${stage}`)}
           const report={stage,fatal,states,consoleErrors,pageErrors,failedRequests:failedRequests.filter(x=>!x.url.includes('favicon'))};
