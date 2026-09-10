@@ -99,7 +99,7 @@ jobs:
           loader=pathlib.Path('app-v0504-fixed-loader.js').read_text(encoding='utf-8')
           core=pathlib.Path('app-v0504.js').read_text(encoding='utf-8')
           failures=[]
-          for token in ["import './app-v0504-fixed-loader.js'","base:'0.5.04'","rollbackBase:'0.5.03'","versionOwner:'bootstrap-v0510.js'"]:
+          for token in ["import './app-v0504-fixed-loader.js'","base:'0.5.04'","rollbackBase:'0.5.03'","versionOwner:'release-version-v0593.js'"]:
             if token not in wrapper: failures.append(f'wrapper recovery contract missing: {token}')
           for token in ["new URL('./app-v0504.js',import.meta.url)",'syncActionLabels-tdz-defer','legacy-doubletap-blocker-suppress','legacy-blanket-multitouch-suppress','queueMicrotask(syncActionLabels)','if(count!==1)','applied.push(patch.id)','legacyBlanketTouchBlockerSuppressed:true','legacyDoubleTapBlockerSuppressed:true','await import(blobUrl)','__AGCB_V0504_FIXED']:
             if token not in loader: failures.append(f'guarded loader missing: {token}')
@@ -127,7 +127,7 @@ jobs:
           for name in ['fishing-ecology-runtime-v0505.js','fishing-forecast-runtime-v0506.js','fishing-journal-runtime-v0510.js']:
             if f'{name}?v={v}' not in boot: failures.append(f'bootstrap wiring missing: {name}?v={v}')
           if f"const release='{expected}'" not in boot: failures.append('bootstrap release owner mismatch')
-          if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('wrapper must defer visible version ownership to bootstrap')
+          if "versionOwner:'release-version-v0593.js'" not in wrapper: failures.append('wrapper must identify the active release-version owner')
           if failures:
             print('\n'.join(failures));sys.exit(1)
           print(f'Fishing ecology + forecast + journal wiring passed for {expected}.')
