@@ -81,9 +81,11 @@ jobs:
           const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
           const page=await browser.newPage({viewport:{width:1080,height:2300},deviceScaleFactor:1});
           page.setDefaultTimeout(120000);
-          const errors=[]; const consoleMessages=[];
+          const errors=[]; const consoleMessages=[]; const httpErrors=[];
           page.on('console',m=>{consoleMessages.push(`[${m.type()}] ${m.text()}`);if(m.type()==='error')errors.push(m.text())});
           page.on('pageerror',e=>errors.push(String(e)));
+          page.on('requestfailed',req=>httpErrors.push({kind:'requestfailed',method:req.method(),url:req.url(),failure:req.failure()?.errorText||null}));
+          page.on('response',res=>{if(res.status()>=400)httpErrors.push({kind:'http',status:res.status(),url:res.url()});});
           let diag=null; let waitError=null;
           try {
             await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});
@@ -93,15 +95,15 @@ jobs:
             waitError=String(e);
           }
           const statusText=await page.locator('#status').textContent().catch(()=>null);
-          fs.writeFileSync('/tmp/c018render/candidate018-page-errors.json',JSON.stringify({waitError,statusText,errors,consoleMessages},null,2));
+          fs.writeFileSync('/tmp/c018render/candidate018-page-errors.json',JSON.stringify({waitError,statusText,errors,consoleMessages,httpErrors},null,2));
           await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion-debug.png',fullPage:true}).catch(()=>{});
           if(diag){
-            fs.writeFileSync('/tmp/c018render/candidate018-mesh-motion-report.json',JSON.stringify({...diag,consoleErrors:errors},null,2));
+            fs.writeFileSync('/tmp/c018render/candidate018-mesh-motion-report.json',JSON.stringify({...diag,consoleErrors:errors,httpErrors},null,2));
             await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion.png',fullPage:true});
           }
           await browser.close();
-          if(waitError){console.error(waitError);console.error(JSON.stringify({statusText,errors,consoleMessages},null,2));process.exit(4);}
-          if(errors.length){console.error(errors);process.exit(2);}
+          if(waitError){console.error(waitError);console.error(JSON.stringify({statusText,errors,consoleMessages,httpErrors},null,2));process.exit(4);}
+          if(errors.length||httpErrors.length){console.error(JSON.stringify({errors,httpErrors},null,2));process.exit(2);}
           if(!diag?.diagnostics?.every(x=>x.finite&&x.mappedBones>=48))process.exit(3);
           JS
       - name: Render six representative full-mesh poses
@@ -112,8 +114,13 @@ jobs:
           SERVER=$!
           trap 'kill $SERVER || true' EXIT
           sleep 2
+          set +e
           node capture.mjs
-          cat candidate018-mesh-motion-report.json
+          RC=$?
+          set -e
+          cat /tmp/c018-http.log || true
+          [ -f candidate018-mesh-motion-report.json ] && cat candidate018-mesh-motion-report.json || true
+          exit $RC
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -123,6 +130,7 @@ jobs:
             /tmp/c018render/candidate018-mesh-motion-debug.png
             /tmp/c018render/candidate018-mesh-motion-report.json
             /tmp/c018render/candidate018-page-errors.json
+            /tmp/c018-http.log
             /tmp/c018render/sources.sha256
             /tmp/c018render/UAL1_LICENSE.txt
           retention-days: 3
