@@ -1,0 +1,23 @@
+name: Build History Gate
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  build-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: node --check build-history-runtime-v0596.js
+      - name: Verify safe scope and wiring
+        run: |
+          grep -q "SAFE_BUILD_ONLY" build-history-runtime-v0596.js
+          grep -q "SAFE_OBJECT_TYPES" build-history-runtime-v0596.js
+          grep -q "build-history-runtime-v0596.js?v=0.5.96" bootstrap-v0510.js
+          grep -q "const release='V0.5.96'" bootstrap-v0510.js
+          grep -q "release-version-v0596.js" app-v0510.js
+          ! grep -q "MutationObserver" build-history-runtime-v0596.js || grep -q "No MutationObserver" build-history-runtime-v0596.js
