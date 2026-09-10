@@ -1,4 +1,4 @@
-name: Save Environment Bound Gate V0.5.104
+name: Save Environment Bound Gate
 on:
   push:
     branches: [dev-v0.1]
@@ -18,26 +18,35 @@ jobs:
           node --check save-drive-contract-v05100.js
           node --check save-drive-bridge-v05103.js
           node --check test-drive-backup-setup-v05104.js
-      - name: Validate isolation and backward compatibility
+      - name: Validate isolation, compatibility and current-release binding
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           files={p:Path(p).read_text(encoding='utf-8') for p in [
             'save-environment-compat-v05100.js','save-envelope-runtime-v05100.js',
             'save-drive-contract-v05100.js','save-drive-bridge-v05103.js','test-drive-backup-setup-v05104.js']}
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          i=Path('index.html').read_text(encoding='utf-8')
           alltxt='\n'.join(files.values())
           required=[
-            "prod-cannot-read-test-save","test-cannot-read-prod-save","promotion-would-break-existing-prod-save",
-            "environment:env","saveSchema:SAVE_SCHEMA","envelope-environment-mismatch","allowCrossEnvironmentRead:false",
-            "VERIFY_BACKWARD_COMPAT","remote-environment-mismatch","v05103-test-bridge-requires-test-runtime",
-            "AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE"
+            'prod-cannot-read-test-save','test-cannot-read-prod-save','promotion-would-break-existing-prod-save',
+            'environment:env','saveSchema:SAVE_SCHEMA','envelope-environment-mismatch','allowCrossEnvironmentRead:false',
+            'VERIFY_BACKWARD_COMPAT','remote-environment-mismatch','v05103-test-bridge-requires-test-runtime',
+            'AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE'
           ]
           missing=[x for x in required if x not in alltxt]
           forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true', "action:'RESTORE'", "action:'DELETE'"]
           bad=[x for x in forbidden if x in alltxt]
-          if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "version:'0.5.104'" not in b: missing.append('V0.5.104 TEST bootstrap binding')
-          if "./test-drive-backup-setup-v05104.js?v=0.5.104" not in b: missing.append('V0.5.104 TEST Drive setup wiring')
+          m=re.search(r'bootstrap-v0510\.js\?v=([0-9.]+)',i)
+          if not m: missing.append('current bootstrap version in index')
+          else:
+              v=m.group(1)
+              if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b: missing.append('TEST runtime binding')
+              if f"version:'{v}'" not in b: missing.append('bootstrap version binding')
+              if f'./test-drive-backup-setup-v05104.js?v={v}' not in b: missing.append('TEST Drive setup current cache query')
+              for name in ['save-environment-compat-v05100.js','save-envelope-runtime-v05100.js','save-drive-contract-v05100.js','save-drive-bridge-v05103.js']:
+                  if f'./{name}?v={v}' not in b: missing.append(name+' current cache query')
           if missing or bad: raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
-          print('V0.5.104 environment-bound save isolation, authenticated TEST backup and setup UI validated.')
+          print('Environment-bound save isolation and TEST Drive setup stay bound to the current release without version pin drift.')
           PY
