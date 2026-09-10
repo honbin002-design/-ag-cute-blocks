@@ -20,9 +20,9 @@ jobs:
           cache: npm
           cache-dependency-path: model-authoring/model003-adult-female-candidate/package-lock.json
       - run: npm ci --ignore-scripts
-      - run: node --check build-v0502-source.mjs
+      - run: node --check build-v0502-source.mjs && node --check build-v0503-refine.mjs
       - name: Build independent GLB
-        run: node build-v0502-source.mjs
+        run: node build-v0503-refine.mjs
       - name: Khronos glTF Validator
         run: node validate.mjs
       - name: Reload exported GLB
@@ -31,20 +31,20 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check numpy pillow
           python render-qa.py
-          python relabel-v0502.py
+          python relabel-v0503.py
       - name: Keep candidate detached from live game
         working-directory: .
         run: |
           set -euo pipefail
           ! grep -Fq "model003-adult-female-candidate" bootstrap-v045.js
-          grep -Fq "INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED" model-authoring/model003-adult-female-candidate/build-v0502-source.mjs
-          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-009-eight-view.png
+          grep -Fq "INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED" model-authoring/model003-adult-female-candidate/build-v0503-refine.mjs
+          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-010-eight-view.png
       - uses: actions/upload-artifact@v4
         with:
-          name: model003-adult-female-candidate-009-v0.5.02
+          name: model003-adult-female-candidate-010-v0.5.03
           path: |
-            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_009.glb
+            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_010.glb
             model-authoring/model003-adult-female-candidate/output/*report.json
             model-authoring/model003-adult-female-candidate/output/*manifest.json
-            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-009-*.png
+            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-010-*.png
           retention-days: 7
