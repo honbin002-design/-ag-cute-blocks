@@ -1,4 +1,4 @@
-name: Save Environment Bound Gate V0.5.100
+name: Save Environment Bound Gate V0.5.102
 on:
   push:
     branches: [dev-v0.1]
@@ -16,32 +16,26 @@ jobs:
           node --check save-environment-compat-v05100.js
           node --check save-envelope-runtime-v05100.js
           node --check save-drive-contract-v05100.js
-          node --check save-drive-bridge-v05100.js
+          node --check save-drive-bridge-v05102.js
       - name: Validate isolation and backward compatibility
         run: |
           python - <<'PY'
           from pathlib import Path
           files={p:Path(p).read_text(encoding='utf-8') for p in [
             'save-environment-compat-v05100.js','save-envelope-runtime-v05100.js',
-            'save-drive-contract-v05100.js','save-drive-bridge-v05100.js']}
+            'save-drive-contract-v05100.js','save-drive-bridge-v05102.js']}
+          b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           alltxt='\n'.join(files.values())
           required=[
-            "const VERSION='0.5.100'",
-            "prod-cannot-read-test-save",
-            "test-cannot-read-prod-save",
-            "promotion-would-break-existing-prod-save",
-            "environment:env",
-            "saveSchema:SAVE_SCHEMA",
-            "envelope-environment-mismatch",
-            "allowCrossEnvironmentRead:false",
-            "VERIFY_BACKWARD_COMPAT",
-            "pre-update-prod-backup-requires-prod-runtime",
-            "remote-environment-mismatch"
+            "prod-cannot-read-test-save","test-cannot-read-prod-save","promotion-would-break-existing-prod-save",
+            "environment:env","saveSchema:SAVE_SCHEMA","envelope-environment-mismatch","allowCrossEnvironmentRead:false",
+            "VERIFY_BACKWARD_COMPAT","remote-environment-mismatch","v05102-test-bridge-requires-test-runtime",
+            "AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE"
           ]
           missing=[x for x in required if x not in alltxt]
-          forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true']
+          forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true', "action:'RESTORE'", "action:'DELETE'"]
           bad=[x for x in forbidden if x in alltxt]
-          if missing or bad:
-            raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
-          print('V0.5.100 environment-bound save isolation and backward compatibility foundation validated.')
+          if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "version:'0.5.102'" not in b: missing.append('V0.5.102 TEST bootstrap binding')
+          if missing or bad: raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
+          print('V0.5.102 environment-bound save isolation and authenticated TEST backup foundation validated.')
           PY
