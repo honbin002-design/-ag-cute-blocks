@@ -13,14 +13,28 @@ jobs:
           node-version: '22'
       - name: Syntax check
         run: node --check build-history-runtime-v0597.js
-      - name: Verify conflict-safe scope and wiring
+      - name: Verify conflict-safe scope and current-release wiring
         run: |
-          grep -q "CONFLICT_SAFE_BUILD_ONLY" build-history-runtime-v0597.js
-          grep -q "SAFE_OBJECT_TYPES" build-history-runtime-v0597.js
-          grep -q "verifyExpected" build-history-runtime-v0597.js
-          grep -q "verifyAbsent" build-history-runtime-v0597.js
-          grep -q "entity-state-changed" build-history-runtime-v0597.js
-          grep -q "build-history-runtime-v0597.js?v=0.5.104" bootstrap-v0510.js
-          grep -q "const release='V0.5.104'" bootstrap-v0510.js
-          grep -q "release-version-v05104.js" app-v0510.js
-          ! grep -q "new MutationObserver" build-history-runtime-v0597.js
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          h=Path('build-history-runtime-v0597.js').read_text(encoding='utf-8')
+          b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          a=Path('app-v0510.js').read_text(encoding='utf-8')
+          i=Path('index.html').read_text(encoding='utf-8')
+          failures=[]
+          for token in ['CONFLICT_SAFE_BUILD_ONLY','SAFE_OBJECT_TYPES','verifyExpected','verifyAbsent','entity-state-changed']:
+              if token not in h: failures.append('build history missing: '+token)
+          if 'new MutationObserver' in h: failures.append('build history must not create MutationObserver')
+          m=re.search(r'bootstrap-v0510\.js\?v=([0-9.]+)',i)
+          if not m: failures.append('current bootstrap version missing from index')
+          else:
+              v=m.group(1)
+              if f'build-history-runtime-v0597.js?v={v}' not in b: failures.append('build-history current cache query mismatch')
+              if f"const release='V{v}'" not in b: failures.append('bootstrap release owner mismatch')
+              if f"version:'{v}'" not in b: failures.append('bootstrap version mismatch')
+              if f"runtimeVersion:'{v}'" not in a: failures.append('wrapper runtimeVersion mismatch')
+          if "versionOwner:'bootstrap-v0510.js'" not in a: failures.append('wrapper version owner mismatch')
+          if failures: raise SystemExit('\n'.join(failures))
+          print('Conflict-safe Build History remains wired to the current release without version pin drift.')
+          PY
