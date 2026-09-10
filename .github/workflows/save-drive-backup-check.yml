@@ -13,24 +13,24 @@ jobs:
           node-version: '22'
       - name: Syntax check
         run: |
-          node --check save-drive-contract-v0599.js
-          node --check save-drive-bridge-v0599.js
-      - name: Validate fail-closed Drive backup contract
+          node --check save-drive-contract-v05100.js
+          node --check save-drive-bridge-v05100.js
+      - name: Validate environment-bound fail-closed Drive backup contract
         run: |
           python - <<'PY'
           from pathlib import Path
-          c=Path('save-drive-contract-v0599.js').read_text(encoding='utf-8')
-          d=Path('save-drive-bridge-v0599.js').read_text(encoding='utf-8')
+          c=Path('save-drive-contract-v05100.js').read_text(encoding='utf-8')
+          d=Path('save-drive-bridge-v05100.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           failures=[]
-          for token in ["const PROJECT='AG Cute Blocks'","AG Cute Blocks/SAVE/PROD","AG Cute Blocks/SAVE/TEST","test-to-prod-overwrite-forbidden","requireRemoteReadbackVerification:true","preservePreviousProd:true","allowTestToProdOverwrite:false","UPLOAD_PRE_UPDATE","READBACK_PRE_UPDATE","VERIFY_REMOTE"]:
+          for token in ["const VERSION='0.5.100'","const PROJECT='AG Cute Blocks'","AG Cute Blocks/SAVE/PROD","AG Cute Blocks/SAVE/TEST","envelope-environment-mismatch","test-to-prod-overwrite-forbidden","requireRemoteReadbackVerification:true","preservePreviousProd:true","allowCrossEnvironmentRead:false","allowTestToProdOverwrite:false","VERIFY_BACKWARD_COMPAT","UPLOAD_PRE_UPDATE","READBACK_PRE_UPDATE","VERIFY_REMOTE"]:
               if token not in c: failures.append('contract missing: '+token)
-          for token in ["MANUAL_VERIFIED_BACKUP_ONLY_NO_RESTORE","https-endpoint-required","drive-endpoint-not-configured","action:'BACKUP'","action:'READBACK'","remote-sha256-mismatch","preUpdateProdBackup"]:
+          for token in ["const VERSION='0.5.100'","ENV_BOUND_VERIFIED_BACKUP_ONLY_NO_RESTORE","https-endpoint-required","drive-endpoint-not-configured","action:'BACKUP'","action:'READBACK'","remote-environment-mismatch","remote-sha256-mismatch","preUpdateProdBackup"]:
               if token not in d: failures.append('bridge missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', "action:'RESTORE'", 'new MutationObserver']:
               if forbidden in d: failures.append('bridge contains forbidden operation: '+forbidden)
-          if "./save-drive-contract-v0599.js?v=0.5.99" not in b or "./save-drive-bridge-v0599.js?v=0.5.99" not in b: failures.append('bootstrap Drive backup wiring missing')
-          if "verified-drive-backup-bridge" not in b or "version:'0.5.99'" not in b: failures.append('bootstrap target/version mismatch')
+          if "./save-drive-contract-v05100.js?v=0.5.100" not in b or "./save-drive-bridge-v05100.js?v=0.5.100" not in b: failures.append('bootstrap Drive backup wiring missing')
+          if "environment-bound-drive-backup" not in b or "version:'0.5.100'" not in b: failures.append('bootstrap target/version mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('V0.5.99 Drive backup transport is fail-closed, readback-verified, and restore-disabled.')
+          print('V0.5.100 Drive backup is environment-bound, fail-closed, readback-verified, and restore-disabled.')
           PY
