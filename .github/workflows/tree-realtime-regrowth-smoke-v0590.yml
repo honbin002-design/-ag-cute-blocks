@@ -24,7 +24,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run tree and terrain persistence smoke
         run: |
-          cat > /tmp/ag-runtime-smoke.mjs <<'JS'
+          cat > ./ag-runtime-smoke.mjs <<'JS'
           import {chromium} from 'playwright';
           import fs from 'node:fs';
           const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
@@ -55,7 +55,6 @@ jobs:
             await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
             report.tree.reload=await page.evaluate(at=>{const api=globalThis.__AGCB_WORLD_TASK_API;const before=api.processTreeRegrowth(Number(at)-1);const early=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');const after=api.processTreeRegrowth(Number(at)+1);const grown=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');return{before,early,after,grown,saved:(JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}').objects||[])[0]||null}},report.tree.chop.r.regrowAt);
             if(report.tree.reload.early||!report.tree.reload.grown||report.tree.reload.after!==1)throw new Error('tree regrowth contract failed');
-
             stage='terrain-seed';
             await seed([]);
             await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===1);
@@ -91,7 +90,7 @@ jobs:
           SERVER=$!
           trap 'kill $SERVER || true' EXIT
           sleep 2
-          node /tmp/ag-runtime-smoke.mjs
+          node ./ag-runtime-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
