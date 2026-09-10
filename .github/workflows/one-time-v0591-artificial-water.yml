@@ -1,4 +1,5 @@
 name: One-time V0.5.91 artificial water core
+# trigger: second push activates newly-created workflow
 
 on:
   push:
