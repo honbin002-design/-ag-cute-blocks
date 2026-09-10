@@ -37,7 +37,11 @@ jobs:
           for token in ["const VERSION='0.5.102'","const PRIVATE_CONFIG_KEY='AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1'",'bridge-token-too-short',"v05102-test-bridge-requires-test-runtime","AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE","action:'BACKUP'","action:'READBACK'",'remote-sha256-mismatch']:
               if token not in c: failures.append('client missing: '+token)
           if 'ag_cute_blocks_' in "AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1".lower(): failures.append('private config key overlaps save namespace')
-          if 'authToken' in c.split('function status()',1)[1].split('}',1)[0]: failures.append('status exposes token')
+          status_body=c.split('function status(){return{',1)[1].split('}}',1)[0]
+          if 'authToken:' in status_body or 'token:' in status_body or 'secret:' in status_body:
+              failures.append('status exposes token value')
+          if 'tokenConfigured:authToken.length>=32' not in status_body:
+              failures.append('status must expose only token configured boolean')
           for forbidden in ["action==='RESTORE'","action==='DELETE'",'localStorage.clear(',"DriveApp.getFolderById(AGCB_PROD_FOLDER_ID).createFile"]:
               if forbidden in s or forbidden in c: failures.append('forbidden destructive/cross-env behavior: '+forbidden)
           if 'https://www.googleapis.com/auth/drive' not in m or '"runtimeVersion": "V8"' not in m: failures.append('manifest missing Drive scope or V8')
