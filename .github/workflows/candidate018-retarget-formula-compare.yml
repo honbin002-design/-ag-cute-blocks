@@ -1,0 +1,83 @@
+name: Candidate 018 Retarget Formula Compare
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/candidate018-retarget-formula-compare.yml']
+  workflow_dispatch:
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned donor and animation library
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/c018cmp
+          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/c018cmp/donor.glb
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/c018cmp/ual1.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/c018cmp/AnimationLibrary_Godot_Standard.bin
+      - name: Install renderer
+        working-directory: /tmp/c018cmp
+        run: |
+          npm init -y >/dev/null
+          npm install --silent three@0.180.0 playwright@1.55.0
+          npx playwright install --with-deps chromium
+          cp node_modules/three/build/three.module.js ./three.module.js
+          cp node_modules/three/build/three.core.js ./three.core.js
+          mkdir -p ./three-addons
+          cp -R node_modules/three/examples/jsm/. ./three-addons/
+      - name: Build formula comparison page
+        run: |
+          cat > /tmp/c018cmp/index.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><style>
+          body{margin:0;background:#eee;font-family:Arial,sans-serif}#status{padding:12px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(2,520px);gap:12px;padding:12px}.card{background:#fff;padding:8px;border-radius:8px}.card h3{margin:4px 0 8px;font-size:16px}.card img{display:block;width:500px;height:700px;object-fit:contain;background:#fff}canvas{position:fixed;left:-9999px;top:0}
+          </style><script type="importmap">{"imports":{"three":"./three.module.js"}}</script></head><body><div id="status">formula compare…</div><div class="grid" id="grid"></div>
+          <script type="module">
+          import * as THREE from 'three';
+          import {GLTFLoader} from './three-addons/loaders/GLTFLoader.js';
+          const status=document.querySelector('#status'),grid=document.querySelector('#grid'),loader=new GLTFLoader();
+          const load=u=>new Promise((res,rej)=>loader.load(u,res,undefined,rej));
+          try{
+          const [donorG,srcG]=await Promise.all([load('./donor.glb'),load('./ual1.gltf')]);
+          const donor=donorG.scene,source=srcG.scene; donor.updateMatrixWorld(true);source.updateMatrixWorld(true);
+          function glbJSON(buf){const dv=new DataView(buf);let o=12;while(o<buf.byteLength){const len=dv.getUint32(o,true),type=dv.getUint32(o+4,true);if(type===0x4e4f534a)return JSON.parse(new TextDecoder().decode(new Uint8Array(buf,o+8,len)).replace(/[\u0000 ]+$/,''));o+=8+len;}throw Error('no JSON');}
+          const dj=glbJSON(await (await fetch('./donor.glb')).arrayBuffer()),hb=dj.extensions?.VRM?.humanoid?.humanBones||[],semToNodeName={};for(const h of hb){const n=dj.nodes[h.node];if(n?.name)semToNodeName[h.bone]=n.name;}
+          const legacy={hips:'DEF-hips',spine:'DEF-spine.001',chest:'DEF-spine.002',upperChest:'DEF-spine.003',neck:'DEF-neck',head:'DEF-head',leftShoulder:'DEF-shoulder.L',leftUpperArm:'DEF-upper_arm.L',leftLowerArm:'DEF-forearm.L',leftHand:'DEF-hand.L',rightShoulder:'DEF-shoulder.R',rightUpperArm:'DEF-upper_arm.R',rightLowerArm:'DEF-forearm.R',rightHand:'DEF-hand.R',leftUpperLeg:'DEF-thigh.L',leftLowerLeg:'DEF-shin.L',leftFoot:'DEF-foot.L',leftToes:'DEF-toe.L',rightUpperLeg:'DEF-thigh.R',rightLowerLeg:'DEF-shin.R',rightFoot:'DEF-foot.R',rightToes:'DEF-toe.R'};
+          for(const [side,S] of [['left','L'],['right','R']])for(const [f,ff] of [['Thumb','thumb'],['Index','f_index'],['Middle','f_middle'],['Ring','f_ring'],['Little','f_pinky']])for(const [k,seg] of [['Proximal','01'],['Intermediate','02'],['Distal','03']])legacy[side+f+k]=`DEF-${ff}.${seg}.${S}`;
+          const sm={},dm={},reg=(m,o)=>{if(!o.name)return;m[o.name]=o;m[THREE.PropertyBinding.sanitizeNodeName(o.name)]=o;};source.traverse(o=>reg(sm,o));donor.traverse(o=>reg(dm,o));const get=(m,n)=>n?(m[n]||m[THREE.PropertyBinding.sanitizeNodeName(n)]):undefined;
+          const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const s=get(sm,sn),d=get(dm,semToNodeName[sem]);if(s&&d)pairs.push({sem,s,d,sBindL:s.quaternion.clone(),dBindL:d.quaternion.clone()});}if(pairs.length<48)throw Error('mapped '+pairs.length);
+          const allS=[],allD=[];source.traverse(o=>allS.push(o));donor.traverse(o=>allD.push(o));const snap=a=>a.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()})),sRest=snap(allS),dRest=snap(allD);const reset=r=>r.forEach(x=>{x.o.position.copy(x.p);x.o.quaternion.copy(x.q);x.o.scale.copy(x.s)});
+          const sBindW=new Map(),dBindW=new Map();for(const p of pairs){const q=new THREE.Quaternion();p.s.getWorldQuaternion(q);sBindW.set(p.s,q.clone());p.d.getWorldQuaternion(q);dBindW.set(p.d,q.clone());}
+          const depth=[...pairs].sort((a,b)=>{let da=0,db=0;for(let x=a.d;x.parent;x=x.parent)da++;for(let x=b.d;x.parent;x=x.parent)db++;return da-db;});
+          const sH=get(sm,'DEF-hips'),dH=get(dm,semToNodeName.hips),sH0=sH.position.clone(),dH0=dH.position.clone();const db0=new THREE.Box3().setFromObject(donor),ds0=db0.getSize(new THREE.Vector3()),sb0=new THREE.Box3().setFromObject(source),ss0=sb0.getSize(new THREE.Vector3()),ts=ds0.y/Math.max(ss0.y,1e-6);
+          function apply(v){source.updateMatrixWorld(true);donor.updateMatrixWorld(true);for(const p of depth){if(v==='A'){const qs=new THREE.Quaternion(),delta=new THREE.Quaternion(),desired=new THREE.Quaternion(),parentQ=new THREE.Quaternion();p.s.getWorldQuaternion(qs);delta.copy(qs).multiply(sBindW.get(p.s).clone().invert());desired.copy(delta).multiply(dBindW.get(p.d));if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));}
+          else if(v==='B'){const qs=new THREE.Quaternion(),delta=new THREE.Quaternion(),desired=new THREE.Quaternion(),parentQ=new THREE.Quaternion();p.s.getWorldQuaternion(qs);delta.copy(sBindW.get(p.s).clone().invert()).multiply(qs);desired.copy(dBindW.get(p.d)).multiply(delta);if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));}
+          else if(v==='C'){const delta=p.s.quaternion.clone().premultiply(p.sBindL.clone().invert());p.d.quaternion.copy(p.dBindL).multiply(delta);}
+          else if(v==='D'){const delta=p.s.quaternion.clone().multiply(p.sBindL.clone().invert());p.d.quaternion.copy(delta).multiply(p.dBindL);}
+          p.d.updateMatrixWorld(true);}const tr=sH.position.clone().sub(sH0).multiplyScalar(ts);dH.position.copy(dH0).add(tr);donor.updateMatrixWorld(true);}
+          const scene=new THREE.Scene();scene.background=new THREE.Color(0xf7f7f7);scene.add(donor);scene.add(new THREE.HemisphereLight(0xffffff,0x888888,2.2));const dl=new THREE.DirectionalLight(0xffffff,2);dl.position.set(3,5,4);scene.add(dl);const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(500,700);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);const cam=new THREE.PerspectiveCamera(30,500/700,.01,100),center=db0.getCenter(new THREE.Vector3()),dist=Math.max(ds0.y*1.65,2.6);cam.position.set(center.x,center.y,center.z+dist);cam.lookAt(center);
+          const poses=[['Idle','Idle_Loop',.35],['Walk','Walk_Loop',.30],['Jump','Jump_Loop',.45]],variants=['A','B','C','D'];const rows=[];
+          for(const v of variants)for(const [label,name,f] of poses){status.textContent=`${v} ${label}`;reset(sRest);reset(dRest);source.updateMatrixWorld(true);donor.updateMatrixWorld(true);const clip=THREE.AnimationClip.findByName(srcG.animations,name);const mixer=new THREE.AnimationMixer(source);mixer.clipAction(clip).play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);apply(v);renderer.render(scene,cam);const url=renderer.domElement.toDataURL('image/png');const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${v} — ${label}</h3><img src="${url}">`;grid.appendChild(card);rows.push({variant:v,pose:label,mapped:pairs.length});mixer.stopAllAction();}
+          window.__cmp={done:true,rows};status.textContent='formula compare complete';
+          }catch(e){status.textContent='ERROR '+String(e);window.__cmp={done:true,error:String(e)};throw e;}
+          </script></body></html>
+          HTML
+          cat > /tmp/c018cmp/capture.mjs <<'JS'
+          import {chromium} from 'playwright';import fs from 'node:fs';const b=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});const p=await b.newPage({viewport:{width:1080,height:8500}});const errs=[];p.on('pageerror',e=>errs.push(String(e)));await p.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});await p.waitForFunction(()=>window.__cmp?.done===true,null,{timeout:120000});const r=await p.evaluate(()=>window.__cmp);fs.writeFileSync('report.json',JSON.stringify({...r,errs},null,2));await p.screenshot({path:'compare.png',fullPage:true});await b.close();if(r.error||errs.length)process.exit(2);
+          JS
+      - name: Render formula comparison
+        working-directory: /tmp/c018cmp
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018cmp-http.log 2>&1 &
+          S=$!; trap 'kill $S || true' EXIT; sleep 2; node capture.mjs; cat report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate018-retarget-formula-compare
+          path: |
+            /tmp/c018cmp/compare.png
+            /tmp/c018cmp/report.json
+            /tmp/c018cmp-http.log
+          retention-days: 3
