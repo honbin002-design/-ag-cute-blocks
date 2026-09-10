@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify V0.5.88 tree resource contract
+      - name: Verify V0.5.90 tree resource contract
         shell: python
         run: |
           import pathlib,sys
@@ -22,6 +22,7 @@ jobs:
           wrapper=pathlib.Path('app-v0510.js').read_text(encoding='utf-8')
           boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           loader=pathlib.Path('app-v0504-fixed-loader.js').read_text(encoding='utf-8')
+          status=pathlib.Path('tree-regrowth-status-runtime-v0587.js').read_text(encoding='utf-8')
           failures=[]
           required_preload=[
             "'appleTree','🍎','蘋果樹'",
@@ -44,10 +45,25 @@ jobs:
           first=wrapper.find("import './tree-resource-integrity-preload-v0588.js';")
           second=wrapper.find("import './app-v0504-fixed-loader.js';")
           if first<0 or second<0 or first>second: failures.append('preload must load before guarded core loader')
-          for token in ["const release='V0.5.88'","__AGCB_BOOTSTRAP={version:'0.5.88'","tree-resource-integrity-no-free-normal-tree-placement"]:
+          for token in ["const release='V0.5.90'","__AGCB_BOOTSTRAP={version:'0.5.90'","persistent-realtime-1to3min-tree-stump-regrowth"]:
             if token not in boot: failures.append('bootstrap missing '+token)
-          for token in ["function chopTreeById","addInventory(economy,'wood',1)","o.userData.treeState='stump'","o.userData.regrowDay=worldDay+TREE_REGROW_DAYS","TREE_REGROW_DAYS=3","processTreeRegrowth"]:
-            if token not in loader: failures.append('authoritative chop/regrowth contract missing '+token)
+          for token in [
+            "function chopTreeById",
+            "addInventory(economy,'wood',1)",
+            "o.userData.treeState='stump'",
+            "o.userData.regrowAt=Date.now()+regrowMs",
+            "TREE_REGROW_MIN_MS=60000",
+            "TREE_REGROW_MAX_MS=180000",
+            "function processTreeRegrowth(now=Date.now())",
+            "__AGCB_TREE_REGROWTH_TIMER=setInterval",
+            "version:4",
+            "AUTHORITATIVE_CORE_WITH_PERSISTENT_REALTIME_TREE_REGROWTH"
+          ]:
+            if token not in loader: failures.append('authoritative realtime chop/regrowth contract missing '+token)
+          for forbidden in ["o.userData.regrowDay=worldDay+TREE_REGROW_DAYS","TREE_REGROW_DAYS=3"]:
+            if forbidden in loader: failures.append('legacy day-based regrowth still authoritative: '+forbidden)
+          for token in ["version:'0.5.90'","remainingMs","READ_ONLY_REALTIME_EXISTING_WORLD_SAVE","formatRemaining"]:
+            if token not in status: failures.append('realtime forest status missing '+token)
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('V0.5.88 tree resource integrity contract passed.')
+          print('V0.5.90 tree resource integrity contract passed.')
