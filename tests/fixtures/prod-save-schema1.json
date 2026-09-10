@@ -1,0 +1,20 @@
+{
+  "project": "AG Cute Blocks",
+  "format": "AG_CUTE_BLOCKS_SAVE_ENVELOPE",
+  "schema": 1,
+  "saveSchema": 1,
+  "environment": "PROD",
+  "gameVersion": "V0.5.97",
+  "createdAt": "2026-09-10T00:00:00.000Z",
+  "source": "fixture-prod-schema1",
+  "requiredKeys": [
+    "ag_cute_blocks_world_v04",
+    "ag_cute_blocks_settings_v048_special_models_r2"
+  ],
+  "missingRequired": [],
+  "records": {
+    "ag_cute_blocks_world_v04": "{\"savedAt\":\"2026-09-10T00:00:00.000Z\",\"blocks\":[{\"x\":1,\"y\":0,\"z\":1,\"type\":\"wood\"}],\"objects\":[]}",
+    "ag_cute_blocks_settings_v048_special_models_r2": "{\"camera\":\"third\"}",
+    "ag_cute_blocks_test_character_v1": "test3"
+  }
+}
