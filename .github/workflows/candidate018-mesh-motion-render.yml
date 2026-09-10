@@ -43,6 +43,7 @@ jobs:
           const status=document.querySelector('#status'), grid=document.querySelector('#grid');
           const loader=new GLTFLoader();
           const load=u=>new Promise((res,rej)=>loader.load(u,res,undefined,rej));
+          try {
           const [donorG,srcG]=await Promise.all([load('./donor.glb'),load('./ual1.gltf')]);
           const donor=donorG.scene, source=srcG.scene;
           donor.updateMatrixWorld(true); source.updateMatrixWorld(true);
@@ -52,15 +53,18 @@ jobs:
           const semToNodeName={}; for(const h of hb){const n=dj.nodes[h.node];if(n?.name)semToNodeName[h.bone]=n.name;}
           const legacy={hips:'DEF-hips',spine:'DEF-spine.001',chest:'DEF-spine.002',upperChest:'DEF-spine.003',neck:'DEF-neck',head:'DEF-head',leftShoulder:'DEF-shoulder.L',leftUpperArm:'DEF-upper_arm.L',leftLowerArm:'DEF-forearm.L',leftHand:'DEF-hand.L',rightShoulder:'DEF-shoulder.R',rightUpperArm:'DEF-upper_arm.R',rightLowerArm:'DEF-forearm.R',rightHand:'DEF-hand.R',leftUpperLeg:'DEF-thigh.L',leftLowerLeg:'DEF-shin.L',leftFoot:'DEF-foot.L',leftToes:'DEF-toe.L',rightUpperLeg:'DEF-thigh.R',rightLowerLeg:'DEF-shin.R',rightFoot:'DEF-foot.R',rightToes:'DEF-toe.R'};
           for(const [side,S] of [['left','L'],['right','R']])for(const [f,ff] of [['Thumb','thumb'],['Index','f_index'],['Middle','f_middle'],['Ring','f_ring'],['Little','f_pinky']])for(const [k,seg] of [['Proximal','01'],['Intermediate','02'],['Distal','03']])legacy[side+f+k]=`DEF-${ff}.${seg}.${S}`;
-          const srcByName={},donorByName={}; source.traverse(o=>{if(o.name)srcByName[o.name]=o}); donor.traverse(o=>{if(o.name)donorByName[o.name]=o});
-          const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const dn=semToNodeName[sem],s=srcByName[sn],d=donorByName[dn];if(s&&d)pairs.push({sem,s,d});}
+          const srcByName={},donorByName={};
+          const register=(map,o)=>{if(!o.name)return;map[o.name]=o;map[THREE.PropertyBinding.sanitizeNodeName(o.name)]=o;};
+          source.traverse(o=>register(srcByName,o)); donor.traverse(o=>register(donorByName,o));
+          const lookup=(map,name)=>name?(map[name]||map[THREE.PropertyBinding.sanitizeNodeName(name)]):undefined;
+          const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const dn=semToNodeName[sem],s=lookup(srcByName,sn),d=lookup(donorByName,dn);if(s&&d)pairs.push({sem,s,d});}
           if(pairs.length<48)throw Error('mapped bones too low '+pairs.length);
           const allSrc=[],allDon=[];source.traverse(o=>allSrc.push(o));donor.traverse(o=>allDon.push(o));
           function saveRest(arr){return arr.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()}));}
           const srcRest=saveRest(allSrc), donRest=saveRest(allDon);
           const srcBindWorld=new Map(),donBindWorld=new Map();
           for(const p of pairs){const q=new THREE.Quaternion();p.s.getWorldQuaternion(q);srcBindWorld.set(p.s,q.clone());p.d.getWorldQuaternion(q);donBindWorld.set(p.d,q.clone());}
-          const sourceHips=srcByName['DEF-hips'], donorHips=donorByName[semToNodeName.hips];
+          const sourceHips=lookup(srcByName,'DEF-hips'), donorHips=lookup(donorByName,semToNodeName.hips);
           const sourceHipsBind=sourceHips.position.clone(), donorHipsBind=donorHips.position.clone();
           const donorBox=new THREE.Box3().setFromObject(donor), donorSize=donorBox.getSize(new THREE.Vector3()), sourceBox=new THREE.Box3().setFromObject(source), sourceSize=sourceBox.getSize(new THREE.Vector3());
           const transScale=donorSize.y/Math.max(sourceSize.y,1e-6);
@@ -72,8 +76,13 @@ jobs:
           const cam=new THREE.PerspectiveCamera(30,500/700,0.01,100);const restCenter=donorBox.getCenter(new THREE.Vector3());const dist=Math.max(donorSize.y*1.65,2.6);cam.position.set(restCenter.x,restCenter.y+donorSize.y*0.02,restCenter.z+dist);cam.lookAt(restCenter);cam.updateProjectionMatrix();
           const picks=[['Idle','Idle_Loop',0.35],['Walk','Walk_Loop',0.30],['Jog','Jog_Fwd_Loop',0.25],['Jump','Jump_Loop',0.45],['Sit','Sitting_Idle_Loop',0.55],['Interact','Interact',0.45]];
           const diagnostics=[];
-          for(const [label,name,f] of picks){reset(srcRest);reset(donRest);source.updateMatrixWorld(true);donor.updateMatrixWorld(true);const clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);const mixer=new THREE.AnimationMixer(source);const action=mixer.clipAction(clip);action.play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);retarget();const b=new THREE.Box3().setFromObject(donor),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3());const maxSpan=Math.max(size.x,size.y,size.z);diagnostics.push({label,clip:name,bounds:{min:b.min.toArray(),max:b.max.toArray(),size:size.toArray()},finite:Number.isFinite(maxSpan),mappedBones:pairs.length});cam.lookAt(new THREE.Vector3(restCenter.x,center.y,restCenter.z));renderer.render(scene,cam);const url=renderer.domElement.toDataURL('image/png');const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label} — ${name}</h3><img src="${url}">`;grid.appendChild(card);mixer.stopAllAction();}
+          for(const [label,name,f] of picks){status.textContent=`Candidate 018: ${label}`;reset(srcRest);reset(donRest);source.updateMatrixWorld(true);donor.updateMatrixWorld(true);const clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);const mixer=new THREE.AnimationMixer(source);const action=mixer.clipAction(clip);action.play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);retarget();const b=new THREE.Box3().setFromObject(donor),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3());const maxSpan=Math.max(size.x,size.y,size.z);diagnostics.push({label,clip:name,bounds:{min:b.min.toArray(),max:b.max.toArray(),size:size.toArray()},finite:Number.isFinite(maxSpan),mappedBones:pairs.length});cam.lookAt(new THREE.Vector3(restCenter.x,center.y,restCenter.z));renderer.render(scene,cam);const url=renderer.domElement.toDataURL('image/png');const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label} — ${name}</h3><img src="${url}">`;grid.appendChild(card);mixer.stopAllAction();}
           window.__candidate018={done:true,diagnostics};status.textContent='Candidate 018 mesh motion render complete';
+          } catch(e) {
+            status.textContent='Candidate 018 ERROR: '+String(e);
+            window.__candidate018={done:true,error:String(e),diagnostics:[]};
+            throw e;
+          }
           </script></body></html>
           HTML
           cat > /tmp/c018render/capture.mjs <<'JS'
@@ -104,6 +113,7 @@ jobs:
           }
           await browser.close();
           if(waitError){console.error(waitError);console.error(JSON.stringify({statusText,errors,consoleMessages,httpErrors},null,2));process.exit(4);}
+          if(diag?.error){console.error(diag.error);process.exit(5);}
           if(errors.length||httpErrors.length){console.error(JSON.stringify({errors,httpErrors},null,2));process.exit(2);}
           if(!diag?.diagnostics?.every(x=>x.finite&&x.mappedBones>=48))process.exit(3);
           JS
