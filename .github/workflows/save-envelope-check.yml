@@ -13,38 +13,23 @@ jobs:
           node-version: '22'
       - name: Syntax check
         run: node --check save-envelope-runtime-v0598.js
-      - name: Validate read-only complete-save foundation
+      - name: Validate complete-save foundation remains non-destructive
         run: |
           python - <<'PY'
           from pathlib import Path
           s=Path('save-envelope-runtime-v0598.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           a=Path('app-v0510.js').read_text(encoding='utf-8')
-          r=Path('release-version-v0598.js').read_text(encoding='utf-8')
+          r=Path('release-version-v0599.js').read_text(encoding='utf-8')
           failures=[]
-          required=[
-              "const VERSION='0.5.98'",
-              "const PROJECT='AG Cute Blocks'",
-              "AG_CUTE_BLOCKS_SAVE_ENVELOPE",
-              "const PREFIX='ag_cute_blocks_'",
-              "ag_cute_blocks_world_v04",
-              "ag_cute_blocks_settings_v048_special_models_r2",
-              "crypto.subtle.digest('SHA-256'",
-              "READ_ONLY_DRIVE_BACKUP_FOUNDATION",
-              "captureRaw",
-              "capture",
-              "verify",
-              "readiness"
-          ]
-          for token in required:
+          for token in ["const VERSION='0.5.98'","const PROJECT='AG Cute Blocks'","AG_CUTE_BLOCKS_SAVE_ENVELOPE","const PREFIX='ag_cute_blocks_'","ag_cute_blocks_world_v04","ag_cute_blocks_settings_v048_special_models_r2","crypto.subtle.digest('SHA-256'","READ_ONLY_DRIVE_BACKUP_FOUNDATION","captureRaw","capture","verify","readiness"]:
               if token not in s: failures.append('save envelope missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', 'location.reload(', 'new MutationObserver']:
               if forbidden in s: failures.append('read-only foundation contains forbidden mutation: '+forbidden)
-          if "./save-envelope-runtime-v0598.js?v=0.5.98" not in b: failures.append('bootstrap save-envelope wiring missing')
-          if "version:'0.5.98'" not in b or "save-envelope-foundation" not in b: failures.append('bootstrap version/target mismatch')
-          if "import './release-version-v0598.js'" not in a or "runtimeVersion:'0.5.98'" not in a: failures.append('app release mismatch')
-          if "const RELEASE='V0.5.98'" not in r or "observerActive:false" not in r or 'new MutationObserver' in r: failures.append('release helper contract broken')
-          if failures:
-              raise SystemExit('\n'.join(failures))
-          print('V0.5.98 read-only save envelope foundation is wired and non-destructive.')
+          if "./save-envelope-runtime-v0598.js?v=0.5.99" not in b: failures.append('bootstrap save-envelope wiring missing')
+          if "version:'0.5.99'" not in b or "save-envelope-foundation" not in b: failures.append('bootstrap version/target mismatch')
+          if "import './release-version-v0599.js'" not in a or "runtimeVersion:'0.5.99'" not in a: failures.append('app release mismatch')
+          if "const RELEASE='V0.5.99'" not in r or "observerActive:false" not in r or 'new MutationObserver' in r: failures.append('release helper contract broken')
+          if failures: raise SystemExit('\n'.join(failures))
+          print('Complete save envelope remains wired and non-destructive under V0.5.99.')
           PY
