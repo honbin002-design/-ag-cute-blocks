@@ -1,0 +1,15 @@
+// AG Cute Blocks V0.5.99 — fail-closed Google Drive backup bridge client.
+// No automatic upload and no restore. A verified endpoint must be configured explicitly.
+const VERSION='0.5.99';
+let endpoint='';
+let lastResult=null;
+
+function contract(){const c=globalThis.__AGCB_DRIVE_BACKUP_CONTRACT;if(!c)throw new Error('drive-contract-unavailable');return c}
+function envelopeApi(){const e=globalThis.__AGCB_SAVE_ENVELOPE;if(!e)throw new Error('save-envelope-unavailable');return e}
+function configure(url){const value=String(url||'').trim();if(value&&!/^https:\/\//i.test(value))throw new Error('https-endpoint-required');endpoint=value;return status()}
+function status(){return{version:VERSION,configured:!!endpoint,endpointConfigured:!!endpoint,lastResult}}
+async function call(payload){if(!endpoint)throw new Error('drive-endpoint-not-configured');const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),cache:'no-store',redirect:'follow'});if(!response.ok)throw new Error(`drive-endpoint-http-${response.status}`);let data;try{data=await response.json()}catch{throw new Error('drive-endpoint-invalid-json')}if(!data||data.ok!==true)throw new Error(String(data?.reason||'drive-endpoint-rejected'));return data}
+async function backup({environment='TEST',role='HISTORY'}={}){const env=contract().normalizeEnvironment(environment);const bundle=await envelopeApi().capture();const local=await envelopeApi().verify(bundle);if(!local.ok)throw new Error(`local-envelope-invalid:${local.reason}`);const request=contract().makeUploadRequest({environment:env,role,envelope:bundle});const uploaded=await call({action:'BACKUP',request});if(!uploaded.fileId&&!uploaded.receiptId)throw new Error('remote-receipt-missing');const readback=await call({action:'READBACK',contract:request.contract,environment:env,fileId:uploaded.fileId||null,receiptId:uploaded.receiptId||null,fileName:request.fileName});if(readback.environment&&String(readback.environment).toUpperCase()!==env)throw new Error('remote-environment-mismatch');const remoteEnvelope=readback.envelope;if(!remoteEnvelope)throw new Error('remote-envelope-missing');const verified=await envelopeApi().verify(remoteEnvelope);if(!verified.ok)throw new Error(`remote-envelope-invalid:${verified.reason}`);if(remoteEnvelope.integrity?.sha256!==bundle.integrity?.sha256)throw new Error('remote-sha256-mismatch');lastResult={ok:true,environment:env,role,fileName:request.fileName,fileId:uploaded.fileId||null,receiptId:uploaded.receiptId||null,sha256:verified.sha256,verifiedAt:new Date().toISOString()};return lastResult}
+async function preUpdateProdBackup(){const plan=contract().validatePromotionBackupPlan(contract().prodPreUpdatePlan);if(!plan.ok)throw new Error(plan.reason);return backup({environment:'PROD',role:'PRE_UPDATE'})}
+
+globalThis.__AGCB_DRIVE_BACKUP_BRIDGE={version:VERSION,status:'MANUAL_VERIFIED_BACKUP_ONLY_NO_RESTORE',configure,status,backup,preUpdateProdBackup};
