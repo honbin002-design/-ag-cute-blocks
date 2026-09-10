@@ -28,38 +28,52 @@ jobs:
           const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
           const page=await browser.newPage({viewport:{width:932,height:430},deviceScaleFactor:1});
           page.setDefaultTimeout(120000);
-          const consoleErrors=[],pageErrors=[],failedRequests=[];
+          const consoleErrors=[],pageErrors=[],failedRequests=[],states={};
+          let fatal=null,stage='init';
           page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
           page.on('pageerror',e=>pageErrors.push(String(e)));
           page.on('requestfailed',r=>failedRequests.push({url:r.url(),error:r.failure()?.errorText||''}));
-          const states={}; let fatal=null;
-          const snap=()=>page.evaluate(()=>({release:globalThis.AG_GAME_VERSION,runtime:globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.release,candidate:globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate,mappedBones:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones,selected:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.selected,locomotion:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.locomotion,action:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.action,style:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.styleStatus,indicator:document.getElementById('agTestCharacterIndicator')?.textContent||''}));
+          const snap=()=>page.evaluate(()=>({release:globalThis.AG_GAME_VERSION,bootstrapVersion:globalThis.__AGCB_BOOTSTRAP?.version,runtime:globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.release,candidate:globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate,mappedBones:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones,selected:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.selected,locomotion:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.locomotion,action:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.action,style:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.styleStatus,indicator:document.getElementById('agTestCharacterIndicator')?.textContent||'',viewButton:[...document.querySelectorAll('button')].map(x=>x.textContent||'').find(x=>x.includes('第一人稱')||x.includes('第三人稱'))||''}));
           const shot=n=>page.screenshot({path:`/tmp/candidate018-ingame-v0589-${n}.png`,fullPage:true}).catch(()=>{});
           try{
+            stage='goto';
             await page.addInitScript(()=>localStorage.setItem('ag_cute_blocks_test_character_v1','ual3'));
             await page.goto('http://127.0.0.1:8000/index.html?v=0.5.89',{waitUntil:'domcontentloaded',timeout:120000});
-            await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.release==='V0.5.89',{timeout:120000});
-            await page.waitForFunction(()=>globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate==='018',{timeout:120000});
-            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:120000});
+            stage='bootstrap';
+            await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.89',{timeout:30000});
+            stage='runtime';
+            await page.waitForFunction(()=>globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate==='018',{timeout:30000});
+            stage='player';
+            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:30000});
+            stage='select';
             await page.evaluate(async()=>{await globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select('ual3')});
-            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones>=48,{timeout:120000});
-            await page.waitForTimeout(500); states.idle=await snap(); await shot('idle');
+            stage='mappedBones';
+            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones>=48,{timeout:60000});
+            stage='thirdPerson';
+            await page.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.textContent||'').includes('第一人稱')); if(b)b.click()});
+            await page.waitForTimeout(700);
+            stage='idle'; states.idle=await snap(); await shot('idle');
+            stage='walk';
             for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.02});await page.waitForTimeout(35)}
             states.walk=await snap(); await shot('walk');
-            await page.waitForTimeout(350); states.stop=await snap();
+            stage='stop'; await page.waitForTimeout(350); states.stop=await snap();
+            stage='run';
             await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.userData.motion='run'});
             for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.025});await page.waitForTimeout(35)}
             states.run=await snap(); await shot('run');
+            stage='jump';
             await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.userData.motion='';globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force('jump',850);p.position.y+=0.08});
             await page.waitForTimeout(120); states.jumpEarly=await snap(); await shot('jump');
-            await page.waitForTimeout(450); states.jumpHold=await snap();
+            stage='jumpHold'; await page.waitForTimeout(450); states.jumpHold=await snap();
+            stage='land';
             await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.y-=0.08});
             await page.waitForTimeout(650); states.afterLand=await snap(); await shot('land');
-          }catch(e){fatal=String(e);await shot('fatal')}
-          const report={fatal,states,consoleErrors,pageErrors,failedRequests:failedRequests.filter(x=>!x.url.includes('favicon'))};
+            stage='done';
+          }catch(e){fatal=`${stage}: ${String(e)}`;await shot(`fatal-${stage}`)}
+          const report={stage,fatal,states,consoleErrors,pageErrors,failedRequests:failedRequests.filter(x=>!x.url.includes('favicon'))};
           fs.writeFileSync('/tmp/candidate018-ingame-v0589.json',JSON.stringify(report,null,2));
           await browser.close();
-          const ok=!fatal&&states.idle?.release==='V0.5.89'&&states.idle?.candidate==='018'&&states.idle?.mappedBones>=48&&states.idle?.selected==='ual3'&&states.idle?.action==='idle'&&states.walk?.action==='walk'&&states.stop?.action==='idle'&&states.run?.action==='run'&&states.jumpEarly?.action==='jump'&&states.jumpHold?.action==='jump'&&states.afterLand?.action==='idle'&&pageErrors.length===0&&consoleErrors.length===0&&report.failedRequests.length===0;
+          const ok=!fatal&&states.idle?.release==='V0.5.89'&&states.idle?.bootstrapVersion==='0.5.89'&&states.idle?.candidate==='018'&&states.idle?.mappedBones>=48&&states.idle?.selected==='ual3'&&states.idle?.action==='idle'&&states.walk?.action==='walk'&&states.stop?.action==='idle'&&states.run?.action==='run'&&states.jumpEarly?.action==='jump'&&states.jumpHold?.action==='jump'&&states.afterLand?.action==='idle'&&pageErrors.length===0&&consoleErrors.length===0&&report.failedRequests.length===0;
           console.log(JSON.stringify(report,null,2)); if(!ok)process.exit(2);
           JS
           python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018-ingame-http.log 2>&1 &
