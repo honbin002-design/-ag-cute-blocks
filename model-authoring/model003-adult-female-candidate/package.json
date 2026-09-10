@@ -1,1 +1,1 @@
-{"name":"ag-model003-adult-female-candidate","version":"0.4.99","private":true,"type":"module","dependencies":{"gltf-validator":"^2.0.0-dev.3.10","three":"0.180.0"},"scripts":{"build":"node build-v0499.mjs"}}
+{"name":"ag-model003-adult-female-candidate","version":"0.5.00","private":true,"type":"module","dependencies":{"gltf-validator":"^2.0.0-dev.3.10","three":"0.180.0"},"scripts":{"build":"node build-v0500.mjs"}}
