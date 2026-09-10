@@ -22,7 +22,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run full game Candidate 018 smoke
         run: |
-          cat > /tmp/c018-ingame.mjs <<'JS'
+          cat > ./c018-ingame.mjs <<'JS'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
           const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
@@ -32,42 +32,47 @@ jobs:
           page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
           page.on('pageerror',e=>pageErrors.push(String(e)));
           page.on('requestfailed',r=>failedRequests.push({url:r.url(),error:r.failure()?.errorText||''}));
-          await page.addInitScript(()=>localStorage.setItem('ag_cute_blocks_test_character_v1','ual3'));
-          await page.goto('http://127.0.0.1:8000/index.html?v=0.5.89',{waitUntil:'domcontentloaded',timeout:120000});
-          await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.release==='V0.5.89',{timeout:120000});
-          await page.waitForFunction(()=>globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate==='018',{timeout:120000});
-          await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:120000});
-          await page.evaluate(async()=>{await globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select('ual3')});
-          await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones>=48,{timeout:120000});
-          const settle=ms=>page.waitForTimeout(ms);
+          const states={}; let fatal=null;
           const snap=()=>page.evaluate(()=>({release:globalThis.AG_GAME_VERSION,runtime:globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.release,candidate:globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate,mappedBones:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones,selected:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.selected,locomotion:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.locomotion,action:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.action,style:globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.styleStatus,indicator:document.getElementById('agTestCharacterIndicator')?.textContent||''}));
-          const states={};
-          await settle(500);states.idle=await snap();
-          await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.position.x+=0.08});await settle(140);states.walk=await snap();
-          await settle(400);states.stop=await snap();
-          await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.userData.motion='run';p.position.x+=0.10});await settle(120);states.run=await snap();
-          await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.userData.motion='';globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force('jump',850);p.position.y+=0.08});await settle(120);states.jumpEarly=await snap();
-          await settle(450);states.jumpHold=await snap();
-          await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.position.y-=0.08});await settle(650);states.afterLand=await snap();
-          await page.screenshot({path:'/tmp/candidate018-ingame-v0589.png',fullPage:true});
-          const report={states,consoleErrors,pageErrors,failedRequests:failedRequests.filter(x=>!x.url.includes('favicon'))};
+          const shot=n=>page.screenshot({path:`/tmp/candidate018-ingame-v0589-${n}.png`,fullPage:true}).catch(()=>{});
+          try{
+            await page.addInitScript(()=>localStorage.setItem('ag_cute_blocks_test_character_v1','ual3'));
+            await page.goto('http://127.0.0.1:8000/index.html?v=0.5.89',{waitUntil:'domcontentloaded',timeout:120000});
+            await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.release==='V0.5.89',{timeout:120000});
+            await page.waitForFunction(()=>globalThis.__AGCB_UAL_CHARACTER3_RUNTIME?.candidate==='018',{timeout:120000});
+            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:120000});
+            await page.evaluate(async()=>{await globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select('ual3')});
+            await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.candidate?.mappedBones>=48,{timeout:120000});
+            await page.waitForTimeout(500); states.idle=await snap(); await shot('idle');
+            for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.02});await page.waitForTimeout(35)}
+            states.walk=await snap(); await shot('walk');
+            await page.waitForTimeout(350); states.stop=await snap();
+            await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.userData.motion='run'});
+            for(let i=0;i<5;i++){await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.x+=0.025});await page.waitForTimeout(35)}
+            states.run=await snap(); await shot('run');
+            await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.userData.motion='';globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force('jump',850);p.position.y+=0.08});
+            await page.waitForTimeout(120); states.jumpEarly=await snap(); await shot('jump');
+            await page.waitForTimeout(450); states.jumpHold=await snap();
+            await page.evaluate(()=>{globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player.position.y-=0.08});
+            await page.waitForTimeout(650); states.afterLand=await snap(); await shot('land');
+          }catch(e){fatal=String(e);await shot('fatal')}
+          const report={fatal,states,consoleErrors,pageErrors,failedRequests:failedRequests.filter(x=>!x.url.includes('favicon'))};
           fs.writeFileSync('/tmp/candidate018-ingame-v0589.json',JSON.stringify(report,null,2));
           await browser.close();
-          const ok=states.idle.release==='V0.5.89'&&states.idle.candidate==='018'&&states.idle.mappedBones>=48&&states.idle.selected==='ual3'&&states.idle.action==='idle'&&states.walk.action==='walk'&&states.stop.action==='idle'&&states.run.action==='run'&&states.jumpEarly.action==='jump'&&states.jumpHold.action==='jump'&&states.afterLand.action==='idle'&&pageErrors.length===0&&consoleErrors.length===0&&report.failedRequests.length===0;
-          if(!ok){console.error(JSON.stringify(report,null,2));process.exit(2)}
-          console.log(JSON.stringify(report,null,2));
+          const ok=!fatal&&states.idle?.release==='V0.5.89'&&states.idle?.candidate==='018'&&states.idle?.mappedBones>=48&&states.idle?.selected==='ual3'&&states.idle?.action==='idle'&&states.walk?.action==='walk'&&states.stop?.action==='idle'&&states.run?.action==='run'&&states.jumpEarly?.action==='jump'&&states.jumpHold?.action==='jump'&&states.afterLand?.action==='idle'&&pageErrors.length===0&&consoleErrors.length===0&&report.failedRequests.length===0;
+          console.log(JSON.stringify(report,null,2)); if(!ok)process.exit(2);
           JS
           python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018-ingame-http.log 2>&1 &
           SERVER=$!
           trap 'kill $SERVER || true' EXIT
           sleep 2
-          node /tmp/c018-ingame.mjs
+          node ./c018-ingame.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: candidate018-ingame-v0589
           path: |
-            /tmp/candidate018-ingame-v0589.png
+            /tmp/candidate018-ingame-v0589-*.png
             /tmp/candidate018-ingame-v0589.json
             /tmp/c018-ingame-http.log
           retention-days: 3
