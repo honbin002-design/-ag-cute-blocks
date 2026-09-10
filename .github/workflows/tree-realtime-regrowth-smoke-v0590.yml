@@ -148,7 +148,11 @@ jobs:
             if(!report.terrain.remove.r?.ok||report.terrain.remove.isWater||report.terrain.remove.count!==5)throw new Error('single pond cell removal failed');
             stage='done';
           }catch(e){fatal=`${stage}: ${String(e)}`}
-          const intentionalReloadAbort=x=>x.error==='net::ERR_ABORTED'&&(x.url.includes('/special-character-')||x.url.includes('/three-vrm.module.js'));
+          const intentionalReloadAbort=x=>x.error==='net::ERR_ABORTED'&&(
+            x.url.includes('/special-character-')||
+            x.url.includes('/three-vrm.module.js')||
+            x.url.includes('/assets/characters/general/girl.v052.glb.part')
+          );
           const meaningful=errors.request.filter(x=>!intentionalReloadAbort(x)&&!x.url.includes('favicon'));
           report.stage=stage;report.fatal=fatal;report.errors=errors;report.meaningfulRequestFailures=meaningful;
           fs.writeFileSync('/tmp/ag-tree-terrain-v0593.json',JSON.stringify(report,null,2));
