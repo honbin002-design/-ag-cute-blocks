@@ -1,0 +1,109 @@
+name: Candidate 018 Mesh Motion Render
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/candidate018-mesh-motion-render.yml']
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned CC0 donor and UAL1 library
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/c018render
+          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/c018render/donor.glb
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/c018render/ual1.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/c018render/AnimationLibrary_Godot_Standard.bin
+          curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/c018render/UAL1_LICENSE.txt
+          sha256sum /tmp/c018render/donor.glb /tmp/c018render/ual1.gltf /tmp/c018render/AnimationLibrary_Godot_Standard.bin > /tmp/c018render/sources.sha256
+      - name: Install headless Three.js renderer
+        working-directory: /tmp/c018render
+        run: |
+          npm init -y >/dev/null
+          npm install --silent three@0.180.0 playwright@1.55.0
+          npx playwright install --with-deps chromium
+          cp node_modules/three/build/three.module.js ./three.module.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js ./GLTFLoader.js
+      - name: Build isolated render page
+        run: |
+          cat > /tmp/c018render/index.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><style>
+          body{margin:0;background:#eee;font-family:Arial,sans-serif}#status{padding:12px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(2,520px);gap:12px;padding:12px}.card{background:white;padding:8px;border-radius:8px}.card h3{margin:4px 0 8px;font-size:18px}.card img{display:block;width:500px;height:700px;object-fit:contain;background:white}
+          canvas{position:fixed;left:-9999px;top:0}
+          </style><script type="importmap">{"imports":{"three":"./three.module.js"}}</script></head><body><div id="status">Candidate 018 rendering…</div><div class="grid" id="grid"></div>
+          <script type="module">
+          import * as THREE from 'three';
+          import {GLTFLoader} from './GLTFLoader.js';
+          const status=document.querySelector('#status'), grid=document.querySelector('#grid');
+          const loader=new GLTFLoader();
+          const load=u=>new Promise((res,rej)=>loader.load(u,res,undefined,rej));
+          const [donorG,srcG]=await Promise.all([load('./donor.glb'),load('./ual1.gltf')]);
+          const donor=donorG.scene, source=srcG.scene;
+          donor.updateMatrixWorld(true); source.updateMatrixWorld(true);
+          function glbJSON(buf){const dv=new DataView(buf);let o=12;while(o<buf.byteLength){const len=dv.getUint32(o,true),type=dv.getUint32(o+4,true);if(type===0x4e4f534a){return JSON.parse(new TextDecoder().decode(new Uint8Array(buf,o+8,len)).replace(/[\u0000 ]+$/,''));}o+=8+len;}throw Error('no JSON');}
+          const donorRaw=await (await fetch('./donor.glb')).arrayBuffer(), dj=glbJSON(donorRaw);
+          const hb=dj.extensions?.VRM?.humanoid?.humanBones||[];
+          const semToNodeName={}; for(const h of hb){const n=dj.nodes[h.node];if(n?.name)semToNodeName[h.bone]=n.name;}
+          const legacy={hips:'DEF-hips',spine:'DEF-spine.001',chest:'DEF-spine.002',upperChest:'DEF-spine.003',neck:'DEF-neck',head:'DEF-head',leftShoulder:'DEF-shoulder.L',leftUpperArm:'DEF-upper_arm.L',leftLowerArm:'DEF-forearm.L',leftHand:'DEF-hand.L',rightShoulder:'DEF-shoulder.R',rightUpperArm:'DEF-upper_arm.R',rightLowerArm:'DEF-forearm.R',rightHand:'DEF-hand.R',leftUpperLeg:'DEF-thigh.L',leftLowerLeg:'DEF-shin.L',leftFoot:'DEF-foot.L',leftToes:'DEF-toe.L',rightUpperLeg:'DEF-thigh.R',rightLowerLeg:'DEF-shin.R',rightFoot:'DEF-foot.R',rightToes:'DEF-toe.R'};
+          for(const [side,S] of [['left','L'],['right','R']])for(const [f,ff] of [['Thumb','thumb'],['Index','f_index'],['Middle','f_middle'],['Ring','f_ring'],['Little','f_pinky']])for(const [k,seg] of [['Proximal','01'],['Intermediate','02'],['Distal','03']])legacy[side+f+k]=`DEF-${ff}.${seg}.${S}`;
+          const srcByName={},donorByName={}; source.traverse(o=>{if(o.name)srcByName[o.name]=o}); donor.traverse(o=>{if(o.name)donorByName[o.name]=o});
+          const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const dn=semToNodeName[sem],s=srcByName[sn],d=donorByName[dn];if(s&&d)pairs.push({sem,s,d});}
+          if(pairs.length<48)throw Error('mapped bones too low '+pairs.length);
+          const allSrc=[],allDon=[];source.traverse(o=>allSrc.push(o));donor.traverse(o=>allDon.push(o));
+          function saveRest(arr){return arr.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()}));}
+          const srcRest=saveRest(allSrc), donRest=saveRest(allDon);
+          const srcBindWorld=new Map(),donBindWorld=new Map();
+          for(const p of pairs){const q=new THREE.Quaternion();p.s.getWorldQuaternion(q);srcBindWorld.set(p.s,q.clone());p.d.getWorldQuaternion(q);donBindWorld.set(p.d,q.clone());}
+          const sourceHips=srcByName['DEF-hips'], donorHips=donorByName[semToNodeName.hips];
+          const sourceHipsBind=sourceHips.position.clone(), donorHipsBind=donorHips.position.clone();
+          const donorBox=new THREE.Box3().setFromObject(donor), donorSize=donorBox.getSize(new THREE.Vector3()), sourceBox=new THREE.Box3().setFromObject(source), sourceSize=sourceBox.getSize(new THREE.Vector3());
+          const transScale=donorSize.y/Math.max(sourceSize.y,1e-6);
+          function reset(rest){for(const r of rest){r.o.position.copy(r.p);r.o.quaternion.copy(r.q);r.o.scale.copy(r.s);} }
+          const byDepth=[...pairs].sort((a,b)=>{let da=0,db=0;for(let x=a.d;x.parent;x=x.parent)da++;for(let x=b.d;x.parent;x=x.parent)db++;return da-db;});
+          function retarget(){source.updateMatrixWorld(true);donor.updateMatrixWorld(true);for(const p of byDepth){const qs=new THREE.Quaternion(),delta=new THREE.Quaternion(),desired=new THREE.Quaternion(),parentQ=new THREE.Quaternion();p.s.getWorldQuaternion(qs);delta.copy(qs).multiply(srcBindWorld.get(p.s).clone().invert());desired.copy(delta).multiply(donBindWorld.get(p.d));if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));p.d.updateMatrixWorld(true);}const d=sourceHips.position.clone().sub(sourceHipsBind).multiplyScalar(transScale);donorHips.position.copy(donorHipsBind).add(d);donor.updateMatrixWorld(true);}
+          const scene=new THREE.Scene();scene.background=new THREE.Color(0xf7f7f7);scene.add(donor);scene.add(new THREE.HemisphereLight(0xffffff,0x888888,2.2));const dl=new THREE.DirectionalLight(0xffffff,2);dl.position.set(3,5,4);scene.add(dl);
+          const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false});renderer.setSize(500,700);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+          const cam=new THREE.PerspectiveCamera(30,500/700,0.01,100);const restCenter=donorBox.getCenter(new THREE.Vector3());const dist=Math.max(donorSize.y*1.65,2.6);cam.position.set(restCenter.x,restCenter.y+donorSize.y*0.02,restCenter.z+dist);cam.lookAt(restCenter);cam.updateProjectionMatrix();
+          const picks=[['Idle','Idle_Loop',0.35],['Walk','Walk_Loop',0.30],['Jog','Jog_Fwd_Loop',0.25],['Jump','Jump_Loop',0.45],['Sit','Sitting_Idle_Loop',0.55],['Interact','Interact',0.45]];
+          const diagnostics=[];
+          for(const [label,name,f] of picks){reset(srcRest);reset(donRest);source.updateMatrixWorld(true);donor.updateMatrixWorld(true);const clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);const mixer=new THREE.AnimationMixer(source);const action=mixer.clipAction(clip);action.play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);retarget();const b=new THREE.Box3().setFromObject(donor),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3());const maxSpan=Math.max(size.x,size.y,size.z);diagnostics.push({label,clip:name,bounds:{min:b.min.toArray(),max:b.max.toArray(),size:size.toArray()},finite:Number.isFinite(maxSpan),mappedBones:pairs.length});cam.lookAt(new THREE.Vector3(restCenter.x,center.y,restCenter.z));renderer.render(scene,cam);const url=renderer.domElement.toDataURL('image/png');const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label} — ${name}</h3><img src="${url}">`;grid.appendChild(card);mixer.stopAllAction();}
+          window.__candidate018={done:true,diagnostics};status.textContent='Candidate 018 mesh motion render complete';
+          </script></body></html>
+          HTML
+          cat > /tmp/c018render/capture.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
+          const page=await browser.newPage({viewport:{width:1080,height:2300},deviceScaleFactor:1});
+          const errors=[];page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('pageerror',e=>errors.push(String(e)));
+          await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});
+          await page.waitForFunction(()=>window.__candidate018?.done===true,{timeout:120000});
+          const diag=await page.evaluate(()=>window.__candidate018);fs.writeFileSync('/tmp/c018render/candidate018-mesh-motion-report.json',JSON.stringify({...diag,consoleErrors:errors},null,2));
+          await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion.png',fullPage:true});
+          await browser.close();
+          if(errors.length){console.error(errors);process.exit(2);} if(!diag.diagnostics.every(x=>x.finite&&x.mappedBones>=48))process.exit(3);
+          JS
+      - name: Render six representative full-mesh poses
+        working-directory: /tmp/c018render
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018-http.log 2>&1 &
+          SERVER=$!
+          trap 'kill $SERVER || true' EXIT
+          sleep 2
+          node capture.mjs
+          cat candidate018-mesh-motion-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate018-mesh-motion-render
+          path: |
+            /tmp/c018render/candidate018-mesh-motion.png
+            /tmp/c018render/candidate018-mesh-motion-report.json
+            /tmp/c018render/sources.sha256
+            /tmp/c018render/UAL1_LICENSE.txt
+          retention-days: 3
