@@ -16,13 +16,12 @@ jobs:
           set -euo pipefail
           curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/donor.vrm
           curl -fL --retry 3 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Female%20Mannequin/Unreal-Godot/Mannequin_F.glb' -o /tmp/ual-female.glb
-          curl -fL --retry 3 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%201%5BStandard%5D/Unreal-Godot/UAL1_Standard.glb' -o /tmp/ual1.glb || \
-          curl -fL --retry 3 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%201%5BStandard%5D/UAL1_Standard.glb' -o /tmp/ual1.glb
-          sha256sum /tmp/donor.vrm /tmp/ual-female.glb /tmp/ual1.glb > /tmp/candidate018-sources.sha256
+          curl -fL --retry 3 'https://raw.githubusercontent.com/agentkaerf/FreeModels/main/Universal%20Animation%20Library%202%5BStandard%5D/Unreal-Godot/UAL2_Standard.glb' -o /tmp/ual2.glb
+          sha256sum /tmp/donor.vrm /tmp/ual-female.glb /tmp/ual2.glb > /tmp/candidate018-sources.sha256
       - name: Validate semantic bone mapping and animation target compatibility
         shell: python
         run: |
-          import json, struct, math, pathlib
+          import json, struct, pathlib
           def gltf_json(path):
               raw=pathlib.Path(path).read_bytes()
               if raw[:4]!=b'glTF': raise SystemExit(f'{path}: not GLB')
@@ -31,7 +30,7 @@ jobs:
                   ln,tp=struct.unpack_from('<II',raw,off); data=raw[off+8:off+8+ln]; off+=8+ln
                   if tp==0x4E4F534A: return json.loads(data.decode('utf8').rstrip(' \x00'))
               raise SystemExit(f'{path}: JSON chunk missing')
-          donor=gltf_json('/tmp/donor.vrm'); target=gltf_json('/tmp/ual-female.glb'); lib=gltf_json('/tmp/ual1.glb')
+          donor=gltf_json('/tmp/donor.vrm'); target=gltf_json('/tmp/ual-female.glb'); lib=gltf_json('/tmp/ual2.glb')
           ext=donor.get('extensions',{}).get('VRM',{})
           human=ext.get('humanoid',{}).get('humanBones',[])
           sem_to_node={h.get('bone'):h.get('node') for h in human if h.get('bone') is not None and h.get('node') is not None}
@@ -63,12 +62,9 @@ jobs:
               rows.append({'semantic':sem,'donorNode':di,'donorName':donor_nodes[di].get('name') if isinstance(di,int) and di<len(donor_nodes) else None,'targetNode':ti,'targetName':tname,'mapped':di is not None and ti is not None})
           core_missing=[s for s in core if sem_to_node.get(s) is None or target_name_to_node.get(M[s]) is None]
           mapped=sum(r['mapped'] for r in rows); coverage=mapped/len(rows)
-          # Ensure mapped donor nodes are actually referenced by at least one donor skin.
           donor_skin_joints=set(j for s in donor.get('skins',[]) for j in s.get('joints',[]))
           donor_not_skinned=[r['semantic'] for r in rows if r['mapped'] and r['donorNode'] not in donor_skin_joints]
-          # Animation compatibility on UAL1: channels target the same target-node namespace used by the female mannequin.
-          animations=[]; mapped_target_nodes=set(r['targetNode'] for r in rows if r['mapped'])
-          all_target_names=set(target_name_to_node)
+          animations=[]; all_target_names=set(target_name_to_node)
           for a in lib.get('animations',[]):
               channels=a.get('channels',[]); hit=0; named=0
               for ch in channels:
@@ -81,7 +77,7 @@ jobs:
           report={
             'candidate':'018','donor':'VRoid HairSample_Female','donorLicense':'CC0 (official VRoid sample-model FAQ independently verified)',
             'donorNodes':len(donor_nodes),'donorSkins':len(donor.get('skins',[])),'donorHumanBones':len(human),
-            'targetNodes':len(target_nodes),'targetSkins':len(target.get('skins',[])),'targetAnimationLibrary':'UAL1 Standard',
+            'targetNodes':len(target_nodes),'targetSkins':len(target.get('skins',[])),'targetAnimationLibrary':'UAL2 Standard',
             'mappingCount':len(rows),'mappedCount':mapped,'coverage':round(coverage,4),'coreMissing':core_missing,
             'missingDonorSemantics':missing_donor,'missingTargetNames':missing_target,'mappedDonorNodesNotInSkin':donor_not_skinned,
             'requiredClipsMissing':missing_clips,'mapping':rows,'libraryAnimations':animations
@@ -92,7 +88,7 @@ jobs:
           if core_missing: errors.append('core humanoid mapping incomplete')
           if coverage < 0.88: errors.append(f'mapping coverage too low: {coverage:.1%}')
           if donor_not_skinned: errors.append('mapped donor bones not present in donor skin')
-          if missing_clips: errors.append('required UAL1 clips missing')
+          if missing_clips: errors.append('required UAL2 clips missing')
           if errors:
               print('CANDIDATE 018 RETARGET GATE: FAIL'); [print('-',e) for e in errors]; raise SystemExit(1)
           print('CANDIDATE 018 RETARGET GATE: PASS')
