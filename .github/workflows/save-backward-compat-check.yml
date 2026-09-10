@@ -1,0 +1,52 @@
+name: Save Backward Compatibility Gate
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  save-backward-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check save-environment-compat-v05100.js
+          node --check save-migration-registry-v05101.js
+      - name: Verify old PROD fixture remains readable for promotion without cross-environment runtime access
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          require('./save-environment-compat-v05100.js');
+          require('./save-migration-registry-v05101.js');
+          const fixture=JSON.parse(fs.readFileSync('tests/fixtures/prod-save-schema1.json','utf8'));
+          const compat=globalThis.__AGCB_SAVE_ENVIRONMENT_COMPAT;
+          const registry=globalThis.__AGCB_SAVE_MIGRATION_REGISTRY;
+          if(!compat||!registry) throw new Error('save compatibility runtime missing');
+          compat.validateSaveForRuntime({runtimeEnvironment:'PROD',envelope:fixture});
+          let blocked=false;
+          try{compat.validateSaveForRuntime({runtimeEnvironment:'TEST',envelope:fixture})}catch(err){blocked=String(err.message).includes('test-cannot-read-prod-save')}
+          if(!blocked) throw new Error('TEST runtime must not read PROD save');
+          const gate=compat.validatePromotionCompatibility({existingProdSaveSchema:fixture.saveSchema,newReadableMin:registry.promotionReadableRange().min,newReadableMax:registry.promotionReadableRange().max});
+          if(!gate.ok) throw new Error('existing PROD schema no longer backward-compatible');
+          registry.migrateEnvelope(fixture).then(result=>{
+            if(!result.ok||result.sourceSchema!==1||result.targetSchema!==1||result.migrated!==false) throw new Error('schema1 fixture no-op migration failed');
+            if(result.envelope.environment!=='PROD') throw new Error('migration changed save environment');
+            if(JSON.stringify(result.envelope.records)!==JSON.stringify(fixture.records)) throw new Error('migration changed schema1 records');
+            console.log('Schema1 PROD fixture remains promotion-compatible while TEST runtime cross-read stays blocked.');
+          }).catch(err=>{console.error(err);process.exit(1)});
+          NODE
+      - name: Guard against destructive migration
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('save-migration-registry-v05101.js').read_text(encoding='utf-8')
+          required=['NON_DESTRUCTIVE_ROLLBACK_SAFE_MIGRATION_REGISTRY','downgrade-migration-forbidden','migration-must-be-single-step','migration-step-failed','originalEnvelope','promotionReadableRange']
+          missing=[x for x in required if x not in s]
+          forbidden=['localStorage.clear(', 'localStorage.removeItem(', "action:'RESTORE'", 'location.reload(', 'new MutationObserver']
+          bad=[x for x in forbidden if x in s]
+          if missing or bad: raise SystemExit('missing='+str(missing)+' forbidden='+str(bad))
+          print('Migration registry remains non-destructive and rollback-safe.')
+          PY
