@@ -3,6 +3,8 @@ on:
   push:
     branches: [dev-v0.1]
     paths:
+      - 'index.html'
+      - 'bootstrap-v0510.js'
       - 'app-v0504-fixed-loader.js'
       - 'app-v0510.js'
       - 'terrain-artificial-water-preload-v0592.js'
@@ -15,11 +17,68 @@ permissions:
   contents: write
 
 jobs:
+  sync-release-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+          fetch-depth: 0
+      - name: Converge index and bootstrap to V0.5.93
+        shell: python
+        run: |
+          from pathlib import Path
+          idx=Path('index.html')
+          s=idx.read_text(encoding='utf-8')
+          pairs=[
+            ('<meta name="ag-runtime-version" content="V0.5.91">','<meta name="ag-runtime-version" content="V0.5.93">'),
+            ('🌈 AG Cute Blocks <small>V0.5.91</small>','🌈 AG Cute Blocks <small>V0.5.93</small>'),
+            ('bootstrap-v0510.js?v=0.5.91','bootstrap-v0510.js?v=0.5.93'),
+            ('wardrobe-runtime.js?v=0.5.91','wardrobe-runtime.js?v=0.5.93'),
+            ('const V="V0.5.91"','const V="V0.5.93"'),
+          ]
+          changed=0
+          for old,new in pairs:
+            n=s.count(old)
+            if n>1: raise SystemExit(f'index ambiguous token {old}: {n}')
+            if n==1:
+              s=s.replace(old,new);changed+=1
+          idx.write_text(s,encoding='utf-8')
+          boot=Path('bootstrap-v0510.js')
+          b=boot.read_text(encoding='utf-8')
+          old='versionOwner:true'
+          new="versionOwner:'bootstrap-v0510.js'"
+          if b.count(old)>1: raise SystemExit('bootstrap versionOwner ambiguous')
+          if old in b:
+            b=b.replace(old,new)
+            boot.write_text(b,encoding='utf-8')
+            changed+=1
+          required=['V0.5.93','bootstrap-v0510.js?v=0.5.93','wardrobe-runtime.js?v=0.5.93','const V="V0.5.93"']
+          final=idx.read_text(encoding='utf-8')
+          for token in required:
+            if token not in final: raise SystemExit('release sync missing '+token)
+          if "const release='V0.5.93'" not in boot.read_text(encoding='utf-8'): raise SystemExit('bootstrap is not V0.5.93')
+          print(f'release convergence changes={changed}')
+      - name: Commit release convergence if needed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html bootstrap-v0510.js
+          if git diff --cached --quiet; then
+            echo 'Release files already converged.'
+            exit 0
+          fi
+          git commit -m 'release: converge index and bootstrap at v0.5.93'
+          git push origin HEAD:dev-v0.1
+
   runtime-smoke:
+    needs: sync-release-files
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
       - name: Install Playwright
         run: |
           npm init -y >/dev/null
@@ -38,14 +97,14 @@ jobs:
           page.on('pageerror',e=>errors.page.push(String(e)));
           page.on('requestfailed',r=>errors.request.push({url:r.url(),error:r.failure()?.errorText||''}));
           const wait=(fn,t=30000)=>page.waitForFunction(fn,null,{timeout:t});
-          const waitRelease=()=>wait(()=>globalThis.__AGCB_VERSION_OVERLAY?.version==='0.5.93'&&globalThis.__AGCB_BOOTSTRAP?.version==='0.5.93'&&globalThis.__AGCB_BOOTSTRAP?.versionOwner==='release-version-v0593.js');
+          const waitRelease=()=>wait(()=>globalThis.__AGCB_VERSION_OVERLAY?.version==='0.5.93'&&globalThis.__AGCB_BOOTSTRAP?.version==='0.5.93'&&globalThis.__AGCB_BOOTSTRAP?.versionOwner==='bootstrap-v0510.js');
           const seed=async(objects,player={x:0,y:0,z:8,yaw:0,pitch:0})=>{
             await page.goto('http://127.0.0.1:8000/__agcb_tree_seed__.html',{waitUntil:'domcontentloaded',timeout:30000});
             await page.evaluate(({objects,player})=>localStorage.setItem('ag_cute_blocks_world_v04',JSON.stringify({version:4.3,savedAt:Date.now(),player,blocks:[],objects})),{objects,player});
             await page.goto('http://127.0.0.1:8000/index.html?v=0.5.93',{waitUntil:'domcontentloaded',timeout:120000});
             await waitRelease();
           };
-          const visible=()=>page.evaluate(()=>({badge:document.querySelector('.title small,#menuBtn small')?.textContent||'',meta:document.querySelector('meta[name="ag-runtime-version"]')?.getAttribute('content')||'',gameVersion:globalThis.AG_GAME_VERSION||'',overlay:globalThis.__AGCB_VERSION_OVERLAY?.version||'',owner:globalThis.__AGCB_BOOTSTRAP?.versionOwner||''}));
+          const visible=()=>page.evaluate(()=>({badge:document.querySelector('.title small,#menuBtn small')?.textContent||'',meta:document.querySelector('meta[name="ag-runtime-version"]')?.getAttribute('content')||'',gameVersion:globalThis.AG_GAME_VERSION||'',overlay:globalThis.__AGCB_VERSION_OVERLAY?.version||'',owner:globalThis.__AGCB_BOOTSTRAP?.versionOwner||'',observerActive:globalThis.__AGCB_VERSION_OVERLAY?.observerActive}));
           const report={tree:{},terrain:{},release:{}};let fatal=null,stage='init';
           try{
             stage='tree-seed';
@@ -60,12 +119,11 @@ jobs:
             await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
             report.tree.reload=await page.evaluate(at=>{const api=globalThis.__AGCB_WORLD_TASK_API;api.processTreeRegrowth(Number(at)-1);const early=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');const after=api.processTreeRegrowth(Number(at)+1);const grown=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');return{early,after,grown}},report.tree.chop.r.regrowAt);
             if(report.tree.reload.early||!report.tree.reload.grown||report.tree.reload.after!==1)throw new Error('tree regrowth contract failed');
-
             stage='terrain-seed';
             await seed([],{x:0,y:0,z:15,yaw:0,pitch:-0.12});
             await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===2);
             report.release.before=await visible();
-            if(report.release.before.badge!=='V0.5.93'||report.release.before.meta!=='V0.5.93'||report.release.before.owner!=='release-version-v0593.js')throw new Error('V0.5.93 visible release owner missing before pond');
+            if(report.release.before.badge!=='V0.5.93'||report.release.before.meta!=='V0.5.93'||report.release.before.owner!=='bootstrap-v0510.js'||report.release.before.observerActive!==false)throw new Error('V0.5.93 release convergence invalid before pond');
             report.terrain.preload=await page.evaluate(()=>globalThis.__AGCB_TERRAIN_PRELOAD||null);
             if(report.terrain.preload?.status!=='CONNECTED_ARTIFICIAL_WATER_VISUALS_PATCHED'||report.terrain.preload?.applied?.length!==3)throw new Error('V0.5.92 terrain preload missing');
             const pond=[[-1,10],[0,10],[1,10],[-1,11],[0,11],[1,11]];
@@ -81,7 +139,7 @@ jobs:
             await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===2);
             report.terrain.reload=await page.evaluate(pond=>{const api=globalThis.__AGCB_TERRAIN_API;api.refreshVisuals();return{cells:api.listArtificialWaterCells(),allWater:pond.every(([x,z])=>api.isWater(x,z))}},pond);
             report.release.afterReload=await visible();
-            if(report.release.afterReload.badge!=='V0.5.93'||report.release.afterReload.meta!=='V0.5.93'||report.release.afterReload.gameVersion!=='V0.5.93'||report.release.afterReload.overlay!=='0.5.93'||report.release.afterReload.owner!=='release-version-v0593.js')throw new Error('visible release regressed after reload');
+            if(report.release.afterReload.badge!=='V0.5.93'||report.release.afterReload.meta!=='V0.5.93'||report.release.afterReload.gameVersion!=='V0.5.93'||report.release.afterReload.overlay!=='0.5.93'||report.release.afterReload.owner!=='bootstrap-v0510.js'||report.release.afterReload.observerActive!==false)throw new Error('visible release regressed after reload');
             if(report.terrain.reload.cells.length!==6||!report.terrain.reload.allWater)throw new Error('3x2 pond did not survive reload');
             await new Promise(r=>setTimeout(r,250));
             await page.screenshot({path:'/tmp/terrain-water-v0593-pond-reload.png',fullPage:true});
@@ -112,50 +170,3 @@ jobs:
             /tmp/terrain-water-v0593-*.png
             /tmp/ag-runtime-http.log
           retention-days: 3
-
-  repair-stale-gates:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: dev-v0.1
-          fetch-depth: 0
-      - name: Rebase to latest branch head
-        run: git pull --rebase origin dev-v0.1
-      - name: Update stale release-owner assertions only
-        shell: python
-        run: |
-          from pathlib import Path
-          files=[
-            Path('.github/workflows/js-syntax.yml'),
-            Path('.github/workflows/building-extension-check.yml'),
-            Path('.github/workflows/fishing-ecology-check.yml'),
-          ]
-          old="versionOwner:'bootstrap-v0510.js'"
-          new="versionOwner:'release-version-v0593.js'"
-          total=0
-          for p in files:
-            s=p.read_text(encoding='utf-8')
-            n=s.count(old)
-            if n<1: raise SystemExit(f'{p}: expected at least one stale versionOwner assertion, found {n}')
-            p.write_text(s.replace(old,new),encoding='utf-8')
-            print(f'{p}: replaced {n} stale owner assertion(s)')
-            total+=n
-          p=Path('.github/workflows/tree-resource-integrity-check.yml')
-          s=p.read_text(encoding='utf-8')
-          old_tree='for token in ["const release=\'V0.5.90\'","__AGCB_BOOTSTRAP={version:\'0.5.90\'","persistent-realtime-1to3min-tree-stump-regrowth"]:'
-          new_tree='for token in ["persistent-realtime-1to3min-tree-stump-regrowth"]:'
-          if s.count(old_tree)!=1: raise SystemExit(f'{p}: stale bootstrap-version tree assertion count={s.count(old_tree)}')
-          p.write_text(s.replace(old_tree,new_tree),encoding='utf-8')
-          print(f'updated {total} release-owner assertions and 1 stale tree bootstrap-version assertion')
-      - name: Commit gate maintenance
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/js-syntax.yml .github/workflows/building-extension-check.yml .github/workflows/fishing-ecology-check.yml .github/workflows/tree-resource-integrity-check.yml
-          if git diff --cached --quiet; then
-            echo 'No gate changes required.'
-            exit 0
-          fi
-          git commit -m 'test: align stale gates with v0.5.93 release owner'
-          git push origin HEAD:dev-v0.1
