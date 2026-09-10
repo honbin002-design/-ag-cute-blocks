@@ -27,7 +27,8 @@ jobs:
           npm install --silent three@0.180.0 playwright@1.55.0
           npx playwright install --with-deps chromium
           cp node_modules/three/build/three.module.js ./three.module.js
-          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js ./GLTFLoader.js
+          mkdir -p ./three-addons
+          cp -R node_modules/three/examples/jsm/. ./three-addons/
       - name: Build isolated render page
         run: |
           cat > /tmp/c018render/index.html <<'HTML'
@@ -37,7 +38,7 @@ jobs:
           </style><script type="importmap">{"imports":{"three":"./three.module.js"}}</script></head><body><div id="status">Candidate 018 rendering…</div><div class="grid" id="grid"></div>
           <script type="module">
           import * as THREE from 'three';
-          import {GLTFLoader} from './GLTFLoader.js';
+          import {GLTFLoader} from './three-addons/loaders/GLTFLoader.js';
           const status=document.querySelector('#status'), grid=document.querySelector('#grid');
           const loader=new GLTFLoader();
           const load=u=>new Promise((res,rej)=>loader.load(u,res,undefined,rej));
