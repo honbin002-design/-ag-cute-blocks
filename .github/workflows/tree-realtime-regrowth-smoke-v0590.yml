@@ -5,9 +5,9 @@ on:
     paths:
       - 'app-v0504-fixed-loader.js'
       - 'app-v0510.js'
-      - 'terrain-artificial-water-preload-v0591.js'
+      - 'terrain-artificial-water-preload-v0592.js'
+      - 'release-version-v0592.js'
       - 'tree-regrowth-status-runtime-v0587.js'
-      - 'bootstrap-v0510.js'
       - '.github/workflows/tree-realtime-regrowth-smoke-v0590.yml'
   workflow_dispatch:
 
@@ -22,7 +22,7 @@ jobs:
           npm init -y >/dev/null
           npm install --silent playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Run tree and terrain persistence smoke
+      - name: Run tree and connected-water persistence smoke
         run: |
           cat > ./ag-runtime-smoke.mjs <<'JS'
           import {chromium} from 'playwright';
@@ -35,55 +35,56 @@ jobs:
           page.on('pageerror',e=>errors.page.push(String(e)));
           page.on('requestfailed',r=>errors.request.push({url:r.url(),error:r.failure()?.errorText||''}));
           const wait=(fn,t=30000)=>page.waitForFunction(fn,null,{timeout:t});
-          const seed=async objects=>{
+          const seed=async(objects,player={x:0,y:0,z:8,yaw:0,pitch:0})=>{
             await page.goto('http://127.0.0.1:8000/__agcb_tree_seed__.html',{waitUntil:'domcontentloaded',timeout:30000});
-            await page.evaluate(objects=>localStorage.setItem('ag_cute_blocks_world_v04',JSON.stringify({version:4.3,savedAt:Date.now(),player:{x:0,y:0,z:8,yaw:0,pitch:0},blocks:[],objects})),objects);
+            await page.evaluate(({objects,player})=>localStorage.setItem('ag_cute_blocks_world_v04',JSON.stringify({version:4.3,savedAt:Date.now(),player,blocks:[],objects})),{objects,player});
             await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'domcontentloaded',timeout:120000});
-            await wait(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.91');
+            await wait(()=>globalThis.__AGCB_VERSION_OVERLAY?.version==='0.5.92'&&globalThis.__AGCB_BOOTSTRAP?.version==='0.5.92');
           };
           const report={tree:{},terrain:{}};let fatal=null,stage='init';
           try{
             stage='tree-seed';
             await seed([{id:'ci-tree-v0590',type:'tree',x:12,z:0,rot:0,treeState:'grown',regrowDay:0,regrowAt:0}]);
             await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
-            await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.listHarvestableTrees?.().some(x=>String(x.id)==='ci-tree-v0590'));
             stage='tree-chop';
-            report.tree.chop=await page.evaluate(()=>{const api=globalThis.__AGCB_WORLD_TASK_API,t=api.listHarvestableTrees().find(x=>String(x.id)==='ci-tree-v0590'),r=api.chopTreeById(t.id),saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}'),o=(saved.objects||[]).find(x=>String(x.id)===String(t.id));return{r,o,harvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(t.id)),min:api.treeRegrowMinMs,max:api.treeRegrowMaxMs}});
+            report.tree.chop=await page.evaluate(()=>{const api=globalThis.__AGCB_WORLD_TASK_API,t=api.listHarvestableTrees().find(x=>String(x.id)==='ci-tree-v0590'),r=api.chopTreeById(t.id),saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}'),o=(saved.objects||[]).find(x=>String(x.id)===String(t.id));return{r,o,harvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(t.id))}});
             if(!report.tree.chop.r?.ok||report.tree.chop.r.regrowMs<60000||report.tree.chop.r.regrowMs>180000||report.tree.chop.o?.treeState!=='stump'||report.tree.chop.harvestable)throw new Error('tree chop/persist contract failed');
             stage='tree-reload';
             await page.reload({waitUntil:'domcontentloaded',timeout:120000});
             await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
-            report.tree.reload=await page.evaluate(at=>{const api=globalThis.__AGCB_WORLD_TASK_API;const before=api.processTreeRegrowth(Number(at)-1);const early=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');const after=api.processTreeRegrowth(Number(at)+1);const grown=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');return{before,early,after,grown,saved:(JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}').objects||[])[0]||null}},report.tree.chop.r.regrowAt);
+            report.tree.reload=await page.evaluate(at=>{const api=globalThis.__AGCB_WORLD_TASK_API;api.processTreeRegrowth(Number(at)-1);const early=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');const after=api.processTreeRegrowth(Number(at)+1);const grown=api.listHarvestableTrees().some(x=>String(x.id)==='ci-tree-v0590');return{early,after,grown}},report.tree.chop.r.regrowAt);
             if(report.tree.reload.early||!report.tree.reload.grown||report.tree.reload.after!==1)throw new Error('tree regrowth contract failed');
+
             stage='terrain-seed';
-            await seed([]);
-            await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===1);
+            await seed([],{x:0,y:0,z:15,yaw:0,pitch:-0.12});
+            await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===2);
             report.terrain.preload=await page.evaluate(()=>globalThis.__AGCB_TERRAIN_PRELOAD||null);
-            if(report.terrain.preload?.status!=='PERSISTENT_ARTIFICIAL_WATER_PATCHED'||report.terrain.preload?.applied?.length!==3)throw new Error('terrain preload missing');
-            const pos={x:12,z:18};
-            stage='terrain-soil';
-            report.terrain.first=await page.evaluate(pos=>{const api=globalThis.__AGCB_TERRAIN_API,r=api.digAt(pos.x,pos.z),s=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');return{r,isWater:api.isWater(pos.x,pos.z),objects:s.objects||[]}},pos);
-            if(report.terrain.first.r?.stage!=='soil'||report.terrain.first.isWater||!report.terrain.first.objects.some(o=>o.type==='soilPlot'))throw new Error('first dig must persist soil');
-            stage='terrain-water';
-            report.terrain.second=await page.evaluate(pos=>{const api=globalThis.__AGCB_TERRAIN_API,r=api.digAt(pos.x,pos.z),s=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');return{r,isWater:api.isWater(pos.x,pos.z),cells:api.listArtificialWaterCells(),objects:s.objects||[]}},pos);
-            if(report.terrain.second.r?.stage!=='water'||!report.terrain.second.isWater||report.terrain.second.objects.some(o=>o.type==='soilPlot')||!report.terrain.second.objects.some(o=>o.type==='waterCell'))throw new Error('second dig must replace soil with water');
-            await page.screenshot({path:'/tmp/terrain-water-v0591-after-dig.png',fullPage:true});
+            if(report.terrain.preload?.status!=='CONNECTED_ARTIFICIAL_WATER_VISUALS_PATCHED'||report.terrain.preload?.applied?.length!==3)throw new Error('V0.5.92 terrain preload missing');
+            const pond=[[-1,10],[0,10],[1,10],[-1,11],[0,11],[1,11]];
+            stage='terrain-pond';
+            report.terrain.pond=await page.evaluate(pond=>{const api=globalThis.__AGCB_TERRAIN_API,out=[];for(const [x,z] of pond){const a=api.digAt(x,z),b=api.digAt(x,z);out.push({x,z,a,b,isWater:api.isWater(x,z)})}api.refreshVisuals();const saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');return{out,cells:api.listArtificialWaterCells(),objects:saved.objects||[],visualMode:api.visualMode}},pond);
+            if(report.terrain.pond.visualMode!=='neighbor-aware-perimeter-bank'||report.terrain.pond.cells.length!==6||report.terrain.pond.out.some(x=>x.a?.stage!=='soil'||x.b?.stage!=='water'||!x.isWater))throw new Error('3x2 connected pond creation failed');
+            if(report.terrain.pond.objects.filter(o=>o.type==='waterCell').length!==6||report.terrain.pond.objects.some(o=>o.type==='soilPlot'))throw new Error('pond persistence shape invalid');
+            await new Promise(r=>setTimeout(r,250));
+            await page.screenshot({path:'/tmp/terrain-water-v0592-pond-near.png',fullPage:true});
             stage='terrain-reload';
             await page.reload({waitUntil:'domcontentloaded',timeout:120000});
-            await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===1);
-            report.terrain.reload=await page.evaluate(pos=>({isWater:globalThis.__AGCB_TERRAIN_API.isWater(pos.x,pos.z),cells:globalThis.__AGCB_TERRAIN_API.listArtificialWaterCells()}),pos);
-            if(!report.terrain.reload.isWater||!report.terrain.reload.cells.length)throw new Error('water did not survive reload');
+            await wait(()=>globalThis.__AGCB_TERRAIN_API?.version===2);
+            report.terrain.reload=await page.evaluate(pond=>{const api=globalThis.__AGCB_TERRAIN_API;api.refreshVisuals();return{cells:api.listArtificialWaterCells(),allWater:pond.every(([x,z])=>api.isWater(x,z))}},pond);
+            if(report.terrain.reload.cells.length!==6||!report.terrain.reload.allWater)throw new Error('3x2 pond did not survive reload');
+            await new Promise(r=>setTimeout(r,250));
+            await page.screenshot({path:'/tmp/terrain-water-v0592-pond-reload.png',fullPage:true});
             stage='terrain-remove';
-            report.terrain.remove=await page.evaluate(pos=>{const api=globalThis.__AGCB_TERRAIN_API,c=api.listArtificialWaterCells().find(x=>Math.round(x.x)===pos.x&&Math.round(x.z)===pos.z),r=api.removeWaterById(c?.id);return{r,isWater:api.isWater(pos.x,pos.z),cells:api.listArtificialWaterCells()}},pos);
-            if(!report.terrain.remove.r?.ok||report.terrain.remove.isWater||report.terrain.remove.cells.length)throw new Error('water removal failed');
+            report.terrain.remove=await page.evaluate(()=>{const api=globalThis.__AGCB_TERRAIN_API,c=api.listArtificialWaterCells().find(x=>Math.round(x.x)===0&&Math.round(x.z)===10),r=api.removeWaterById(c?.id);return{r,isWater:api.isWater(0,10),count:api.listArtificialWaterCells().length}});
+            if(!report.terrain.remove.r?.ok||report.terrain.remove.isWater||report.terrain.remove.count!==5)throw new Error('single pond cell removal failed');
             stage='done';
           }catch(e){fatal=`${stage}: ${String(e)}`}
           const intentionalReloadAbort=x=>x.error==='net::ERR_ABORTED'&&(x.url.includes('/special-character-')||x.url.includes('/three-vrm.module.js'));
           const meaningful=errors.request.filter(x=>!intentionalReloadAbort(x)&&!x.url.includes('favicon'));
           report.stage=stage;report.fatal=fatal;report.errors=errors;report.meaningfulRequestFailures=meaningful;
-          fs.writeFileSync('/tmp/ag-tree-terrain-v0591.json',JSON.stringify(report,null,2));
+          fs.writeFileSync('/tmp/ag-tree-terrain-v0592.json',JSON.stringify(report,null,2));
           await browser.close();
-          const ok=!fatal&&!report.tree.reload?.early&&report.tree.reload?.grown&&report.terrain.reload?.isWater&&!report.terrain.remove?.isWater&&!errors.console.length&&!errors.page.length&&!meaningful.length;
+          const ok=!fatal&&report.tree.reload?.grown&&report.terrain.reload?.allWater&&report.terrain.reload?.cells?.length===6&&report.terrain.remove?.count===5&&!errors.console.length&&!errors.page.length&&!meaningful.length;
           console.log(JSON.stringify(report,null,2));if(!ok)process.exit(2);
           JS
           python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/ag-runtime-http.log 2>&1 &
@@ -94,9 +95,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tree-terrain-runtime-v0591
+          name: tree-terrain-runtime-v0592
           path: |
-            /tmp/ag-tree-terrain-v0591.json
-            /tmp/terrain-water-v0591-after-dig.png
+            /tmp/ag-tree-terrain-v0592.json
+            /tmp/terrain-water-v0592-*.png
             /tmp/ag-runtime-http.log
           retention-days: 3
