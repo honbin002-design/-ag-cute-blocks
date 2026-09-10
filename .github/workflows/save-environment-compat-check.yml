@@ -1,0 +1,39 @@
+name: Save Environment Compatibility Gate
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  save-environment-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: node --check save-environment-compat-v0600.js
+      - name: Validate strict environment isolation and backward compatibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('save-environment-compat-v0600.js').read_text(encoding='utf-8')
+          failures=[]
+          required=[
+            "const VERSION='0.6.00'",
+            "prod-cannot-read-test-save",
+            "test-cannot-read-prod-save",
+            "STRICT_ENV_ISOLATION_BACKWARD_COMPATIBLE",
+            "validatePromotionCompatibility",
+            "promotion-would-break-existing-prod-save",
+            "MIN_READABLE_SAVE_SCHEMA",
+            "CURRENT_SAVE_SCHEMA"
+          ]
+          for token in required:
+            if token not in s: failures.append('missing: '+token)
+          for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', 'location.reload(', 'new MutationObserver']:
+            if forbidden in s: failures.append('forbidden mutation: '+forbidden)
+          if failures:
+            raise SystemExit('\n'.join(failures))
+          print('Strict PROD/TEST save isolation and backward-compatible promotion policy validated.')
+          PY
