@@ -26,7 +26,7 @@ jobs:
               if token not in s: failures.append('save envelope missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', 'location.reload(', 'new MutationObserver']:
               if forbidden in s: failures.append('read-only foundation contains forbidden mutation: '+forbidden)
-          if "./save-envelope-runtime-v05100.js?v=0.5.102" not in b: failures.append('bootstrap save-envelope wiring missing')
+          if "./save-envelope-runtime-v05100.js?v=0.5.103" not in b: failures.append('bootstrap save-envelope wiring missing')
           if "version:'0.5.103'" not in b or "environment-bound-save-envelope" not in b: failures.append('bootstrap version/target mismatch')
           if "import './release-version-v05103.js'" not in a or "runtimeVersion:'0.5.103'" not in a: failures.append('app release mismatch')
           if "const RELEASE='V0.5.103'" not in r or "observerActive:false" not in r or 'new MutationObserver' in r: failures.append('release helper contract broken')
