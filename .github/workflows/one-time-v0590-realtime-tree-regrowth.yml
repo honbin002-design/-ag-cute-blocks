@@ -24,6 +24,7 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import subprocess
 
           def one(text, old, new, label):
               n=text.count(old)
@@ -33,61 +34,26 @@ jobs:
 
           p=Path('app-v0504-fixed-loader.js')
           s=p.read_text(encoding='utf-8')
-          s=one(s,
-            "treeState:r.treeState||'grown',regrowDay:Number(r.regrowDay||0)};\"",
-            "treeState:r.treeState||'grown',regrowDay:Number(r.regrowDay||0),regrowAt:Number(r.regrowAt||0)};\"",
-            'load regrowAt')
-          s=one(s,
-            "treeState:o.userData.treeState,regrowDay:o.userData.regrowDay}))\"",
-            "treeState:o.userData.treeState,regrowDay:o.userData.regrowDay,regrowAt:o.userData.regrowAt}))\"",
-            'save regrowAt')
-          s=one(s,
-            "const TREE_REGROW_DAYS=3;function taskObjectById",
-            "const TREE_REGROW_MIN_MS=60000,TREE_REGROW_MAX_MS=180000;const randomTreeRegrowMs=()=>Math.floor(TREE_REGROW_MIN_MS+Math.random()*(TREE_REGROW_MAX_MS-TREE_REGROW_MIN_MS+1));function taskObjectById",
-            'realtime constants')
-          s=one(s,
-            "o.userData.regrowDay=0;o.userData.solid=true;",
-            "o.userData.regrowDay=0;o.userData.regrowAt=0;o.userData.solid=true;",
-            'grown reset timestamp')
-          s=one(s,
-            "if(o.userData.treeState==='stump')return{ok:false,reason:'stump-regrowing',regrowDay:Number(o.userData.regrowDay||0)};o.userData.treeState='stump';o.userData.regrowDay=worldDay+TREE_REGROW_DAYS;renderWildTreeState(o);addInventory(economy,'wood',1);changed=true;renderLife();saveSettings();saveWorld();return{ok:true,id,itemId:'wood',qty:1,inventory:Number(economy.inventory.wood||0),regrowDay:o.userData.regrowDay}",
-            "if(o.userData.treeState==='stump')return{ok:false,reason:'stump-regrowing',regrowAt:Number(o.userData.regrowAt||0),remainingMs:Math.max(0,Number(o.userData.regrowAt||0)-Date.now())};const regrowMs=randomTreeRegrowMs();o.userData.treeState='stump';o.userData.regrowDay=0;o.userData.regrowAt=Date.now()+regrowMs;renderWildTreeState(o);addInventory(economy,'wood',1);changed=true;renderLife();saveSettings();saveWorld();return{ok:true,id,itemId:'wood',qty:1,inventory:Number(economy.inventory.wood||0),regrowAt:o.userData.regrowAt,regrowMs}",
-            'chop timestamp')
-          s=one(s,
-            "function processTreeRegrowth(){let count=0;for(const o of objects){if(o.userData?.type!=='tree'||o.userData.treeState!=='stump'||Number(o.userData.regrowDay||0)>worldDay)continue;o.userData.treeState='grown';o.userData.regrowDay=0;renderWildTreeState(o);count++;changed=true}return count}globalThis.__AGCB_WORLD_TASK_API={version:3,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_TREE_REGROWTH',inventoryOwner:'economy-system/addInventory',worldOwner:'objects/worldIndex',treeRegrowDays:TREE_REGROW_DAYS,listMatureCrops,harvestMatureCropById,listHarvestableTrees,chopTreeById,processTreeRegrowth};",
-            "function processTreeRegrowth(now=Date.now()){let count=0;for(const o of objects){if(o.userData?.type!=='tree'||o.userData.treeState!=='stump')continue;let at=Number(o.userData.regrowAt||0);if(!at){o.userData.regrowAt=now+randomTreeRegrowMs();o.userData.regrowDay=0;count++;changed=true;continue}if(at>now)continue;o.userData.treeState='grown';o.userData.regrowDay=0;o.userData.regrowAt=0;renderWildTreeState(o);count++;changed=true}return count}globalThis.__AGCB_WORLD_TASK_API={version:4,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_REALTIME_TREE_REGROWTH',inventoryOwner:'economy-system/addInventory',worldOwner:'objects/worldIndex',treeRegrowMinMs:TREE_REGROW_MIN_MS,treeRegrowMaxMs:TREE_REGROW_MAX_MS,listMatureCrops,harvestMatureCropById,listHarvestableTrees,chopTreeById,processTreeRegrowth};if(!globalThis.__AGCB_TREE_REGROWTH_TIMER)globalThis.__AGCB_TREE_REGROWTH_TIMER=setInterval(()=>{if(globalThis.__AGCB_WORLD_TASK_API?.processTreeRegrowth?.(Date.now())){renderLife();saveWorld()}},1000);",
-            'process realtime')
-          s=one(s,
-            "persistentTreeRegrowth:true,treeRegrowDays:3",
-            "persistentTreeRegrowth:true,realtimeTreeRegrowth:true,treeRegrowMinMs:60000,treeRegrowMaxMs:180000",
-            'loader telemetry')
+          s=one(s,"treeState:r.treeState||'grown',regrowDay:Number(r.regrowDay||0)};\"","treeState:r.treeState||'grown',regrowDay:Number(r.regrowDay||0),regrowAt:Number(r.regrowAt||0)};\"",'load regrowAt')
+          s=one(s,"treeState:o.userData.treeState,regrowDay:o.userData.regrowDay}))\"","treeState:o.userData.treeState,regrowDay:o.userData.regrowDay,regrowAt:o.userData.regrowAt}))\"",'save regrowAt')
+          s=one(s,"const TREE_REGROW_DAYS=3;function taskObjectById","const TREE_REGROW_MIN_MS=60000,TREE_REGROW_MAX_MS=180000;const randomTreeRegrowMs=()=>Math.floor(TREE_REGROW_MIN_MS+Math.random()*(TREE_REGROW_MAX_MS-TREE_REGROW_MIN_MS+1));function taskObjectById",'realtime constants')
+          s=one(s,"o.userData.regrowDay=0;o.userData.solid=true;","o.userData.regrowDay=0;o.userData.regrowAt=0;o.userData.solid=true;",'grown reset timestamp')
+          s=one(s,"if(o.userData.treeState==='stump')return{ok:false,reason:'stump-regrowing',regrowDay:Number(o.userData.regrowDay||0)};o.userData.treeState='stump';o.userData.regrowDay=worldDay+TREE_REGROW_DAYS;renderWildTreeState(o);addInventory(economy,'wood',1);changed=true;renderLife();saveSettings();saveWorld();return{ok:true,id,itemId:'wood',qty:1,inventory:Number(economy.inventory.wood||0),regrowDay:o.userData.regrowDay}","if(o.userData.treeState==='stump')return{ok:false,reason:'stump-regrowing',regrowAt:Number(o.userData.regrowAt||0),remainingMs:Math.max(0,Number(o.userData.regrowAt||0)-Date.now())};const regrowMs=randomTreeRegrowMs();o.userData.treeState='stump';o.userData.regrowDay=0;o.userData.regrowAt=Date.now()+regrowMs;renderWildTreeState(o);addInventory(economy,'wood',1);changed=true;renderLife();saveSettings();saveWorld();return{ok:true,id,itemId:'wood',qty:1,inventory:Number(economy.inventory.wood||0),regrowAt:o.userData.regrowAt,regrowMs}",'chop timestamp')
+          s=one(s,"function processTreeRegrowth(){let count=0;for(const o of objects){if(o.userData?.type!=='tree'||o.userData.treeState!=='stump'||Number(o.userData.regrowDay||0)>worldDay)continue;o.userData.treeState='grown';o.userData.regrowDay=0;renderWildTreeState(o);count++;changed=true}return count}globalThis.__AGCB_WORLD_TASK_API={version:3,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_TREE_REGROWTH',inventoryOwner:'economy-system/addInventory',worldOwner:'objects/worldIndex',treeRegrowDays:TREE_REGROW_DAYS,listMatureCrops,harvestMatureCropById,listHarvestableTrees,chopTreeById,processTreeRegrowth};","function processTreeRegrowth(now=Date.now()){let count=0;for(const o of objects){if(o.userData?.type!=='tree'||o.userData.treeState!=='stump')continue;let at=Number(o.userData.regrowAt||0);if(!at){o.userData.regrowAt=now+randomTreeRegrowMs();o.userData.regrowDay=0;count++;changed=true;continue}if(at>now)continue;o.userData.treeState='grown';o.userData.regrowDay=0;o.userData.regrowAt=0;renderWildTreeState(o);count++;changed=true}return count}globalThis.__AGCB_WORLD_TASK_API={version:4,status:'AUTHORITATIVE_CORE_WITH_PERSISTENT_REALTIME_TREE_REGROWTH',inventoryOwner:'economy-system/addInventory',worldOwner:'objects/worldIndex',treeRegrowMinMs:TREE_REGROW_MIN_MS,treeRegrowMaxMs:TREE_REGROW_MAX_MS,listMatureCrops,harvestMatureCropById,listHarvestableTrees,chopTreeById,processTreeRegrowth};if(!globalThis.__AGCB_TREE_REGROWTH_TIMER)globalThis.__AGCB_TREE_REGROWTH_TIMER=setInterval(()=>{if(globalThis.__AGCB_WORLD_TASK_API?.processTreeRegrowth?.(Date.now())){renderLife();saveWorld()}},1000);",'process realtime')
+          s=one(s,"persistentTreeRegrowth:true,treeRegrowDays:3","persistentTreeRegrowth:true,realtimeTreeRegrowth:true,treeRegrowMinMs:60000,treeRegrowMaxMs:180000",'loader telemetry')
           p.write_text(s,encoding='utf-8')
 
-          status=Path('tree-regrowth-status-runtime-v0587.js')
-          status.write_text("""// AG Cute Blocks V0.5.90 — read-only realtime forest regrowth status.\n// Reads the existing authoritative world save only. Creates no second world store.\nconst WORLD_KEY='ag_cute_blocks_world_v04';\nconst PANEL_ID='agcbForestStatus';\nfunction readJson(key,fallback={}){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}\nfunction snapshot(now=Date.now()){const world=readJson(WORLD_KEY,{}),objects=Array.isArray(world.objects)?world.objects:[];const stumps=objects.filter(o=>o?.type==='tree'&&o?.treeState==='stump').map(o=>({id:o.id,regrowAt:Number(o.regrowAt||0),remainingMs:Math.max(0,Number(o.regrowAt||0)-now)}));stumps.sort((a,b)=>a.remainingMs-b.remainingMs);return{stumpCount:stumps.length,stumps,nextMs:stumps[0]?.remainingMs??null}}\nfunction ensurePanel(){const inventory=document.querySelector('#inventoryList');if(!inventory)return null;let box=document.getElementById(PANEL_ID);if(box)return box;box=document.createElement('div');box.id=PANEL_ID;box.className='lifeSection';box.style.marginTop='9px';box.innerHTML='<h3>🌲 森林</h3><div data-agcb-forest-status style=\"font-size:12px;line-height:1.55\"></div>';inventory.parentElement?.insertAdjacentElement('afterend',box);return box}\nfunction formatRemaining(ms){const total=Math.max(0,Math.ceil(ms/1000)),m=Math.floor(total/60),s=total%60;return m?`${m} 分 ${s} 秒`:`${s} 秒`}\nfunction render(){const box=ensurePanel();if(!box)return;const s=snapshot(),out=box.querySelector('[data-agcb-forest-status]');if(!out)return;if(!s.stumpCount){out.textContent='目前沒有等待再生的樹樁。';return}out.textContent=`樹樁 ${s.stumpCount} 個・最近約 ${formatRemaining(s.nextMs)}後長回來`}\nconst api={version:'0.5.90',status:'READ_ONLY_REALTIME_EXISTING_WORLD_SAVE',worldKey:WORLD_KEY,statusSnapshot:snapshot,render};globalThis.__AGCB_TREE_REGROWTH_STATUS=api;render();setInterval(render,1000);document.addEventListener('click',e=>{if(e.target?.closest?.('#lifeBtn,#lifeInteract,#add'))setTimeout(render,60)},true);\n""",encoding='utf-8')
+          Path('tree-regrowth-status-runtime-v0587.js').write_text("""// AG Cute Blocks V0.5.90 — read-only realtime forest regrowth status.\n// Reads the existing authoritative world save only. Creates no second world store.\nconst WORLD_KEY='ag_cute_blocks_world_v04';\nconst PANEL_ID='agcbForestStatus';\nfunction readJson(key,fallback={}){try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}\nfunction snapshot(now=Date.now()){const world=readJson(WORLD_KEY,{}),objects=Array.isArray(world.objects)?world.objects:[];const stumps=objects.filter(o=>o?.type==='tree'&&o?.treeState==='stump').map(o=>({id:o.id,regrowAt:Number(o.regrowAt||0),remainingMs:Math.max(0,Number(o.regrowAt||0)-now)}));stumps.sort((a,b)=>a.remainingMs-b.remainingMs);return{stumpCount:stumps.length,stumps,nextMs:stumps[0]?.remainingMs??null}}\nfunction ensurePanel(){const inventory=document.querySelector('#inventoryList');if(!inventory)return null;let box=document.getElementById(PANEL_ID);if(box)return box;box=document.createElement('div');box.id=PANEL_ID;box.className='lifeSection';box.style.marginTop='9px';box.innerHTML='<h3>🌲 森林</h3><div data-agcb-forest-status style=\"font-size:12px;line-height:1.55\"></div>';inventory.parentElement?.insertAdjacentElement('afterend',box);return box}\nfunction formatRemaining(ms){const total=Math.max(0,Math.ceil(ms/1000)),m=Math.floor(total/60),s=total%60;return m?`${m} 分 ${s} 秒`:`${s} 秒`}\nfunction render(){const box=ensurePanel();if(!box)return;const s=snapshot(),out=box.querySelector('[data-agcb-forest-status]');if(!out)return;if(!s.stumpCount){out.textContent='目前沒有等待再生的樹樁。';return}out.textContent=`樹樁 ${s.stumpCount} 個・最近約 ${formatRemaining(s.nextMs)}後長回來`}\nconst api={version:'0.5.90',status:'READ_ONLY_REALTIME_EXISTING_WORLD_SAVE',worldKey:WORLD_KEY,statusSnapshot:snapshot,render};globalThis.__AGCB_TREE_REGROWTH_STATUS=api;render();setInterval(render,1000);document.addEventListener('click',e=>{if(e.target?.closest?.('#lifeBtn,#lifeInteract,#add'))setTimeout(render,60)},true);\n""",encoding='utf-8')
 
           boot=Path('bootstrap-v0510.js')
           b=boot.read_text(encoding='utf-8')
           if "V0.5.89" not in b or "0.5.89" not in b: raise SystemExit('bootstrap V0.5.89 signature missing')
-          b=b.replace('V0.5.89','V0.5.90').replace('0.5.89','0.5.90')
-          b=b.replace('persistent-tree-stump-regrowth','persistent-realtime-1to3min-tree-stump-regrowth')
+          b=b.replace('V0.5.89','V0.5.90').replace('0.5.89','0.5.90').replace('persistent-tree-stump-regrowth','persistent-realtime-1to3min-tree-stump-regrowth')
           boot.write_text(b,encoding='utf-8')
 
-          gate=Path('.github/workflows/tree-resource-integrity-check.yml')
-          g=gate.read_text(encoding='utf-8')
-          g=g.replace('Verify V0.5.88 tree resource contract','Verify V0.5.90 tree resource contract')
-          g=g.replace("const release='V0.5.88'","const release='V0.5.90'").replace("__AGCB_BOOTSTRAP={version:'0.5.88'","__AGCB_BOOTSTRAP={version:'0.5.90'")
-          g=g.replace("\"o.userData.regrowDay=worldDay+TREE_REGROW_DAYS\",\"TREE_REGROW_DAYS=3\",\"processTreeRegrowth\"","\"o.userData.regrowAt=Date.now()+regrowMs\",\"TREE_REGROW_MIN_MS=60000\",\"TREE_REGROW_MAX_MS=180000\",\"processTreeRegrowth\",\"setInterval\"")
-          g=g.replace('V0.5.88 tree resource integrity contract passed.','V0.5.90 tree resource integrity contract passed.')
-          gate.write_text(g,encoding='utf-8')
-
           for f in ['app-v0504-fixed-loader.js','tree-regrowth-status-runtime-v0587.js','bootstrap-v0510.js']:
-              import subprocess
               subprocess.run(['node','--check',f],check=True)
-          checks={
-            'app-v0504-fixed-loader.js':['TREE_REGROW_MIN_MS=60000','TREE_REGROW_MAX_MS=180000','regrowAt','setInterval','version:4'],
-            'tree-regrowth-status-runtime-v0587.js':["version:'0.5.90'",'remainingMs','分 ${s} 秒'],
-            'bootstrap-v0510.js':["release='V0.5.90'","version:'0.5.90'",'persistent-realtime-1to3min-tree-stump-regrowth']}
+          checks={'app-v0504-fixed-loader.js':['TREE_REGROW_MIN_MS=60000','TREE_REGROW_MAX_MS=180000','regrowAt','setInterval','version:4'],'tree-regrowth-status-runtime-v0587.js':["version:'0.5.90'",'remainingMs','分 ${s} 秒'],'bootstrap-v0510.js':["release='V0.5.90'","version:'0.5.90'",'persistent-realtime-1to3min-tree-stump-regrowth']}
           for file,tokens in checks.items():
               text=Path(file).read_text(encoding='utf-8')
               for token in tokens:
@@ -97,6 +63,6 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add app-v0504-fixed-loader.js tree-regrowth-status-runtime-v0587.js bootstrap-v0510.js .github/workflows/tree-resource-integrity-check.yml
+          git add app-v0504-fixed-loader.js tree-regrowth-status-runtime-v0587.js bootstrap-v0510.js
           git commit -m "fix(tree): realtime independent 1-3 minute regrowth v0.5.90"
           git push origin HEAD:dev-v0.1
