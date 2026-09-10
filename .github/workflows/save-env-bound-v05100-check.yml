@@ -1,4 +1,4 @@
-name: Save Environment Bound Gate V0.5.103
+name: Save Environment Bound Gate V0.5.104
 on:
   push:
     branches: [dev-v0.1]
@@ -17,13 +17,14 @@ jobs:
           node --check save-envelope-runtime-v05100.js
           node --check save-drive-contract-v05100.js
           node --check save-drive-bridge-v05103.js
+          node --check test-drive-backup-setup-v05104.js
       - name: Validate isolation and backward compatibility
         run: |
           python - <<'PY'
           from pathlib import Path
           files={p:Path(p).read_text(encoding='utf-8') for p in [
             'save-environment-compat-v05100.js','save-envelope-runtime-v05100.js',
-            'save-drive-contract-v05100.js','save-drive-bridge-v05103.js']}
+            'save-drive-contract-v05100.js','save-drive-bridge-v05103.js','test-drive-backup-setup-v05104.js']}
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           alltxt='\n'.join(files.values())
           required=[
@@ -35,7 +36,8 @@ jobs:
           missing=[x for x in required if x not in alltxt]
           forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true', "action:'RESTORE'", "action:'DELETE'"]
           bad=[x for x in forbidden if x in alltxt]
-          if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "version:'0.5.103'" not in b: missing.append('V0.5.103 TEST bootstrap binding')
+          if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "version:'0.5.104'" not in b: missing.append('V0.5.104 TEST bootstrap binding')
+          if "./test-drive-backup-setup-v05104.js?v=0.5.104" not in b: missing.append('V0.5.104 TEST Drive setup wiring')
           if missing or bad: raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
-          print('V0.5.103 environment-bound save isolation and authenticated TEST backup foundation validated.')
+          print('V0.5.104 environment-bound save isolation, authenticated TEST backup and setup UI validated.')
           PY
