@@ -20,9 +20,9 @@ jobs:
           cache: npm
           cache-dependency-path: model-authoring/model003-adult-female-candidate/package-lock.json
       - run: npm ci --ignore-scripts
-      - run: node --check build-adult-female.mjs && node --check build-v0499.mjs && node --check build-v0500.mjs
+      - run: node --check build-adult-female.mjs && node --check build-v0499.mjs && node --check build-v0501.mjs
       - name: Build independent GLB
-        run: node build-v0500.mjs
+        run: node build-v0501.mjs
       - name: Khronos glTF Validator
         run: node validate.mjs
       - name: Reload exported GLB
@@ -31,20 +31,20 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check numpy pillow
           python render-qa.py
-          python relabel-v0500.py
+          python relabel-v0501.py
       - name: Keep candidate detached from live game
         working-directory: .
         run: |
           set -euo pipefail
           ! grep -Fq "model003-adult-female-candidate" bootstrap-v045.js
           grep -Fq "INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED" model-authoring/model003-adult-female-candidate/build-adult-female.mjs
-          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-007-eight-view.png
+          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-008-eight-view.png
       - uses: actions/upload-artifact@v4
         with:
-          name: model003-adult-female-candidate-007-v0.5.00
+          name: model003-adult-female-candidate-008-v0.5.01
           path: |
-            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_007.glb
+            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_008.glb
             model-authoring/model003-adult-female-candidate/output/*report.json
             model-authoring/model003-adult-female-candidate/output/*manifest.json
-            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-007-*.png
+            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-008-*.png
           retention-days: 7
