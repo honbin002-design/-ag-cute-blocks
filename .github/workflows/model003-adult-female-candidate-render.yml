@@ -20,9 +20,9 @@ jobs:
           cache: npm
           cache-dependency-path: model-authoring/model003-adult-female-candidate/package-lock.json
       - run: npm ci --ignore-scripts
-      - run: node --check build-v0505-source.mjs && node --check build-v0506-source.mjs && node --check build-v0508-source.mjs
+      - run: node --check build-v0505-source.mjs && node --check build-v0508-source.mjs && node --check build-v0509-source.mjs
       - name: Build independent GLB
-        run: node build-v0508-source.mjs
+        run: node build-v0509-source.mjs
       - name: Khronos glTF Validator
         run: node validate.mjs
       - name: Reload exported GLB
@@ -31,20 +31,20 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check numpy pillow
           python render-qa.py
-          python relabel-v0508.py
+          python relabel-v0509.py
       - name: Keep candidate detached from live game
         working-directory: .
         run: |
           set -euo pipefail
           ! grep -Fq "model003-adult-female-candidate" bootstrap-v045.js
-          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_015_manifest.json','utf8'));if(m.status!=='INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED'||m.gameIntegrated!==false)process.exit(1)"
-          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-015-eight-view.png
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_016_manifest.json','utf8'));if(m.status!=='INDEPENDENT_CANDIDATE_NOT_GAME_INTEGRATED'||m.gameIntegrated!==false)process.exit(1)"
+          test -f model-authoring/model003-adult-female-candidate/output/adult-female-candidate-016-eight-view.png
       - uses: actions/upload-artifact@v4
         with:
-          name: model003-adult-female-candidate-015-v0.5.08
+          name: model003-adult-female-candidate-016-v0.5.09
           path: |
-            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_015.glb
+            model-authoring/model003-adult-female-candidate/output/AG_Model003_Adult_Female_Candidate_016.glb
             model-authoring/model003-adult-female-candidate/output/*report.json
             model-authoring/model003-adult-female-candidate/output/*manifest.json
-            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-015-*.png
+            model-authoring/model003-adult-female-candidate/output/adult-female-candidate-016-*.png
           retention-days: 7
