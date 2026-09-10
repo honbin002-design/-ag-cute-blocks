@@ -15,22 +15,26 @@ jobs:
         run: |
           node --check save-drive-contract-v05100.js
           node --check save-drive-bridge-v05103.js
+          node --check test-drive-backup-setup-v05104.js
       - name: Validate authenticated TEST Drive backup contract
         run: |
           python - <<'PY'
           from pathlib import Path
           c=Path('save-drive-contract-v05100.js').read_text(encoding='utf-8')
           d=Path('save-drive-bridge-v05103.js').read_text(encoding='utf-8')
+          u=Path('test-drive-backup-setup-v05104.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           failures=[]
           for token in ["const PROJECT='AG Cute Blocks'","AG Cute Blocks/SAVE/PROD","AG Cute Blocks/SAVE/TEST","envelope-environment-mismatch","test-to-prod-overwrite-forbidden","requireRemoteReadbackVerification:true","preservePreviousProd:true","allowCrossEnvironmentRead:false","allowTestToProdOverwrite:false","VERIFY_BACKWARD_COMPAT","UPLOAD_PRE_UPDATE","READBACK_PRE_UPDATE","VERIFY_REMOTE"]:
               if token not in c: failures.append('contract missing: '+token)
           for token in ["const VERSION='0.5.103'","AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE","AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1","bridge-token-too-short","drive-endpoint-not-configured","action:'BACKUP'","action:'READBACK'","remote-environment-mismatch","remote-sha256-mismatch","v05103-test-bridge-requires-test-runtime","async function probe(","await probe()"]:
               if token not in d: failures.append('bridge missing: '+token)
+          for token in ["const VERSION='0.5.104'","TEST_ONLY_MANUAL_CONFIG_PROBE_BACKUP_NO_RESTORE","test-drive-ui-requires-test-runtime","bridge().configure","bridge().probe","bridge().backup({role:'HISTORY'})"]:
+              if token not in u: failures.append('setup ui missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', "action:'RESTORE'", "action:'DELETE'", 'new MutationObserver']:
-              if forbidden in d: failures.append('bridge contains forbidden operation: '+forbidden)
-          if "./save-drive-contract-v05100.js?v=0.5.103" not in b or "./save-drive-bridge-v05103.js?v=0.5.103" not in b: failures.append('bootstrap Drive backup wiring missing')
-          if "authenticated-test-drive-bridge-server" not in b or "version:'0.5.103'" not in b: failures.append('bootstrap target/version mismatch')
+              if forbidden in d or forbidden in u: failures.append('client/setup contains forbidden operation: '+forbidden)
+          if "./save-drive-contract-v05100.js?v=0.5.104" not in b or "./save-drive-bridge-v05103.js?v=0.5.104" not in b or "./test-drive-backup-setup-v05104.js?v=0.5.104" not in b: failures.append('bootstrap Drive backup wiring missing')
+          if "test-drive-setup-ui" not in b or "version:'0.5.104'" not in b: failures.append('bootstrap target/version mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('V0.5.103 Drive backup client is authenticated, TEST-only, fail-closed, probe-gated and restore-disabled.')
+          print('V0.5.104 TEST Drive setup, probe and verified backup path is wired; PROD/restore/delete remain disabled.')
           PY
