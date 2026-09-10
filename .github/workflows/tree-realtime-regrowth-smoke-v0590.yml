@@ -1,0 +1,88 @@
+name: Tree Realtime Regrowth Smoke V0.5.90
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'app-v0504-fixed-loader.js'
+      - 'tree-regrowth-status-runtime-v0587.js'
+      - 'bootstrap-v0510.js'
+      - '.github/workflows/tree-realtime-regrowth-smoke-v0590.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install --silent playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run full-game realtime tree regrowth smoke
+        run: |
+          cat > ./tree-regrowth-smoke.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
+          const page=await browser.newPage({viewport:{width:932,height:430},deviceScaleFactor:1});
+          page.setDefaultTimeout(120000);
+          const consoleErrors=[],pageErrors=[],failedRequests=[];
+          let fatal=null,stage='init';
+          const report={};
+          page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
+          page.on('pageerror',e=>pageErrors.push(String(e)));
+          page.on('requestfailed',r=>failedRequests.push({url:r.url(),error:r.failure()?.errorText||''}));
+          const shot=n=>page.screenshot({path:`/tmp/tree-regrowth-v0590-${n}.png`,fullPage:true}).catch(()=>{});
+          try{
+            stage='goto';
+            await page.goto('http://127.0.0.1:8000/index.html?v=0.5.90',{waitUntil:'domcontentloaded',timeout:120000});
+            stage='bootstrap';
+            await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.90',{timeout:30000});
+            stage='api';
+            await page.waitForFunction(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4,{timeout:30000});
+            stage='tree';
+            await page.waitForFunction(()=>globalThis.__AGCB_WORLD_TASK_API?.listHarvestableTrees?.().length>0,{timeout:30000});
+            report.before=await page.evaluate(()=>({apiVersion:globalThis.__AGCB_WORLD_TASK_API.version,min:globalThis.__AGCB_WORLD_TASK_API.treeRegrowMinMs,max:globalThis.__AGCB_WORLD_TASK_API.treeRegrowMaxMs,trees:globalThis.__AGCB_WORLD_TASK_API.listHarvestableTrees().length}));
+            stage='chop';
+            report.chop=await page.evaluate(()=>{const api=globalThis.__AGCB_WORLD_TASK_API;const t=api.listHarvestableTrees()[0];const before=Date.now();const r=api.chopTreeById(t.id);const saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');const obj=(saved.objects||[]).find(x=>String(x.id)===String(t.id));return{target:t,result:r,before,saved:obj||null,stillHarvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(t.id))}});
+            await shot('after-chop');
+            if(!report.chop.result?.ok)throw new Error('chopTreeById failed');
+            if(report.chop.result.regrowMs<60000||report.chop.result.regrowMs>180000)throw new Error('regrowMs outside 60-180 sec');
+            if(!report.chop.saved||report.chop.saved.treeState!=='stump'||Number(report.chop.saved.regrowAt)!==Number(report.chop.result.regrowAt))throw new Error('stump timestamp not persisted');
+            if(report.chop.stillHarvestable)throw new Error('stump still harvestable immediately after chop');
+            stage='reload';
+            await page.reload({waitUntil:'domcontentloaded',timeout:120000});
+            await page.waitForFunction(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4,{timeout:30000});
+            report.reload=await page.evaluate(id=>{const api=globalThis.__AGCB_WORLD_TASK_API;const saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');const obj=(saved.objects||[]).find(x=>String(x.id)===String(id));return{saved:obj||null,harvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(id))}},report.chop.target.id);
+            if(!report.reload.saved||report.reload.saved.treeState!=='stump'||report.reload.harvestable)throw new Error('stump did not survive reload');
+            stage='before-expiry';
+            report.beforeExpiry=await page.evaluate(({id,at})=>{const api=globalThis.__AGCB_WORLD_TASK_API;const changed=api.processTreeRegrowth(Number(at)-1);return{changed,harvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(id))}},{id:report.chop.target.id,at:report.chop.result.regrowAt});
+            if(report.beforeExpiry.harvestable)throw new Error('tree regrew before regrowAt');
+            stage='after-expiry';
+            report.afterExpiry=await page.evaluate(({id,at})=>{const api=globalThis.__AGCB_WORLD_TASK_API;const changed=api.processTreeRegrowth(Number(at)+1);return{changed,harvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(id))}},{id:report.chop.target.id,at:report.chop.result.regrowAt});
+            if(!report.afterExpiry.harvestable)throw new Error('tree did not regrow after regrowAt');
+            await shot('after-regrow');
+            stage='done';
+          }catch(e){fatal=`${stage}: ${String(e)}`;await shot(`fatal-${stage}`)}
+          report.stage=stage;report.fatal=fatal;report.consoleErrors=consoleErrors;report.pageErrors=pageErrors;report.failedRequests=failedRequests.filter(x=>!x.url.includes('favicon'));
+          fs.writeFileSync('/tmp/tree-regrowth-v0590.json',JSON.stringify(report,null,2));
+          await browser.close();
+          const ok=!fatal&&report.before?.apiVersion===4&&report.before?.min===60000&&report.before?.max===180000&&report.chop?.result?.ok&&report.reload?.saved?.treeState==='stump'&&!report.reload?.harvestable&&!report.beforeExpiry?.harvestable&&report.afterExpiry?.harvestable&&pageErrors.length===0&&consoleErrors.length===0&&report.failedRequests.length===0;
+          console.log(JSON.stringify(report,null,2));if(!ok)process.exit(2);
+          JS
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/tree-regrowth-http.log 2>&1 &
+          SERVER=$!
+          trap 'kill $SERVER || true' EXIT
+          sleep 2
+          node ./tree-regrowth-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tree-realtime-regrowth-v0590
+          path: |
+            /tmp/tree-regrowth-v0590-*.png
+            /tmp/tree-regrowth-v0590.json
+            /tmp/tree-regrowth-http.log
+          retention-days: 3
