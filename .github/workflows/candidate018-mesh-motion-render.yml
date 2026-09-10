@@ -27,6 +27,7 @@ jobs:
           npm install --silent three@0.180.0 playwright@1.55.0
           npx playwright install --with-deps chromium
           cp node_modules/three/build/three.module.js ./three.module.js
+          cp node_modules/three/build/three.core.js ./three.core.js
           mkdir -p ./three-addons
           cp -R node_modules/three/examples/jsm/. ./three-addons/
       - name: Build isolated render page
