@@ -29,7 +29,7 @@ jobs:
               if token not in d: failures.append('bridge missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', "action:'RESTORE'", "action:'DELETE'", 'new MutationObserver']:
               if forbidden in d: failures.append('bridge contains forbidden operation: '+forbidden)
-          if "./save-drive-contract-v05100.js?v=0.5.102" not in b or "./save-drive-bridge-v05103.js?v=0.5.103" not in b: failures.append('bootstrap Drive backup wiring missing')
+          if "./save-drive-contract-v05100.js?v=0.5.103" not in b or "./save-drive-bridge-v05103.js?v=0.5.103" not in b: failures.append('bootstrap Drive backup wiring missing')
           if "authenticated-test-drive-bridge-server" not in b or "version:'0.5.103'" not in b: failures.append('bootstrap target/version mismatch')
           if failures: raise SystemExit('\n'.join(failures))
           print('V0.5.103 Drive backup client is authenticated, TEST-only, fail-closed, probe-gated and restore-disabled.')
