@@ -1,0 +1,192 @@
+name: Candidate 018 Dynamic Preview
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/candidate018-dynamic-preview.yml']
+  workflow_dispatch:
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install preview dependencies
+        run: |
+          python -m pip install --disable-pip-version-check numpy pillow scipy pygltflib
+      - name: Download pinned donor and UAL1 CC0 animation library
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/donor.vrm
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual1.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/AnimationLibrary_Godot_Standard.bin
+          sha256sum /tmp/donor.vrm /tmp/ual1.gltf /tmp/AnimationLibrary_Godot_Standard.bin > /tmp/candidate018-dynamic-sources.sha256
+      - name: Generate retarget pose diagnostic and preview
+        shell: python
+        run: |
+          import json,struct,pathlib,math
+          import numpy as np
+          from scipy.spatial.transform import Rotation as R
+          from PIL import Image,ImageDraw
+
+          def glb_json(path):
+              raw=pathlib.Path(path).read_bytes(); off=12; j=None; binchunk=None
+              while off<len(raw):
+                  ln,tp=struct.unpack_from('<II',raw,off); data=raw[off+8:off+8+ln]; off+=8+ln
+                  if tp==0x4E4F534A: j=json.loads(data.decode('utf8').rstrip(' \x00'))
+                  elif tp==0x004E4942: binchunk=data
+              return j,binchunk
+          donor,dbin=glb_json('/tmp/donor.vrm')
+          src=json.load(open('/tmp/ual1.gltf',encoding='utf8')); sbin=pathlib.Path('/tmp/AnimationLibrary_Godot_Standard.bin').read_bytes()
+
+          ctype={5120:np.int8,5121:np.uint8,5122:np.int16,5123:np.uint16,5125:np.uint32,5126:np.float32}
+          comps={'SCALAR':1,'VEC2':2,'VEC3':3,'VEC4':4,'MAT4':16}
+          def acc(j,blob,idx):
+              a=j['accessors'][idx]; bv=j['bufferViews'][a['bufferView']]; dt=np.dtype(ctype[a['componentType']]).newbyteorder('<'); n=comps[a['type']]
+              off=bv.get('byteOffset',0)+a.get('byteOffset',0); stride=bv.get('byteStride',dt.itemsize*n)
+              if stride==dt.itemsize*n:
+                  ar=np.frombuffer(blob,dtype=dt,count=a['count']*n,offset=off).reshape(a['count'],n)
+              else:
+                  ar=np.empty((a['count'],n),dtype=dt)
+                  for i in range(a['count']): ar[i]=np.frombuffer(blob,dtype=dt,count=n,offset=off+i*stride)
+              return ar
+          def qmul(a,b):
+              # xyzw quaternions
+              ax,ay,az,aw=a; bx,by,bz,bw=b
+              return np.array([aw*bx+ax*bw+ay*bz-az*by,aw*by-ay*0+ay*bw+az*bx-ax*bz,aw*bz+az*bw+ax*by-ay*bx,aw*bw-ax*bx-ay*by-az*bz],float)
+          def qinv(q):
+              q=np.array(q,float); return np.array([-q[0],-q[1],-q[2],q[3]])/np.dot(q,q)
+          def qnorm(q):
+              q=np.array(q,float); return q/np.linalg.norm(q)
+          def nlocal(n):
+              return np.array(n.get('translation',[0,0,0]),float), qnorm(n.get('rotation',[0,0,0,1])), np.array(n.get('scale',[1,1,1]),float)
+          def mat_trs(t,q,s):
+              M=np.eye(4); M[:3,:3]=R.from_quat(q).as_matrix()@np.diag(s); M[:3,3]=t; return M
+          def parent_map(nodes):
+              p={}
+              for i,n in enumerate(nodes):
+                  for c in n.get('children',[]): p[c]=i
+              return p
+          def world_bind(nodes):
+              p=parent_map(nodes); cache={}
+              def rec(i):
+                  if i in cache:return cache[i]
+                  n=nodes[i]
+                  if 'matrix' in n: L=np.array(n['matrix'],float).reshape(4,4).T
+                  else:
+                      t,q,s=nlocal(n); L=mat_trs(t,q,s)
+                  cache[i]=rec(p[i])@L if i in p else L
+                  return cache[i]
+              return [rec(i) for i in range(len(nodes))]
+
+          # VRM humanoid semantics
+          hb=donor.get('extensions',{}).get('VRM',{}).get('humanoid',{}).get('humanBones',[])
+          sem2d={h['bone']:h['node'] for h in hb if 'bone' in h and 'node' in h}
+          legacy={
+            'hips':'DEF-hips','spine':'DEF-spine.001','chest':'DEF-spine.002','upperChest':'DEF-spine.003','neck':'DEF-neck','head':'DEF-head',
+            'leftShoulder':'DEF-shoulder.L','leftUpperArm':'DEF-upper_arm.L','leftLowerArm':'DEF-forearm.L','leftHand':'DEF-hand.L',
+            'rightShoulder':'DEF-shoulder.R','rightUpperArm':'DEF-upper_arm.R','rightLowerArm':'DEF-forearm.R','rightHand':'DEF-hand.R',
+            'leftUpperLeg':'DEF-thigh.L','leftLowerLeg':'DEF-shin.L','leftFoot':'DEF-foot.L','leftToes':'DEF-toe.L',
+            'rightUpperLeg':'DEF-thigh.R','rightLowerLeg':'DEF-shin.R','rightFoot':'DEF-foot.R','rightToes':'DEF-toe.R'
+          }
+          for side,S in [('left','L'),('right','R')]:
+              for f,ff in [('Thumb','thumb'),('Index','f_index'),('Middle','f_middle'),('Ring','f_ring'),('Little','f_pinky')]:
+                  for k,seg in [('Proximal','01'),('Intermediate','02'),('Distal','03')]:
+                      legacy[f'{side}{f}{k}']=f'DEF-{ff}.{seg}.{S}'
+          sname={n.get('name'):i for i,n in enumerate(src['nodes']) if n.get('name')}
+          map_sd={sname[v]:sem2d[k] for k,v in legacy.items() if v in sname and k in sem2d}
+          if len(map_sd)<48: raise SystemExit(f'mapping unexpectedly low {len(map_sd)}')
+
+          # donor bind local/world
+          dnodes=donor['nodes']; snodes=src['nodes']; dw=world_bind(dnodes); sw=world_bind(snodes)
+          dbq={i:R.from_matrix(dw[i][:3,:3]).as_quat() for i in map_sd.values()}
+          sbq={i:R.from_matrix(sw[i][:3,:3]).as_quat() for i in map_sd.keys()}
+          dparents=parent_map(dnodes)
+
+          # sample animation helper
+          anim_by_name={a.get('name'):a for a in src.get('animations',[])}
+          selected=[('Idle','Idle_Loop',0.35),('Walk','Walk_Loop',0.30),('Jog','Jog_Fwd_Loop',0.25),('Jump','Jump_Loop',0.45),('Sit','Sitting_Idle_Loop',0.55),('Interact','Interact',0.45)]
+          def sample_anim(a,t):
+              out={}
+              for ch in a.get('channels',[]):
+                  ni=ch['target']['node']; path=ch['target']['path']
+                  if ni not in map_sd or path!='rotation': continue
+                  samp=a['samplers'][ch['sampler']]; tt=acc(src,sbin,samp['input'])[:,0]; vv=acc(src,sbin,samp['output'])
+                  duration=float(tt[-1]) if len(tt) else 0; tm=(t*duration if duration>0 else 0)
+                  k=np.searchsorted(tt,tm,side='right')-1; k=max(0,min(k,len(tt)-2))
+                  u=0 if tt[k+1]==tt[k] else (tm-tt[k])/(tt[k+1]-tt[k])
+                  q0=R.from_quat(vv[k]); q1=R.from_quat(vv[k+1])
+                  # scipy slerp unavailable directly here: normalized lerp sufficient for diagnostic midpoint
+                  q=qnorm((1-u)*q0.as_quat()+u*q1.as_quat()); out[ni]=q
+              return out
+
+          # derive donor joint positions after rest-basis aware world rotation transfer, keeping local translations.
+          key_sems=['head','leftShoulder','leftHand','rightShoulder','rightHand','leftUpperLeg','leftLowerLeg','leftFoot','rightUpperLeg','rightLowerLeg','rightFoot']
+          previews=[]; pose_report={}
+          for label,clip,fraction in selected:
+              if clip not in anim_by_name: raise SystemExit(f'missing clip {clip}')
+              sar=sample_anim(anim_by_name[clip],fraction)
+              # source animated local quats, then source world quats recursively
+              sp=parent_map(snodes); sq_local={}
+              for i,n in enumerate(snodes): sq_local[i]=qnorm(n.get('rotation',[0,0,0,1]))
+              sq_local.update(sar)
+              swq={}
+              def srcwq(i):
+                  if i in swq:return swq[i]
+                  q=sq_local[i]; swq[i]=qnorm(qmul(srcwq(sp[i]),q)) if i in sp else q
+                  return swq[i]
+              for i in range(len(snodes)): srcwq(i)
+              # target local quats initialized bind; mapped joints receive bind-world-conjugated source delta
+              dq_local={i:qnorm(n.get('rotation',[0,0,0,1])) for i,n in enumerate(dnodes)}
+              # desired mapped target world rotations
+              desired_world={}
+              for si,di in map_sd.items():
+                  delta=qnorm(qmul(swq[si],qinv(sbq[si])))
+                  desired_world[di]=qnorm(qmul(delta,dbq[di]))
+              # solve local target rotation from parent desired/current world
+              dp=dparents; outw={}
+              def solve(i):
+                  if i in outw:return outw[i]
+                  pw=solve(dp[i]) if i in dp else np.array([0,0,0,1.],float)
+                  if i in desired_world:
+                      w=desired_world[i]; dq_local[i]=qnorm(qmul(qinv(pw),w))
+                  w=qnorm(qmul(pw,dq_local[i])); outw[i]=w; return w
+              for i in range(len(dnodes)): solve(i)
+              # FK positions from bind local translations + retargeted rotations
+              pos={}; wq={}
+              def fk(i):
+                  if i in pos:return
+                  n=dnodes[i]; t=np.array(n.get('translation',[0,0,0]),float); q=dq_local[i]
+                  if i in dp:
+                      fk(dp[i]); pq=wq[dp[i]]; pp=pos[dp[i]]; pos[i]=pp+R.from_quat(pq).apply(t); wq[i]=qnorm(qmul(pq,q))
+                  else: pos[i]=t; wq[i]=q
+              for i in range(len(dnodes)): fk(i)
+              pts={s:pos[sem2d[s]].tolist() for s in key_sems if s in sem2d}
+              pose_report[label]={'clip':clip,'sampleFraction':fraction,'points':pts}
+              # stick skeleton front preview
+              W,H=420,640; im=Image.new('RGB',(W,H),'white'); dr=ImageDraw.Draw(im)
+              allp=np.array(list(pts.values())); x=allp[:,0]; y=allp[:,1]; sc=min(340/max(x.max()-x.min(),1e-6),560/max(y.max()-y.min(),1e-6)); cx=(x.max()+x.min())/2; cy=(y.max()+y.min())/2
+              def P(v): return ((v[0]-cx)*sc+W/2,H/2-(v[1]-cy)*sc)
+              chains=[['head','leftShoulder','leftHand'],['head','rightShoulder','rightHand'],['leftUpperLeg','leftLowerLeg','leftFoot'],['rightUpperLeg','rightLowerLeg','rightFoot']]
+              for c in chains:
+                  for a,b in zip(c,c[1:]):
+                      if a in pts and b in pts: dr.line([P(pts[a]),P(pts[b])],fill=(20,20,20),width=5)
+              for s,v in pts.items():
+                  px,py=P(v); dr.ellipse((px-5,py-5,px+5,py+5),fill=(70,70,70))
+              dr.text((15,15),f'Candidate 018 {label}',fill=(0,0,0)); previews.append(im)
+          pathlib.Path('/tmp/candidate018-dynamic-report.json').write_text(json.dumps({'mappedBones':len(map_sd),'poses':pose_report},ensure_ascii=False,indent=2),encoding='utf8')
+          sheet=Image.new('RGB',(840,1920),(230,230,230))
+          for i,im in enumerate(previews): sheet.paste(im,((i%2)*420,(i//2)*640))
+          sheet.save('/tmp/candidate018-dynamic-stick-preview.png')
+          print('CANDIDATE 018 DYNAMIC RETARGET STRUCTURAL PREVIEW: PASS')
+          print('Mapped bones:',len(map_sd))
+          print('Visual mesh deformation still requires rendered mesh validation before PASS.')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate018-dynamic-preview
+          path: |
+            /tmp/candidate018-dynamic-report.json
+            /tmp/candidate018-dynamic-stick-preview.png
+            /tmp/candidate018-dynamic-sources.sha256
+          retention-days: 3
