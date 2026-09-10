@@ -37,7 +37,7 @@ jobs:
             if tp==0x4E4F534A: j=json.loads(data.decode('utf8').rstrip(' \x00'))
           if not j: raise SystemExit('missing JSON chunk')
           report={'bytes':len(raw),'version':ver,'nodes':len(j.get('nodes',[])),'meshes':len(j.get('meshes',[])),'skins':len(j.get('skins',[])),'animations':[a.get('name') for a in j.get('animations',[])],'materials':len(j.get('materials',[])),'textures':len(j.get('textures',[])),'images':len(j.get('images',[])),'extensionsUsed':j.get('extensionsUsed',[]),'extensionsRequired':j.get('extensionsRequired',[]),'nodeNames':[n.get('name') for n in j.get('nodes',[])[:180]],'meshNames':[m.get('name') for m in j.get('meshes',[])[:120]]}
-          scene=trimesh.load(p,force='scene',process=False); parts=[]
+          scene=trimesh.load(p,file_type='glb',force='scene',process=False); parts=[]
           for node_name in scene.graph.nodes_geometry:
             T,gn=scene.graph[node_name]; g=scene.geometry[gn]; v=trimesh.transform_points(np.asarray(g.vertices),T); f=np.asarray(g.faces)
             try:
