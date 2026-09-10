@@ -1,0 +1,46 @@
+name: Install V0.5.89 Candidate 018 Game Runtime
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/one-time-v0589-candidate018-game.yml']
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Wire Candidate 018 and bump release
+        shell: python
+        run: |
+          from pathlib import Path
+          # Bootstrap: use Candidate 018 production runtime and force a fresh query version.
+          p=Path('bootstrap-v0510.js')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('V0.5.88','V0.5.89').replace('0.5.88','0.5.89')
+          s=s.replace("./ual-character3-game-runtime.js?v=0.5.89","./candidate018-game-runtime.js?v=0.5.89")
+          s=s.replace("true-ual-character3-ingame-validation","candidate018-w0-production-game-runtime")
+          p.write_text(s,encoding='utf-8')
+          # Main document: visible badge, metadata, and bootstrap cache-buster must move together.
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8').replace('V0.5.88','V0.5.89').replace('0.5.88','0.5.89')
+          p.write_text(s,encoding='utf-8')
+      - name: Verify release wiring
+        run: |
+          set -euo pipefail
+          grep -q "candidate018-game-runtime.js?v=0.5.89" bootstrap-v0510.js
+          grep -q "const release='V0.5.89'" bootstrap-v0510.js
+          grep -q 'content="V0.5.89"' index.html
+          grep -q 'bootstrap-v0510.js?v=0.5.89' index.html
+          ! grep -q 'ual-character3-game-runtime.js?v=0.5.89' bootstrap-v0510.js
+      - name: Commit V0.5.89 wiring
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bootstrap-v0510.js index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'release: V0.5.89 Candidate 018 production locomotion'
+          git push origin HEAD:dev-v0.1
