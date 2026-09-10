@@ -1,0 +1,44 @@
+name: Patch Candidate 018 Loader Layout
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/patch-c018-loader-layout.yml']
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Preserve Three.js addon relative import layout
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('.github/workflows/candidate018-mesh-motion-render.yml')
+          s=p.read_text()
+          old="""          cp node_modules/three/build/three.module.js ./three.module.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js ./GLTFLoader.js
+"""
+          new="""          cp node_modules/three/build/three.module.js ./three.module.js
+          mkdir -p addons/loaders addons/utils
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js ./addons/loaders/GLTFLoader.js
+          cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js ./addons/utils/BufferGeometryUtils.js
+"""
+          if old not in s: raise SystemExit('install anchor not found')
+          s=s.replace(old,new,1)
+          old2="import {GLTFLoader} from './GLTFLoader.js';"
+          new2="import {GLTFLoader} from './addons/loaders/GLTFLoader.js';"
+          if old2 not in s: raise SystemExit('import anchor not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+      - name: Commit patch
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/candidate018-mesh-motion-render.yml
+          git diff --cached --check
+          git commit -m 'fix(character): preserve Three.js loader addon imports'
+          git push origin HEAD:dev-v0.1
