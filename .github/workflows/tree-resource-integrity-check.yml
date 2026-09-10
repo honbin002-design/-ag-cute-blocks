@@ -45,8 +45,8 @@ jobs:
           first=wrapper.find("import './tree-resource-integrity-preload-v0588.js';")
           second=wrapper.find("import './app-v0504-fixed-loader.js';")
           if first<0 or second<0 or first>second: failures.append('preload must load before guarded core loader')
-          for token in ["const release='V0.5.90'","__AGCB_BOOTSTRAP={version:'0.5.90'","persistent-realtime-1to3min-tree-stump-regrowth"]:
-            if token not in boot: failures.append('bootstrap missing '+token)
+          if "persistent-realtime-1to3min-tree-stump-regrowth" not in boot:
+            failures.append('bootstrap missing persistent realtime tree-regrowth target')
           for token in [
             "function chopTreeById",
             "addInventory(economy,'wood',1)",
@@ -66,4 +66,4 @@ jobs:
             if token not in status: failures.append('realtime forest status missing '+token)
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('V0.5.90 tree resource integrity contract passed.')
+          print('V0.5.90 tree subsystem contract passed under the current overall release.')
