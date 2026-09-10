@@ -35,18 +35,33 @@ jobs:
           page.on('pageerror',e=>pageErrors.push(String(e)));
           page.on('requestfailed',r=>failedRequests.push({url:r.url(),error:r.failure()?.errorText||''}));
           const shot=n=>page.screenshot({path:`/tmp/tree-regrowth-v0590-${n}.png`,fullPage:true}).catch(()=>{});
+          const wait=(fn,timeout=30000)=>page.waitForFunction(fn,null,{timeout});
           try{
             stage='goto';
             await page.goto('http://127.0.0.1:8000/index.html?v=0.5.90',{waitUntil:'domcontentloaded',timeout:120000});
             stage='bootstrap';
-            await page.waitForFunction(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.90',{timeout:30000});
+            await wait(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.90');
             stage='api';
-            await page.waitForFunction(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4,{timeout:30000});
+            await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
+            stage='seed-world';
+            report.seed=await page.evaluate(()=>{
+              const key='ag_cute_blocks_world_v04';
+              const current=JSON.parse(localStorage.getItem(key)||'null')||{version:4.3,savedAt:Date.now(),player:{x:0,y:0,z:8,yaw:0,pitch:0},blocks:[],objects:[]};
+              current.blocks=Array.isArray(current.blocks)?current.blocks:[];
+              current.objects=Array.isArray(current.objects)?current.objects:[];
+              current.objects=current.objects.filter(o=>String(o?.id||'')!=='ci-tree-v0590');
+              current.objects.push({id:'ci-tree-v0590',type:'tree',x:12,z:0,rot:0,treeState:'grown',regrowDay:0,regrowAt:0});
+              localStorage.setItem(key,JSON.stringify(current));
+              return {key,objectCount:current.objects.length};
+            });
+            await page.reload({waitUntil:'domcontentloaded',timeout:120000});
+            await wait(()=>globalThis.__AGCB_BOOTSTRAP?.version==='0.5.90');
+            await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
             stage='tree';
-            await page.waitForFunction(()=>globalThis.__AGCB_WORLD_TASK_API?.listHarvestableTrees?.().length>0,{timeout:30000});
+            await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.listHarvestableTrees?.().some(x=>String(x.id)==='ci-tree-v0590'));
             report.before=await page.evaluate(()=>({apiVersion:globalThis.__AGCB_WORLD_TASK_API.version,min:globalThis.__AGCB_WORLD_TASK_API.treeRegrowMinMs,max:globalThis.__AGCB_WORLD_TASK_API.treeRegrowMaxMs,trees:globalThis.__AGCB_WORLD_TASK_API.listHarvestableTrees().length}));
             stage='chop';
-            report.chop=await page.evaluate(()=>{const api=globalThis.__AGCB_WORLD_TASK_API;const t=api.listHarvestableTrees()[0];const before=Date.now();const r=api.chopTreeById(t.id);const saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');const obj=(saved.objects||[]).find(x=>String(x.id)===String(t.id));return{target:t,result:r,before,saved:obj||null,stillHarvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(t.id))}});
+            report.chop=await page.evaluate(()=>{const api=globalThis.__AGCB_WORLD_TASK_API;const t=api.listHarvestableTrees().find(x=>String(x.id)==='ci-tree-v0590');const before=Date.now();const r=api.chopTreeById(t.id);const saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');const obj=(saved.objects||[]).find(x=>String(x.id)===String(t.id));return{target:t,result:r,before,saved:obj||null,stillHarvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(t.id))}});
             await shot('after-chop');
             if(!report.chop.result?.ok)throw new Error('chopTreeById failed');
             if(report.chop.result.regrowMs<60000||report.chop.result.regrowMs>180000)throw new Error('regrowMs outside 60-180 sec');
@@ -54,7 +69,7 @@ jobs:
             if(report.chop.stillHarvestable)throw new Error('stump still harvestable immediately after chop');
             stage='reload';
             await page.reload({waitUntil:'domcontentloaded',timeout:120000});
-            await page.waitForFunction(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4,{timeout:30000});
+            await wait(()=>globalThis.__AGCB_WORLD_TASK_API?.version===4);
             report.reload=await page.evaluate(id=>{const api=globalThis.__AGCB_WORLD_TASK_API;const saved=JSON.parse(localStorage.getItem('ag_cute_blocks_world_v04')||'{}');const obj=(saved.objects||[]).find(x=>String(x.id)===String(id));return{saved:obj||null,harvestable:api.listHarvestableTrees().some(x=>String(x.id)===String(id))}},report.chop.target.id);
             if(!report.reload.saved||report.reload.saved.treeState!=='stump'||report.reload.harvestable)throw new Error('stump did not survive reload');
             stage='before-expiry';
