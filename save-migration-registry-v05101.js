@@ -1,0 +1,14 @@
+// AG Cute Blocks V0.5.101 — non-destructive save migration registry.
+// Current schema remains 1; this registry establishes explicit future migrations and rollback-safe promotion checks.
+const VERSION='0.5.101';
+const PROJECT='AG Cute Blocks';
+const CURRENT_SCHEMA=1;
+const MIN_READABLE_SCHEMA=1;
+const migrations=new Map();
+function normalizeSchema(value){const n=Number(value);if(!Number.isInteger(n)||n<1)throw new Error('invalid-save-schema');return n}
+function register({from,to,migrate}={}){const a=normalizeSchema(from),b=normalizeSchema(to);if(b!==a+1)throw new Error('migration-must-be-single-step');if(typeof migrate!=='function')throw new Error('migration-function-required');const key=`${a}->${b}`;if(migrations.has(key))throw new Error('migration-already-registered');migrations.set(key,migrate);return key}
+function cloneEnvelope(envelope){return JSON.parse(JSON.stringify(envelope))}
+function plan(from,to=CURRENT_SCHEMA){const a=normalizeSchema(from),b=normalizeSchema(to);if(a>b)throw new Error('downgrade-migration-forbidden');const steps=[];for(let s=a;s<b;s++){const key=`${s}->${s+1}`;if(!migrations.has(key))throw new Error(`migration-missing:${key}`);steps.push(key)}return steps}
+async function migrateEnvelope(envelope,{targetSchema=CURRENT_SCHEMA}={}){if(!envelope||envelope.project!==PROJECT)throw new Error('invalid-save-envelope');const source=normalizeSchema(envelope.saveSchema??envelope.schema);const target=normalizeSchema(targetSchema);if(source<MIN_READABLE_SCHEMA)throw new Error('save-schema-too-old');if(source>target)throw new Error('save-schema-newer-than-target');if(source===target)return{ok:true,migrated:false,sourceSchema:source,targetSchema:target,envelope:cloneEnvelope(envelope),steps:[]};let working=cloneEnvelope(envelope);const steps=plan(source,target);for(const key of steps){const fn=migrations.get(key);const before=cloneEnvelope(working);let next;try{next=await fn(cloneEnvelope(working))}catch(err){return{ok:false,reason:'migration-step-failed',step:key,error:String(err?.message||err),sourceSchema:source,targetSchema:target,originalEnvelope:before}}if(!next||next.project!==PROJECT)return{ok:false,reason:'migration-output-invalid',step:key,sourceSchema:source,targetSchema:target,originalEnvelope:before};const expected=Number(key.split('->')[1]);next.saveSchema=expected;next.schema=expected;working=next}return{ok:true,migrated:true,sourceSchema:source,targetSchema:target,envelope:working,steps}}
+function promotionReadableRange(){return{min:MIN_READABLE_SCHEMA,max:CURRENT_SCHEMA}}
+globalThis.__AGCB_SAVE_MIGRATION_REGISTRY={version:VERSION,status:'NON_DESTRUCTIVE_ROLLBACK_SAFE_MIGRATION_REGISTRY',project:PROJECT,currentSchema:CURRENT_SCHEMA,minReadableSchema:MIN_READABLE_SCHEMA,register,plan,migrateEnvelope,promotionReadableRange};
