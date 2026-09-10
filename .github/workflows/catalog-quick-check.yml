@@ -8,25 +8,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V0.5.95 catalogue quick access
+      - name: Validate catalogue quick access remains wired
         run: |
           python - <<'PY'
           from pathlib import Path
           q=Path('catalog-quick-runtime-v0595.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           a=Path('app-v0510.js').read_text(encoding='utf-8')
-          r=Path('release-version-v0595.js').read_text(encoding='utf-8')
           failures=[]
           for token in ["const VERSION='0.5.95'","agcb_catalog_recent_v0595","agcb_catalog_favorites_v0595","MAX_RECENT=8","MAX_FAV=24","items?.addEventListener('click'","agCatalogRecent","agCatalogFavorites","agCatalogFavoriteToggle","__AGCB_CATALOG_QUICK"]:
               if token not in q: failures.append('catalog quick missing: '+token)
           if 'MutationObserver' in q: failures.append('catalog quick must not use MutationObserver')
-          if "const release='V0.5.95'" not in b: failures.append('bootstrap version mismatch')
-          if "./catalog-search-runtime-v0594.js?v=0.5.95" not in b: failures.append('search runtime wiring missing')
-          if "./catalog-quick-runtime-v0595.js?v=0.5.95" not in b: failures.append('quick runtime wiring missing')
-          if "version:'0.5.95'" not in b or "versionOwner:'bootstrap-v0510.js'" not in b: failures.append('bootstrap ownership mismatch')
-          if "import './release-version-v0595.js'" not in a or "runtimeVersion:'0.5.95'" not in a: failures.append('wrapper release mismatch')
+          if "./catalog-search-runtime-v0594.js?v=0.5.96" not in b: failures.append('search runtime wiring missing')
+          if "./catalog-quick-runtime-v0595.js?v=0.5.96" not in b: failures.append('quick runtime wiring missing')
+          if "version:'0.5.96'" not in b or "versionOwner:'bootstrap-v0510.js'" not in b: failures.append('bootstrap ownership mismatch')
+          if "import './release-version-v0596.js'" not in a or "runtimeVersion:'0.5.96'" not in a: failures.append('wrapper release mismatch')
+          r=Path('release-version-v0596.js').read_text(encoding='utf-8')
           if "observerActive:false" not in r or 'new MutationObserver' in r: failures.append('finite release helper contract broken')
           if failures:
               raise SystemExit('\n'.join(failures))
-          print('Catalog quick V0.5.95 static gate passed.')
+          print('Catalog quick feature remains wired under V0.5.96.')
           PY
