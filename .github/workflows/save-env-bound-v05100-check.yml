@@ -1,0 +1,47 @@
+name: Save Environment Bound Gate V0.5.100
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  save-env-bound:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check save-environment-compat-v05100.js
+          node --check save-envelope-runtime-v05100.js
+          node --check save-drive-contract-v05100.js
+          node --check save-drive-bridge-v05100.js
+      - name: Validate isolation and backward compatibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files={p:Path(p).read_text(encoding='utf-8') for p in [
+            'save-environment-compat-v05100.js','save-envelope-runtime-v05100.js',
+            'save-drive-contract-v05100.js','save-drive-bridge-v05100.js']}
+          alltxt='\n'.join(files.values())
+          required=[
+            "const VERSION='0.5.100'",
+            "prod-cannot-read-test-save",
+            "test-cannot-read-prod-save",
+            "promotion-would-break-existing-prod-save",
+            "environment:env",
+            "saveSchema:SAVE_SCHEMA",
+            "envelope-environment-mismatch",
+            "allowCrossEnvironmentRead:false",
+            "VERIFY_BACKWARD_COMPAT",
+            "pre-update-prod-backup-requires-prod-runtime",
+            "remote-environment-mismatch"
+          ]
+          missing=[x for x in required if x not in alltxt]
+          forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true']
+          bad=[x for x in forbidden if x in alltxt]
+          if missing or bad:
+            raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
+          print('V0.5.100 environment-bound save isolation and backward compatibility foundation validated.')
+          PY
