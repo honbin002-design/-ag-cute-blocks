@@ -1,0 +1,52 @@
+name: Save Drive Deployment Preflight V0.5.105
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'apps-script/agcb-save-bridge-v05105.gs'
+      - '.github/workflows/save-drive-deployment-preflight-v05105.yml'
+
+jobs:
+  deployment-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check Apps Script source
+        run: cp apps-script/agcb-save-bridge-v05105.gs /tmp/agcb-save-bridge-v05105.js && node --check /tmp/agcb-save-bridge-v05105.js
+      - name: Validate fail-closed deployment contract
+        shell: python
+        run: |
+          import pathlib,sys
+          s=pathlib.Path('apps-script/agcb-save-bridge-v05105.gs').read_text(encoding='utf-8')
+          required=[
+            "const AGCB_VERSION='0.5.105'",
+            "const AGCB_TEST_WRITE_ENABLED=true",
+            "const AGCB_PROD_WRITE_ENABLED=false",
+            "function agcbDeploymentPreflight_()",
+            "status:'DEPLOYMENT_PREFLIGHT_PASS'",
+            "prodWriteEnabled:AGCB_PROD_WRITE_ENABLED",
+            "prodReadEnabled:false",
+            "restoreEnabled:false",
+            "deleteEnabled:false",
+            "server-token-not-configured",
+            "test-folder-id-name-mismatch",
+            "unsafe-prod-write-enabled",
+            "env!=='TEST'",
+            "prod-write-disabled",
+            "prod-read-disabled",
+            "file-outside-test-folder",
+            "remote-sha256-mismatch",
+          ]
+          missing=[x for x in required if x not in s]
+          forbidden=[
+            'AGCB_PROD_WRITE_ENABLED=true',
+            "restoreEnabled:true",
+            "deleteEnabled:true",
+          ]
+          bad=[x for x in forbidden if x in s]
+          if missing or bad:
+            if missing: print('missing:',*missing,sep='\n- ')
+            if bad: print('forbidden:',*bad,sep='\n- ')
+            sys.exit(1)
+          print('TEST deployment preflight contract passed; PROD/restore/delete remain fail-closed.')
