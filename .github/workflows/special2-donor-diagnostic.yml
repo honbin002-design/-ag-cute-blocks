@@ -1,0 +1,73 @@
+name: Special2 donor diagnostic
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/special2-donor-diagnostic.yml'
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild Special2 GLB from v051 base64 parts
+        run: |
+          set -euo pipefail
+          cat assets/characters/special2/model.v051.b64.* | base64 -d > /tmp/special2.glb
+          stat -c%s /tmp/special2.glb
+          sha256sum /tmp/special2.glb > /tmp/special2.sha256
+      - name: Install lightweight offline inspection tools
+        run: python -m pip install --disable-pip-version-check numpy pillow trimesh
+      - name: Inspect and render four orthographic donor views
+        run: |
+          python - <<'PY'
+          import json,struct
+          import numpy as np
+          import trimesh
+          from PIL import Image,ImageDraw
+          p='/tmp/special2.glb';raw=open(p,'rb').read();magic,ver,total=struct.unpack_from('<III',raw,0)
+          if magic!=0x46546c67: raise SystemExit('not glb')
+          off=12;j=None
+          while off<len(raw):
+            ln,tp=struct.unpack_from('<II',raw,off);data=raw[off+8:off+8+ln];off+=8+ln
+            if tp==0x4E4F534A:j=json.loads(data.decode('utf8').rstrip(' \x00'))
+          report={'bytes':len(raw),'version':ver,'nodes':len(j.get('nodes',[])),'meshes':len(j.get('meshes',[])),'skins':len(j.get('skins',[])),'animations':[a.get('name') for a in j.get('animations',[])],'materials':len(j.get('materials',[])),'textures':len(j.get('textures',[])),'images':len(j.get('images',[])),'nodeNames':[n.get('name') for n in j.get('nodes',[])[:120]],'meshNames':[m.get('name') for m in j.get('meshes',[])[:120]]}
+          scene=trimesh.load(p,force='scene',process=False);parts=[]
+          for node_name in scene.graph.nodes_geometry:
+            T,gn=scene.graph[node_name];g=scene.geometry[gn];v=trimesh.transform_points(np.asarray(g.vertices),T);f=np.asarray(g.faces)
+            try:
+              fc=np.asarray(g.visual.face_colors)[:,:3]
+              if len(fc)!=len(f):raise ValueError
+            except Exception:fc=np.tile(np.array([178,165,154]),(len(f),1))
+            parts.append((v,f,fc,node_name))
+          V=np.vstack([v for v,_,_,_ in parts]);mn,mx=V.min(0),V.max(0);span=mx-mn;up=int(np.argmax(span));rem=[i for i in range(3) if i!=up];xaxis,depth=rem
+          report.update({'geometryNodes':len(parts),'vertices':int(sum(len(v) for v,_,_,_ in parts)),'faces':int(sum(len(f) for _,f,_,_ in parts)),'boundsMin':mn.tolist(),'boundsMax':mx.tolist(),'span':span.tolist(),'upAxis':up})
+          open('/tmp/special2-report.json','w').write(json.dumps(report,ensure_ascii=False,indent=2))
+          W,H=620,860;pad=30;cy=(mn[up]+mx[up])/2;views=[('front',1),('right',2),('back',-1),('left',-2)];imgs=[]
+          for name,side in views:
+            allh=[];tris=[]
+            for v,f,fc,node in parts:
+              if abs(side)==1:h=v[:,xaxis]*(1 if side==1 else -1);d=v[:,depth]*side
+              else:h=v[:,depth]*(1 if side==2 else -1);d=-v[:,xaxis]*(1 if side==2 else -1)
+              y=v[:,up];allh.extend(h.tolist())
+              for i,face in enumerate(f):tris.append((float(d[face].mean()),np.c_[h[face],y[face]],tuple(map(int,fc[i]))))
+            cx=(min(allh)+max(allh))/2;hr=max(allh)-min(allh);scale=min((W-2*pad)/max(hr,1e-9),(H-2*pad)/max(span[up],1e-9));tris.sort(key=lambda x:x[0]);im=Image.new('RGB',(W,H),'white');dr=ImageDraw.Draw(im)
+            for dep,pts,col in tris:dr.polygon([((x-cx)*scale+W/2,H/2-(y-cy)*scale) for x,y in pts],fill=col)
+            dr.text((18,14),name,fill=(30,45,55));im.save(f'/tmp/special2-{name}.png');imgs.append(im)
+          sheet=Image.new('RGB',(W*2,H*2),(225,225,225))
+          for i,im in enumerate(imgs):sheet.paste(im,((i%2)*W,(i//2)*H))
+          sheet.save('/tmp/special2-fourview.png')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: special2-donor-diagnostic
+          path: |
+            /tmp/special2-report.json
+            /tmp/special2-fourview.png
+            /tmp/special2-front.png
+            /tmp/special2-right.png
+            /tmp/special2-back.png
+            /tmp/special2-left.png
+            /tmp/special2.sha256
+          retention-days: 3
