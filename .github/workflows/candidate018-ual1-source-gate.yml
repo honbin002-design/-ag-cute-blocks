@@ -1,0 +1,58 @@
+name: Candidate 018 UAL1 Source Gate
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/candidate018-ual1-source-gate.yml'
+  workflow_dispatch:
+jobs:
+  source-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned CC0 UAL1 mirror
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual1.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/AnimationLibrary_Godot_Standard.bin
+          curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/UAL1_LICENSE.txt
+          curl -fL --retry 3 "$BASE/README.md" -o /tmp/UAL1_README.md
+          sha256sum /tmp/ual1.gltf /tmp/AnimationLibrary_Godot_Standard.bin /tmp/UAL1_LICENSE.txt > /tmp/ual1-source.sha256
+      - name: Inspect animation semantics and rig namespace
+        shell: python
+        run: |
+          import json,pathlib
+          j=json.load(open('/tmp/ual1.gltf','r',encoding='utf8'))
+          names=[a.get('name') for a in j.get('animations',[])]
+          nodes=[n.get('name') for n in j.get('nodes',[]) if n.get('name')]
+          required={
+            'idle':['Idle_Loop'],
+            'walk':['Walk_Loop'],
+            'run':['Jog_Fwd_Loop','Sprint_Loop'],
+            'jump':['Jump_Start','Jump_Loop','Jump_Land'],
+            'sit':['Sitting_Enter','Sitting_Idle_Loop','Sitting_Exit'],
+            'interact':['Interact']
+          }
+          resolved={k:[x for x in opts if x in names] for k,opts in required.items()}
+          missing=[k for k,v in resolved.items() if not v]
+          target_hits={n for n in nodes if n in {'root','pelvis','spine_01','spine_02','spine_03','neck_01','Head','clavicle_l','upperarm_l','lowerarm_l','hand_l','clavicle_r','upperarm_r','lowerarm_r','hand_r','thigh_l','calf_l','foot_l','ball_l','thigh_r','calf_r','foot_r','ball_r'}}
+          report={'candidate':'018','source':'J-Ponzo/gltf-universal-animation-library@e24c23c','license':'CC0-1.0 mirror of Quaternius free Standard','animationCount':len(names),'animationNames':names,'nodeCount':len(j.get('nodes',[])),'coreTargetNameHits':sorted(target_hits),'semanticResolution':resolved,'semanticMissing':missing}
+          pathlib.Path('/tmp/candidate018-ual1-source-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          print(json.dumps({'animationCount':len(names),'semanticResolution':resolved,'semanticMissing':missing,'coreTargetNameHits':len(target_hits)},ensure_ascii=False,indent=2))
+          if missing:
+            print('CANDIDATE 018 UAL1 SOURCE GATE: FAIL - required semantics missing'); raise SystemExit(1)
+          if len(target_hits)<20:
+            print('CANDIDATE 018 UAL1 SOURCE GATE: FAIL - rig namespace mismatch'); raise SystemExit(1)
+          print('CANDIDATE 018 UAL1 SOURCE GATE: PASS')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate018-ual1-source-gate
+          path: |
+            /tmp/candidate018-ual1-source-report.json
+            /tmp/ual1-source.sha256
+            /tmp/UAL1_LICENSE.txt
+            /tmp/UAL1_README.md
+          retention-days: 3
