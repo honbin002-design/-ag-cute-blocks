@@ -1,0 +1,89 @@
+name: Candidate 018 Source Pose Diagnostic
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/candidate018-source-pose-diagnostic.yml']
+  workflow_dispatch:
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned donor and UAL1
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/c018src
+          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/c018src/donor.glb
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/c018src/ual1.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/c018src/AnimationLibrary_Godot_Standard.bin
+      - name: Install renderer
+        working-directory: /tmp/c018src
+        run: |
+          npm init -y >/dev/null
+          npm install --silent three@0.180.0 playwright@1.55.0
+          npx playwright install --with-deps chromium
+          cp node_modules/three/build/three.module.js ./three.module.js
+          cp node_modules/three/build/three.core.js ./three.core.js
+          mkdir -p ./three-addons
+          cp -R node_modules/three/examples/jsm/. ./three-addons/
+      - name: Build source diagnostic page
+        run: |
+          cat > /tmp/c018src/index.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><style>
+          body{margin:0;background:#eee;font-family:Arial,sans-serif}#status{padding:12px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(2,520px);gap:12px;padding:12px}.card{background:#fff;padding:8px}.card h3{margin:4px}.card img{width:500px;height:700px;object-fit:contain;background:#fff}canvas{position:fixed;left:-9999px;top:0}
+          </style><script type="importmap">{"imports":{"three":"./three.module.js"}}</script></head><body><div id="status">source pose diagnostic…</div><div class="grid" id="grid"></div>
+          <script type="module">
+          import * as THREE from 'three';
+          import {GLTFLoader} from './three-addons/loaders/GLTFLoader.js';
+          const loader=new GLTFLoader(),load=u=>new Promise((r,j)=>loader.load(u,r,undefined,j));
+          const status=document.querySelector('#status'),grid=document.querySelector('#grid');
+          try{
+            const [srcG,donG]=await Promise.all([load('./ual1.gltf'),load('./donor.glb')]);
+            const src=srcG.scene,don=donG.scene; src.updateMatrixWorld(true);don.updateMatrixWorld(true);
+            const sm={};src.traverse(o=>{if(o.name){sm[o.name]=o;sm[THREE.PropertyBinding.sanitizeNodeName(o.name)]=o;}});
+            const get=n=>sm[n]||sm[THREE.PropertyBinding.sanitizeNodeName(n)];
+            const keys={hips:'DEF-hips',head:'DEF-head',lShoulder:'DEF-shoulder.L',lUpperArm:'DEF-upper_arm.L',lHand:'DEF-hand.L',rShoulder:'DEF-shoulder.R',rUpperArm:'DEF-upper_arm.R',rHand:'DEF-hand.R',lThigh:'DEF-thigh.L',lShin:'DEF-shin.L',lFoot:'DEF-foot.L',rThigh:'DEF-thigh.R',rShin:'DEF-shin.R',rFoot:'DEF-foot.R'};
+            const objs={};for(const [k,n] of Object.entries(keys))objs[k]=get(n);
+            const all=[];src.traverse(o=>all.push(o));const rest=all.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()}));
+            const reset=()=>rest.forEach(x=>{x.o.position.copy(x.p);x.o.quaternion.copy(x.q);x.o.scale.copy(x.s)});
+            const pos=o=>{const v=new THREE.Vector3();o.getWorldPosition(v);return v.toArray();};
+            const scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);scene.add(new THREE.HemisphereLight(0xffffff,0x777777,2.2));const dl=new THREE.DirectionalLight(0xffffff,2);dl.position.set(3,5,4);scene.add(dl);
+            const helper=new THREE.SkeletonHelper(src);helper.material.linewidth=3;scene.add(src);scene.add(helper);
+            const box=new THREE.Box3().setFromObject(helper),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+            const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(500,700);document.body.appendChild(renderer.domElement);
+            const cam=new THREE.PerspectiveCamera(32,500/700,.01,100);const dist=Math.max(size.y*1.8,3);cam.position.set(center.x,center.y,center.z+dist);cam.lookAt(center);
+            const samples=[['Rest',null,0],['Idle','Idle_Loop',.35],['Walk','Walk_Loop',.30],['Jump','Jump_Loop',.45],['Jog','Jog_Fwd_Loop',.25],['Interact','Interact',.45]];
+            const report={clips:srcG.animations.map(c=>c.name),samples:[]};
+            for(const [label,name,f] of samples){
+              reset();src.updateMatrixWorld(true);let mixer=null,clip=null;
+              if(name){clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);mixer=new THREE.AnimationMixer(src);mixer.clipAction(clip).play();mixer.setTime(clip.duration*f);src.updateMatrixWorld(true);}
+              helper.updateMatrixWorld(true);renderer.render(scene,cam);
+              const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label}${name?' — '+name:''}</h3><img src="${renderer.domElement.toDataURL('image/png')}">`;grid.appendChild(card);
+              const p={};for(const [k,o] of Object.entries(objs))p[k]=o?pos(o):null;
+              const headY=p.head?.[1]??0;report.samples.push({label,clip:name,duration:clip?.duration??0,positions:p,handAboveHead:{left:(p.lHand?.[1]??-999)>headY,right:(p.rHand?.[1]??-999)>headY}});
+              mixer?.stopAllAction();
+            }
+            window.__diag={done:true,report};status.textContent='source diagnostic complete';
+          }catch(e){window.__diag={done:true,error:String(e)};status.textContent='ERROR '+String(e);throw e;}
+          </script></body></html>
+          HTML
+          cat > /tmp/c018src/capture.mjs <<'JS'
+          import {chromium} from 'playwright';import fs from 'node:fs';
+          const b=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});const p=await b.newPage({viewport:{width:1080,height:5000}});const errs=[];p.on('pageerror',e=>errs.push(String(e)));await p.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});await p.waitForFunction(()=>window.__diag?.done===true,null,{timeout:120000});const d=await p.evaluate(()=>window.__diag);fs.writeFileSync('source-pose-report.json',JSON.stringify({...d,errs},null,2));await p.screenshot({path:'source-pose-diagnostic.png',fullPage:true});await b.close();if(d.error||errs.length)process.exit(2);
+          JS
+      - name: Render and measure source poses
+        working-directory: /tmp/c018src
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018src-http.log 2>&1 &
+          S=$!; trap 'kill $S || true' EXIT; sleep 2; node capture.mjs; cat source-pose-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate018-source-pose-diagnostic
+          path: |
+            /tmp/c018src/source-pose-diagnostic.png
+            /tmp/c018src/source-pose-report.json
+            /tmp/c018src-http.log
+          retention-days: 3
