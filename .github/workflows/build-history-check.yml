@@ -12,12 +12,15 @@ jobs:
         with:
           node-version: '22'
       - name: Syntax check
-        run: node --check build-history-runtime-v0596.js
-      - name: Verify safe scope and wiring
+        run: node --check build-history-runtime-v0597.js
+      - name: Verify conflict-safe scope and wiring
         run: |
-          grep -q "SAFE_BUILD_ONLY" build-history-runtime-v0596.js
-          grep -q "SAFE_OBJECT_TYPES" build-history-runtime-v0596.js
-          grep -q "build-history-runtime-v0596.js?v=0.5.96" bootstrap-v0510.js
-          grep -q "const release='V0.5.96'" bootstrap-v0510.js
-          grep -q "release-version-v0596.js" app-v0510.js
-          ! grep -q "MutationObserver" build-history-runtime-v0596.js || grep -q "No MutationObserver" build-history-runtime-v0596.js
+          grep -q "CONFLICT_SAFE_BUILD_ONLY" build-history-runtime-v0597.js
+          grep -q "SAFE_OBJECT_TYPES" build-history-runtime-v0597.js
+          grep -q "verifyExpected" build-history-runtime-v0597.js
+          grep -q "verifyAbsent" build-history-runtime-v0597.js
+          grep -q "entity-state-changed" build-history-runtime-v0597.js
+          grep -q "build-history-runtime-v0597.js?v=0.5.97" bootstrap-v0510.js
+          grep -q "const release='V0.5.97'" bootstrap-v0510.js
+          grep -q "release-version-v0597.js" app-v0510.js
+          ! grep -q "new MutationObserver" build-history-runtime-v0597.js
