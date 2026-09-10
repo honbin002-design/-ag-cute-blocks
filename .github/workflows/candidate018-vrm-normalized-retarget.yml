@@ -1,0 +1,86 @@
+name: Candidate 018 VRM Normalized Retarget
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/candidate018-vrm-normalized-retarget.yml']
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned donor and UAL1
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/c018norm
+          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/c018norm/donor.vrm
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/c018norm/ual1.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/c018norm/AnimationLibrary_Godot_Standard.bin
+      - name: Install renderer and VRM runtime
+        working-directory: /tmp/c018norm
+        run: |
+          npm init -y >/dev/null
+          npm install --silent three@0.180.0 @pixiv/three-vrm@3.4.4 playwright@1.55.0
+          npx playwright install --with-deps chromium
+          cp node_modules/three/build/three.module.js ./three.module.js
+          cp node_modules/three/build/three.core.js ./three.core.js
+          mkdir -p ./three-addons ./three-vrm
+          cp -R node_modules/three/examples/jsm/. ./three-addons/
+          cp -R node_modules/@pixiv/three-vrm/lib/. ./three-vrm/
+      - name: Build normalized humanoid retarget page
+        run: |
+          cat > /tmp/c018norm/index.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><style>
+          body{margin:0;background:#eee;font-family:Arial,sans-serif}#status{padding:12px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(2,520px);gap:12px;padding:12px}.card{background:white;padding:8px;border-radius:8px}.card h3{margin:4px 0 8px}.card img{display:block;width:500px;height:700px;object-fit:contain;background:#fff}canvas{position:fixed;left:-9999px;top:0}
+          </style><script type="importmap">{"imports":{"three":"./three.module.js","@pixiv/three-vrm":"./three-vrm/three-vrm.module.js"}}</script></head><body><div id="status">VRM normalized retarget…</div><div class="grid" id="grid"></div>
+          <script type="module">
+          import * as THREE from 'three';
+          import {GLTFLoader} from './three-addons/loaders/GLTFLoader.js';
+          import {VRMLoaderPlugin, VRMUtils} from '@pixiv/three-vrm';
+          const status=document.querySelector('#status'),grid=document.querySelector('#grid');
+          try{
+            const dl=new GLTFLoader();dl.register(p=>new VRMLoaderPlugin(p));
+            const sl=new GLTFLoader();
+            const load=(l,u)=>new Promise((r,j)=>l.load(u,r,undefined,j));
+            const [donG,srcG]=await Promise.all([load(dl,'./donor.vrm'),load(sl,'./ual1.gltf')]);
+            const vrm=donG.userData.vrm;if(!vrm)throw Error('VRM plugin did not produce vrm');
+            VRMUtils.rotateVRM0(vrm);
+            const donor=vrm.scene,source=srcG.scene; donor.updateMatrixWorld(true);source.updateMatrixWorld(true);
+            const sm={};source.traverse(o=>{if(o.name){sm[o.name]=o;sm[THREE.PropertyBinding.sanitizeNodeName(o.name)]=o;}});const sget=n=>sm[n]||sm[THREE.PropertyBinding.sanitizeNodeName(n)];
+            const legacy={hips:'DEF-hips',spine:'DEF-spine.001',chest:'DEF-spine.002',upperChest:'DEF-spine.003',neck:'DEF-neck',head:'DEF-head',leftShoulder:'DEF-shoulder.L',leftUpperArm:'DEF-upper_arm.L',leftLowerArm:'DEF-forearm.L',leftHand:'DEF-hand.L',rightShoulder:'DEF-shoulder.R',rightUpperArm:'DEF-upper_arm.R',rightLowerArm:'DEF-forearm.R',rightHand:'DEF-hand.R',leftUpperLeg:'DEF-thigh.L',leftLowerLeg:'DEF-shin.L',leftFoot:'DEF-foot.L',leftToes:'DEF-toe.L',rightUpperLeg:'DEF-thigh.R',rightLowerLeg:'DEF-shin.R',rightFoot:'DEF-foot.R',rightToes:'DEF-toe.R'};
+            for(const [side,S] of [['left','L'],['right','R']])for(const [f,ff] of [['Thumb','thumb'],['Index','f_index'],['Middle','f_middle'],['Ring','f_ring'],['Little','f_pinky']])for(const [k,seg] of [['Proximal','01'],['Intermediate','02'],['Distal','03']])legacy[side+f+k]=`DEF-${ff}.${seg}.${S}`;
+            const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const s=sget(sn),d=vrm.humanoid.getNormalizedBoneNode(sem);if(s&&d)pairs.push({sem,s,d,sBind:s.quaternion.clone(),dBind:d.quaternion.clone()});}
+            if(pairs.length<48)throw Error('normalized mapped '+pairs.length);
+            const srcAll=[],dstAll=[];source.traverse(o=>srcAll.push(o));vrm.humanoid.normalizedHumanBonesRoot.traverse(o=>dstAll.push(o));const snap=a=>a.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()})),sr=snap(srcAll),dr=snap(dstAll),reset=r=>r.forEach(x=>{x.o.position.copy(x.p);x.o.quaternion.copy(x.q);x.o.scale.copy(x.s)});
+            const sH=sget('DEF-hips'),dH=vrm.humanoid.getNormalizedBoneNode('hips'),sH0=sH.position.clone(),dH0=dH.position.clone();
+            const srcBox0=new THREE.Box3().setFromObject(source),srcSize0=srcBox0.getSize(new THREE.Vector3()),dstBox0=new THREE.Box3().setFromObject(donor),dstSize0=dstBox0.getSize(new THREE.Vector3()),ts=dstSize0.y/Math.max(srcSize0.y,1e-6);
+            function retarget(){for(const p of pairs){const delta=p.sBind.clone().invert().multiply(p.s.quaternion);p.d.quaternion.copy(p.dBind).multiply(delta);}const t=sH.position.clone().sub(sH0).multiplyScalar(ts);dH.position.copy(dH0).add(t);vrm.humanoid.update();donor.updateMatrixWorld(true);}
+            const scene=new THREE.Scene();scene.background=new THREE.Color(0xf7f7f7);scene.add(donor);scene.add(new THREE.HemisphereLight(0xffffff,0x888888,2.2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(3,5,4);scene.add(sun);
+            const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(500,700);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+            const box=new THREE.Box3().setFromObject(donor),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());const cam=new THREE.PerspectiveCamera(30,500/700,.01,100),dist=Math.max(size.y*1.7,2.6);cam.position.set(center.x,center.y+size.y*.03,center.z+dist);cam.lookAt(center);
+            const poses=[['Rest',null,0],['Idle','Idle_Loop',.35],['Walk','Walk_Loop',.30],['Jog','Jog_Fwd_Loop',.25],['Jump','Jump_Loop',.45],['Interact','Interact',.45],['Sit','Sitting_Idle_Loop',.55]],rows=[];
+            for(const [label,name,f] of poses){reset(sr);reset(dr);source.updateMatrixWorld(true);vrm.humanoid.update();donor.updateMatrixWorld(true);let mixer=null;if(name){const clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);mixer=new THREE.AnimationMixer(source);mixer.clipAction(clip).play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);retarget();}else{vrm.humanoid.update();donor.updateMatrixWorld(true);}renderer.render(scene,cam);const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label}${name?' — '+name:''}</h3><img src="${renderer.domElement.toDataURL('image/png')}">`;grid.appendChild(card);rows.push({label,clip:name,mapped:pairs.length,bounds:new THREE.Box3().setFromObject(donor).getSize(new THREE.Vector3()).toArray()});mixer?.stopAllAction();}
+            window.__norm={done:true,rows};status.textContent='VRM normalized retarget complete';
+          }catch(e){window.__norm={done:true,error:String(e)};status.textContent='ERROR '+String(e);throw e;}
+          </script></body></html>
+          HTML
+          cat > /tmp/c018norm/capture.mjs <<'JS'
+          import {chromium} from 'playwright';import fs from 'node:fs';
+          const b=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});const p=await b.newPage({viewport:{width:1080,height:6000}});const errs=[];p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});p.on('pageerror',e=>errs.push(String(e)));await p.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});await p.waitForFunction(()=>window.__norm?.done===true,null,{timeout:120000});const d=await p.evaluate(()=>window.__norm);fs.writeFileSync('normalized-report.json',JSON.stringify({...d,errs},null,2));await p.screenshot({path:'normalized-retarget.png',fullPage:true});await b.close();if(d.error||errs.length)process.exit(2);
+          JS
+      - name: Render normalized humanoid poses
+        working-directory: /tmp/c018norm
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018norm-http.log 2>&1 &
+          S=$!; trap 'kill $S || true' EXIT; sleep 2; node capture.mjs; cat normalized-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate018-vrm-normalized-retarget
+          path: |
+            /tmp/c018norm/normalized-retarget.png
+            /tmp/c018norm/normalized-report.json
+            /tmp/c018norm-http.log
+          retention-days: 3
