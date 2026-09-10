@@ -20,7 +20,7 @@ jobs:
           grep -q "verifyExpected" build-history-runtime-v0597.js
           grep -q "verifyAbsent" build-history-runtime-v0597.js
           grep -q "entity-state-changed" build-history-runtime-v0597.js
-          grep -q "build-history-runtime-v0597.js?v=0.5.100" bootstrap-v0510.js
-          grep -q "const release='V0.5.100'" bootstrap-v0510.js
-          grep -q "release-version-v05100.js" app-v0510.js
+          grep -q "build-history-runtime-v0597.js?v=0.5.102" bootstrap-v0510.js
+          grep -q "const release='V0.5.102'" bootstrap-v0510.js
+          grep -q "release-version-v05102.js" app-v0510.js
           ! grep -q "new MutationObserver" build-history-runtime-v0597.js
