@@ -14,121 +14,77 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/c018render
-          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/c018render/donor.glb
+          curl -fL --retry 3 'https://raw.githubusercontent.com/ruslanmv/3D-Avatar-Chatbot/c8c4e13d2c76038e53fdc02bd897d5850eb44cea/vendor/avatars/HairSample_Female.vrm' -o /tmp/c018render/donor.vrm
           BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
           curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/c018render/ual1.gltf
           curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/c018render/AnimationLibrary_Godot_Standard.bin
           curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/c018render/UAL1_LICENSE.txt
-          sha256sum /tmp/c018render/donor.glb /tmp/c018render/ual1.gltf /tmp/c018render/AnimationLibrary_Godot_Standard.bin > /tmp/c018render/sources.sha256
-      - name: Install headless Three.js renderer
+          sha256sum /tmp/c018render/donor.vrm /tmp/c018render/ual1.gltf /tmp/c018render/AnimationLibrary_Godot_Standard.bin > /tmp/c018render/sources.sha256
+      - name: Install headless Three.js and VRM renderer
         working-directory: /tmp/c018render
         run: |
           npm init -y >/dev/null
-          npm install --silent three@0.180.0 playwright@1.55.0
+          npm install --silent three@0.180.0 @pixiv/three-vrm@3.4.4 playwright@1.55.0
           npx playwright install --with-deps chromium
           cp node_modules/three/build/three.module.js ./three.module.js
           cp node_modules/three/build/three.core.js ./three.core.js
-          mkdir -p ./three-addons
+          mkdir -p ./three-addons ./three-vrm
           cp -R node_modules/three/examples/jsm/. ./three-addons/
-      - name: Build isolated render page
+          cp -R node_modules/@pixiv/three-vrm/lib/. ./three-vrm/
+      - name: Build isolated normalized world-space render page
         run: |
           cat > /tmp/c018render/index.html <<'HTML'
           <!doctype html><html><head><meta charset="utf-8"><style>
-          body{margin:0;background:#eee;font-family:Arial,sans-serif}#status{padding:12px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(2,520px);gap:12px;padding:12px}.card{background:white;padding:8px;border-radius:8px}.card h3{margin:4px 0 8px;font-size:18px}.card img{display:block;width:500px;height:700px;object-fit:contain;background:white}
-          canvas{position:fixed;left:-9999px;top:0}
-          </style><script type="importmap">{"imports":{"three":"./three.module.js"}}</script></head><body><div id="status">Candidate 018 rendering…</div><div class="grid" id="grid"></div>
+          body{margin:0;background:#eee;font-family:Arial,sans-serif}#status{padding:12px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(2,520px);gap:12px;padding:12px}.card{background:white;padding:8px;border-radius:8px}.card h3{margin:4px 0 8px;font-size:18px}.card img{display:block;width:500px;height:700px;object-fit:contain;background:white}canvas{position:fixed;left:-9999px;top:0}
+          </style><script type="importmap">{"imports":{"three":"./three.module.js","@pixiv/three-vrm":"./three-vrm/three-vrm.module.js"}}</script></head><body><div id="status">Candidate 018 normalized world-space rendering…</div><div class="grid" id="grid"></div>
           <script type="module">
           import * as THREE from 'three';
           import {GLTFLoader} from './three-addons/loaders/GLTFLoader.js';
-          const status=document.querySelector('#status'), grid=document.querySelector('#grid');
-          const loader=new GLTFLoader();
-          const load=u=>new Promise((res,rej)=>loader.load(u,res,undefined,rej));
-          try {
-          const [donorG,srcG]=await Promise.all([load('./donor.glb'),load('./ual1.gltf')]);
-          const donor=donorG.scene, source=srcG.scene;
-          donor.updateMatrixWorld(true); source.updateMatrixWorld(true);
-          function glbJSON(buf){const dv=new DataView(buf);let o=12;while(o<buf.byteLength){const len=dv.getUint32(o,true),type=dv.getUint32(o+4,true);if(type===0x4e4f534a){return JSON.parse(new TextDecoder().decode(new Uint8Array(buf,o+8,len)).replace(/[\u0000 ]+$/,''));}o+=8+len;}throw Error('no JSON');}
-          const donorRaw=await (await fetch('./donor.glb')).arrayBuffer(), dj=glbJSON(donorRaw);
-          const hb=dj.extensions?.VRM?.humanoid?.humanBones||[];
-          const semToNodeName={}; for(const h of hb){const n=dj.nodes[h.node];if(n?.name)semToNodeName[h.bone]=n.name;}
-          const legacy={hips:'DEF-hips',spine:'DEF-spine.001',chest:'DEF-spine.002',upperChest:'DEF-spine.003',neck:'DEF-neck',head:'DEF-head',leftShoulder:'DEF-shoulder.L',leftUpperArm:'DEF-upper_arm.L',leftLowerArm:'DEF-forearm.L',leftHand:'DEF-hand.L',rightShoulder:'DEF-shoulder.R',rightUpperArm:'DEF-upper_arm.R',rightLowerArm:'DEF-forearm.R',rightHand:'DEF-hand.R',leftUpperLeg:'DEF-thigh.L',leftLowerLeg:'DEF-shin.L',leftFoot:'DEF-foot.L',leftToes:'DEF-toe.L',rightUpperLeg:'DEF-thigh.R',rightLowerLeg:'DEF-shin.R',rightFoot:'DEF-foot.R',rightToes:'DEF-toe.R'};
-          for(const [side,S] of [['left','L'],['right','R']])for(const [f,ff] of [['Thumb','thumb'],['Index','f_index'],['Middle','f_middle'],['Ring','f_ring'],['Little','f_pinky']])for(const [k,seg] of [['Proximal','01'],['Intermediate','02'],['Distal','03']])legacy[side+f+k]=`DEF-${ff}.${seg}.${S}`;
-          const srcByName={},donorByName={};
-          const register=(map,o)=>{if(!o.name)return;map[o.name]=o;map[THREE.PropertyBinding.sanitizeNodeName(o.name)]=o;};
-          source.traverse(o=>register(srcByName,o)); donor.traverse(o=>register(donorByName,o));
-          const lookup=(map,name)=>name?(map[name]||map[THREE.PropertyBinding.sanitizeNodeName(name)]):undefined;
-          const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const dn=semToNodeName[sem],s=lookup(srcByName,sn),d=lookup(donorByName,dn);if(s&&d)pairs.push({sem,s,d});}
-          if(pairs.length<48)throw Error('mapped bones too low '+pairs.length);
-          const allSrc=[],allDon=[];source.traverse(o=>allSrc.push(o));donor.traverse(o=>allDon.push(o));
-          function saveRest(arr){return arr.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()}));}
-          const srcRest=saveRest(allSrc), donRest=saveRest(allDon);
-          const srcBindWorld=new Map(),donBindWorld=new Map();
-          for(const p of pairs){const q=new THREE.Quaternion();p.s.getWorldQuaternion(q);srcBindWorld.set(p.s,q.clone());p.d.getWorldQuaternion(q);donBindWorld.set(p.d,q.clone());}
-          const sourceHips=lookup(srcByName,'DEF-hips'), donorHips=lookup(donorByName,semToNodeName.hips);
-          const sourceHipsBind=sourceHips.position.clone(), donorHipsBind=donorHips.position.clone();
-          const donorBox=new THREE.Box3().setFromObject(donor), donorSize=donorBox.getSize(new THREE.Vector3()), sourceBox=new THREE.Box3().setFromObject(source), sourceSize=sourceBox.getSize(new THREE.Vector3());
-          const transScale=donorSize.y/Math.max(sourceSize.y,1e-6);
-          function reset(rest){for(const r of rest){r.o.position.copy(r.p);r.o.quaternion.copy(r.q);r.o.scale.copy(r.s);} }
-          const byDepth=[...pairs].sort((a,b)=>{let da=0,db=0;for(let x=a.d;x.parent;x=x.parent)da++;for(let x=b.d;x.parent;x=x.parent)db++;return da-db;});
-          function retarget(){source.updateMatrixWorld(true);donor.updateMatrixWorld(true);for(const p of byDepth){const qs=new THREE.Quaternion(),delta=new THREE.Quaternion(),desired=new THREE.Quaternion(),parentQ=new THREE.Quaternion();p.s.getWorldQuaternion(qs);delta.copy(qs).multiply(srcBindWorld.get(p.s).clone().invert());desired.copy(delta).multiply(donBindWorld.get(p.d));if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));p.d.updateMatrixWorld(true);}const d=sourceHips.position.clone().sub(sourceHipsBind).multiplyScalar(transScale);donorHips.position.copy(donorHipsBind).add(d);donor.updateMatrixWorld(true);}
-          const scene=new THREE.Scene();scene.background=new THREE.Color(0xf7f7f7);scene.add(donor);scene.add(new THREE.HemisphereLight(0xffffff,0x888888,2.2));const dl=new THREE.DirectionalLight(0xffffff,2);dl.position.set(3,5,4);scene.add(dl);
-          const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false});renderer.setSize(500,700);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
-          const cam=new THREE.PerspectiveCamera(30,500/700,0.01,100);const restCenter=donorBox.getCenter(new THREE.Vector3());const dist=Math.max(donorSize.y*1.65,2.6);cam.position.set(restCenter.x,restCenter.y+donorSize.y*0.02,restCenter.z+dist);cam.lookAt(restCenter);cam.updateProjectionMatrix();
-          const picks=[['Idle','Idle_Loop',0.35],['Walk','Walk_Loop',0.30],['Jog','Jog_Fwd_Loop',0.25],['Jump','Jump_Loop',0.45],['Sit','Sitting_Idle_Loop',0.55],['Interact','Interact',0.45]];
-          const diagnostics=[];
-          for(const [label,name,f] of picks){status.textContent=`Candidate 018: ${label}`;reset(srcRest);reset(donRest);source.updateMatrixWorld(true);donor.updateMatrixWorld(true);const clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);const mixer=new THREE.AnimationMixer(source);const action=mixer.clipAction(clip);action.play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);retarget();const b=new THREE.Box3().setFromObject(donor),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3());const maxSpan=Math.max(size.x,size.y,size.z);diagnostics.push({label,clip:name,bounds:{min:b.min.toArray(),max:b.max.toArray(),size:size.toArray()},finite:Number.isFinite(maxSpan),mappedBones:pairs.length});cam.lookAt(new THREE.Vector3(restCenter.x,center.y,restCenter.z));renderer.render(scene,cam);const url=renderer.domElement.toDataURL('image/png');const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label} — ${name}</h3><img src="${url}">`;grid.appendChild(card);mixer.stopAllAction();}
-          window.__candidate018={done:true,diagnostics};status.textContent='Candidate 018 mesh motion render complete';
-          } catch(e) {
-            status.textContent='Candidate 018 ERROR: '+String(e);
-            window.__candidate018={done:true,error:String(e),diagnostics:[]};
-            throw e;
-          }
+          import {VRMLoaderPlugin,VRMUtils} from '@pixiv/three-vrm';
+          const status=document.querySelector('#status'),grid=document.querySelector('#grid');
+          try{
+            const donorLoader=new GLTFLoader(); donorLoader.register(p=>new VRMLoaderPlugin(p));
+            const sourceLoader=new GLTFLoader();
+            const load=(l,u)=>new Promise((res,rej)=>l.load(u,res,undefined,rej));
+            const [donorG,srcG]=await Promise.all([load(donorLoader,'./donor.vrm'),load(sourceLoader,'./ual1.gltf')]);
+            const vrm=donorG.userData.vrm;if(!vrm)throw Error('VRM plugin did not produce vrm');
+            VRMUtils.rotateVRM0(vrm);
+            const donor=vrm.scene,source=srcG.scene;source.updateMatrixWorld(true);vrm.humanoid.update();donor.updateMatrixWorld(true);
+            const legacy={hips:'DEF-hips',spine:'DEF-spine.001',chest:'DEF-spine.002',upperChest:'DEF-spine.003',neck:'DEF-neck',head:'DEF-head',leftShoulder:'DEF-shoulder.L',leftUpperArm:'DEF-upper_arm.L',leftLowerArm:'DEF-forearm.L',leftHand:'DEF-hand.L',rightShoulder:'DEF-shoulder.R',rightUpperArm:'DEF-upper_arm.R',rightLowerArm:'DEF-forearm.R',rightHand:'DEF-hand.R',leftUpperLeg:'DEF-thigh.L',leftLowerLeg:'DEF-shin.L',leftFoot:'DEF-foot.L',leftToes:'DEF-toe.L',rightUpperLeg:'DEF-thigh.R',rightLowerLeg:'DEF-shin.R',rightFoot:'DEF-foot.R',rightToes:'DEF-toe.R'};
+            for(const [side,S] of [['left','L'],['right','R']])for(const [f,ff] of [['Thumb','thumb'],['Index','f_index'],['Middle','f_middle'],['Ring','f_ring'],['Little','f_pinky']])for(const [k,seg] of [['Proximal','01'],['Intermediate','02'],['Distal','03']])legacy[side+f+k]=`DEF-${ff}.${seg}.${S}`;
+            const srcByName={};source.traverse(o=>{if(o.name){srcByName[o.name]=o;srcByName[THREE.PropertyBinding.sanitizeNodeName(o.name)]=o;}});const sget=n=>srcByName[n]||srcByName[THREE.PropertyBinding.sanitizeNodeName(n)];
+            const pairs=[];for(const [sem,sn] of Object.entries(legacy)){const s=sget(sn),d=vrm.humanoid.getNormalizedBoneNode(sem);if(s&&d){const sb=new THREE.Quaternion(),db=new THREE.Quaternion();s.getWorldQuaternion(sb);d.getWorldQuaternion(db);pairs.push({sem,s,d,sb,db});}}
+            if(pairs.length<48)throw Error('mapped bones too low '+pairs.length);
+            const depth=o=>{let d=0;for(let x=o;x.parent;x=x.parent)d++;return d};pairs.sort((a,b)=>depth(a.d)-depth(b.d));
+            const srcAll=[],dstAll=[];source.traverse(o=>srcAll.push(o));vrm.humanoid.normalizedHumanBonesRoot.traverse(o=>dstAll.push(o));
+            const snap=a=>a.map(o=>({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone()}));const srcRest=snap(srcAll),dstRest=snap(dstAll);const reset=r=>r.forEach(x=>{x.o.position.copy(x.p);x.o.quaternion.copy(x.q);x.o.scale.copy(x.s)});
+            const sourceHips=sget('DEF-hips'),targetHips=vrm.humanoid.getNormalizedBoneNode('hips');if(!sourceHips||!targetHips)throw Error('hips missing');
+            const sourceHipsBind=sourceHips.position.clone(),targetHipsBind=targetHips.position.clone();
+            const donorBox0=new THREE.Box3().setFromObject(donor),donorSize0=donorBox0.getSize(new THREE.Vector3()),donorCenter0=donorBox0.getCenter(new THREE.Vector3());const sourceSize0=new THREE.Box3().setFromObject(source).getSize(new THREE.Vector3());const transScale=donorSize0.y/Math.max(sourceSize0.y,1e-6),restHeight=Math.max(donorSize0.y,1e-6);
+            function retarget(){source.updateMatrixWorld(true);vrm.humanoid.update();donor.updateMatrixWorld(true);for(const p of pairs){const cur=new THREE.Quaternion();p.s.getWorldQuaternion(cur);const delta=cur.clone().multiply(p.sb.clone().invert());const desired=delta.multiply(p.db.clone());const parentQ=new THREE.Quaternion();if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));p.d.updateMatrixWorld(true);}const t=sourceHips.position.clone().sub(sourceHipsBind).multiplyScalar(transScale);targetHips.position.copy(targetHipsBind).add(t);vrm.humanoid.update();donor.updateMatrixWorld(true);}
+            const scene=new THREE.Scene();scene.background=new THREE.Color(0xf7f7f7);scene.add(donor);scene.add(new THREE.HemisphereLight(0xffffff,0x888888,2.2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(3,5,4);scene.add(sun);
+            const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false});renderer.setSize(500,700);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+            const cam=new THREE.PerspectiveCamera(30,500/700,.01,100);const dist=Math.max(restHeight*1.7,2.6);
+            const keySem=['head','hips','leftHand','rightHand','leftFoot','rightFoot','leftToes','rightToes'];
+            const wpos=o=>{const v=new THREE.Vector3();o?.getWorldPosition(v);return o?v:null};
+            function framePose(){const pts={};for(const sem of keySem){const o=vrm.humanoid.getNormalizedBoneNode(sem);const v=wpos(o);pts[sem]=v?v.toArray():null;}const ys=Object.values(pts).filter(Boolean).map(v=>v[1]);if(!ys.length)throw Error('no key points');const top=Math.max(...ys)+restHeight*.12,bottom=Math.min(...ys)-restHeight*.10,centerY=(top+bottom)/2;cam.position.set(donorCenter0.x,centerY,donorCenter0.z+dist);cam.lookAt(new THREE.Vector3(donorCenter0.x,centerY,donorCenter0.z));cam.updateProjectionMatrix();return {keyPoints:pts,cameraCenterY:centerY,poseSpanY:top-bottom};}
+            const picks=[['Idle','Idle_Loop',.35],['Walk','Walk_Loop',.30],['Jog','Jog_Fwd_Loop',.25],['Jump','Jump_Loop',.45],['Sit','Sitting_Idle_Loop',.55],['Interact','Interact',.45]],diagnostics=[];
+            for(const [label,name,f] of picks){status.textContent=`Candidate 018: ${label}`;reset(srcRest);reset(dstRest);source.updateMatrixWorld(true);vrm.humanoid.update();donor.updateMatrixWorld(true);const clip=THREE.AnimationClip.findByName(srcG.animations,name);if(!clip)throw Error('missing '+name);const mixer=new THREE.AnimationMixer(source);mixer.clipAction(clip).play();mixer.setTime(clip.duration*f);source.updateMatrixWorld(true);retarget();const frame=framePose();renderer.render(scene,cam);const finite=Object.values(frame.keyPoints).filter(Boolean).flat().every(Number.isFinite);const headY=frame.keyPoints.head?.[1]??Infinity;diagnostics.push({label,clip:name,mappedBones:pairs.length,finite,keyPoints:frame.keyPoints,cameraCenterY:frame.cameraCenterY,poseSpanY:frame.poseSpanY,handAboveHead:{left:(frame.keyPoints.leftHand?.[1]??-Infinity)>headY,right:(frame.keyPoints.rightHand?.[1]??-Infinity)>headY}});const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${label} — ${name}</h3><img src="${renderer.domElement.toDataURL('image/png')}">`;grid.appendChild(card);mixer.stopAllAction();}
+            window.__candidate018={done:true,retarget:'VRM normalized humanoid + W0 world-space delta',diagnostics};status.textContent='Candidate 018 mesh motion render complete';
+          }catch(e){status.textContent='Candidate 018 ERROR: '+String(e);window.__candidate018={done:true,error:String(e),diagnostics:[]};throw e;}
           </script></body></html>
           HTML
           cat > /tmp/c018render/capture.mjs <<'JS'
-          import { chromium } from 'playwright';
-          import fs from 'node:fs';
-          const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});
-          const page=await browser.newPage({viewport:{width:1080,height:2300},deviceScaleFactor:1});
-          page.setDefaultTimeout(120000);
-          const errors=[]; const consoleMessages=[]; const httpErrors=[];
-          page.on('console',m=>{consoleMessages.push(`[${m.type()}] ${m.text()}`);if(m.type()==='error')errors.push(m.text())});
-          page.on('pageerror',e=>errors.push(String(e)));
-          page.on('requestfailed',req=>httpErrors.push({kind:'requestfailed',method:req.method(),url:req.url(),failure:req.failure()?.errorText||null}));
-          page.on('response',res=>{if(res.status()>=400)httpErrors.push({kind:'http',status:res.status(),url:res.url()});});
-          let diag=null; let waitError=null;
-          try {
-            await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});
-            await page.waitForFunction(()=>window.__candidate018?.done===true,null,{timeout:120000});
-            diag=await page.evaluate(()=>window.__candidate018);
-          } catch(e) {
-            waitError=String(e);
-          }
-          const statusText=await page.locator('#status').textContent().catch(()=>null);
-          fs.writeFileSync('/tmp/c018render/candidate018-page-errors.json',JSON.stringify({waitError,statusText,errors,consoleMessages,httpErrors},null,2));
-          await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion-debug.png',fullPage:true}).catch(()=>{});
-          if(diag){
-            fs.writeFileSync('/tmp/c018render/candidate018-mesh-motion-report.json',JSON.stringify({...diag,consoleErrors:errors,httpErrors},null,2));
-            await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion.png',fullPage:true});
-          }
-          await browser.close();
-          if(waitError){console.error(waitError);console.error(JSON.stringify({statusText,errors,consoleMessages,httpErrors},null,2));process.exit(4);}
-          if(diag?.error){console.error(diag.error);process.exit(5);}
-          if(errors.length||httpErrors.length){console.error(JSON.stringify({errors,httpErrors},null,2));process.exit(2);}
-          if(!diag?.diagnostics?.every(x=>x.finite&&x.mappedBones>=48))process.exit(3);
+          import {chromium} from 'playwright';import fs from 'node:fs';
+          const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--disable-gpu-sandbox']});const page=await browser.newPage({viewport:{width:1080,height:2450},deviceScaleFactor:1});page.setDefaultTimeout(120000);const errors=[],consoleMessages=[],httpErrors=[];page.on('console',m=>{consoleMessages.push(`[${m.type()}] ${m.text()}`);if(m.type()==='error')errors.push(m.text())});page.on('pageerror',e=>errors.push(String(e)));page.on('requestfailed',req=>httpErrors.push({kind:'requestfailed',method:req.method(),url:req.url(),failure:req.failure()?.errorText||null}));page.on('response',res=>{if(res.status()>=400)httpErrors.push({kind:'http',status:res.status(),url:res.url()})});let diag=null,waitError=null;try{await page.goto('http://127.0.0.1:8000/index.html',{waitUntil:'networkidle',timeout:120000});await page.waitForFunction(()=>window.__candidate018?.done===true,null,{timeout:120000});diag=await page.evaluate(()=>window.__candidate018)}catch(e){waitError=String(e)}const statusText=await page.locator('#status').textContent().catch(()=>null);fs.writeFileSync('/tmp/c018render/candidate018-page-errors.json',JSON.stringify({waitError,statusText,errors,consoleMessages,httpErrors},null,2));await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion-debug.png',fullPage:true}).catch(()=>{});if(diag){fs.writeFileSync('/tmp/c018render/candidate018-mesh-motion-report.json',JSON.stringify({...diag,consoleErrors:errors,httpErrors},null,2));await page.screenshot({path:'/tmp/c018render/candidate018-mesh-motion.png',fullPage:true})}await browser.close();if(waitError)process.exit(4);if(diag?.error)process.exit(5);if(errors.length||httpErrors.length)process.exit(2);if(!diag?.diagnostics?.every(x=>x.finite&&x.mappedBones>=48))process.exit(3);
           JS
       - name: Render six representative full-mesh poses
         working-directory: /tmp/c018render
         run: |
           set -euo pipefail
           python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/c018-http.log 2>&1 &
-          SERVER=$!
-          trap 'kill $SERVER || true' EXIT
-          sleep 2
-          set +e
-          node capture.mjs
-          RC=$?
-          set -e
+          SERVER=$!; trap 'kill $SERVER || true' EXIT; sleep 2
+          set +e; node capture.mjs; RC=$?; set -e
           cat /tmp/c018-http.log || true
           [ -f candidate018-mesh-motion-report.json ] && cat candidate018-mesh-motion-report.json || true
           exit $RC
