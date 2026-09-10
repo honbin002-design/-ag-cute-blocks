@@ -110,7 +110,7 @@ jobs:
           if f'wardrobe-runtime.js?v={v}' not in index: failures.append('wardrobe cache query mismatch')
           if f'const V="V{v}"' not in index: failures.append('index version sync script mismatch')
           if f"const release='V{v}'" not in boot or f"__AGCB_BOOTSTRAP={{version:'{v}'" not in boot: failures.append('bootstrap version owner mismatch')
-          if "versionOwner:'release-version-v0593.js'" not in wrapper: failures.append('release wrapper version ownership mismatch')
+          if "versionOwner:'bootstrap-v0510.js'" not in wrapper: failures.append('release wrapper version ownership mismatch')
           if wrapper_name not in boot: failures.append('current app wrapper not imported by bootstrap')
           if loader_name and "rollbackBase:'0.5.03'" not in wrapper: failures.append('guarded recovery rollback base missing')
           if failures:
