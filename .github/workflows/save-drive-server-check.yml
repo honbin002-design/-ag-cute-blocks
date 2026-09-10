@@ -1,0 +1,47 @@
+name: Save Drive Server Gate
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  save-drive-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check Apps Script source
+        run: |
+          cp apps-script/agcb-save-bridge-v05102.gs /tmp/agcb-save-bridge-v05102.js
+          node --check /tmp/agcb-save-bridge-v05102.js
+          node --check save-drive-bridge-v05102.js
+      - name: Validate TEST-only authenticated Drive server/client policy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('apps-script/agcb-save-bridge-v05102.gs').read_text(encoding='utf-8')
+          c=Path('save-drive-bridge-v05102.js').read_text(encoding='utf-8')
+          m=Path('apps-script/appsscript.json').read_text(encoding='utf-8')
+          b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          failures=[]
+          for token in [
+            "AGCB_VERSION='0.5.102'","AGCB_PROJECT='AG Cute Blocks'","AGCB_CONTRACT='AG_CUTE_BLOCKS_DRIVE_BACKUP_V1'",
+            "AGCB_TEST_FOLDER_ID='1XTOj_YbpfehI4hIjhaKBPw3oI_L3HEpZ'","AGCB_PROD_FOLDER_ID='19YNP7hM7O0XevxiCvLsuiy65woggBs3R'",
+            "AGCB_TEST_PATH='AG Cute Blocks/SAVE/TEST'","AGCB_PROD_PATH='AG Cute Blocks/SAVE/PROD'",
+            'AGCB_TEST_WRITE_ENABLED=true','AGCB_PROD_WRITE_ENABLED=false',"AGCB_TOKEN_PROPERTY='AGCB_BRIDGE_TOKEN'",
+            'PropertiesService.getScriptProperties()',"action==='BACKUP'","action==='READBACK'",'prod-write-disabled','prod-read-disabled',
+            'agcbValidateEnvelope_','agcbSha256_','remote-sha256-mismatch','file-outside-test-folder'
+          ]:
+              if token not in s: failures.append('server missing: '+token)
+          for token in ["const VERSION='0.5.102'","const PRIVATE_CONFIG_KEY='AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1'",'bridge-token-too-short',"v05102-test-bridge-requires-test-runtime","AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE","action:'BACKUP'","action:'READBACK'",'remote-sha256-mismatch']:
+              if token not in c: failures.append('client missing: '+token)
+          if 'ag_cute_blocks_' in "AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1".lower(): failures.append('private config key overlaps save namespace')
+          if 'authToken' in c.split('function status()',1)[1].split('}',1)[0]: failures.append('status exposes token')
+          for forbidden in ["action==='RESTORE'","action==='DELETE'",'localStorage.clear(',"DriveApp.getFolderById(AGCB_PROD_FOLDER_ID).createFile"]:
+              if forbidden in s or forbidden in c: failures.append('forbidden destructive/cross-env behavior: '+forbidden)
+          if 'https://www.googleapis.com/auth/drive' not in m or '"runtimeVersion": "V8"' not in m: failures.append('manifest missing Drive scope or V8')
+          if "./save-drive-bridge-v05102.js?v=0.5.102" not in b or "runtimeEnvironment:'TEST'" not in b: failures.append('bootstrap TEST bridge wiring missing')
+          if failures: raise SystemExit('\n'.join(failures))
+          print('V0.5.102 TEST Drive server/client is authenticated, environment-bound, and PROD-write/restore disabled.')
+          PY
