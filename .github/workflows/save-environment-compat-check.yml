@@ -26,7 +26,8 @@ jobs:
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', 'location.reload(', 'new MutationObserver']:
               if forbidden in s: failures.append('forbidden mutation: '+forbidden)
           if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "runtimeEnvironment:'TEST'" not in b: failures.append('TEST runtime environment not explicitly bound')
-          if "./save-environment-compat-v05100.js?v=0.5.100" not in b: failures.append('current compat runtime not wired')
+          if "./save-environment-compat-v05100.js?v=0.5.102" not in b: failures.append('current compat runtime not wired')
+          if "version:'0.5.102'" not in b: failures.append('bootstrap release mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('V0.5.100 strict PROD/TEST isolation and backward-compatible promotion policy validated.')
+          print('Strict PROD/TEST isolation remains active under V0.5.102.')
           PY
