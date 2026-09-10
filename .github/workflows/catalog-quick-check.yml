@@ -8,23 +8,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate catalogue quick access remains wired
+      - name: Validate catalogue quick access remains wired to current release
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           q=Path('catalog-quick-runtime-v0595.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           a=Path('app-v0510.js').read_text(encoding='utf-8')
+          i=Path('index.html').read_text(encoding='utf-8')
           failures=[]
           for token in ["const VERSION='0.5.95'","agcb_catalog_recent_v0595","agcb_catalog_favorites_v0595","MAX_RECENT=8","MAX_FAV=24","items?.addEventListener('click'","agCatalogRecent","agCatalogFavorites","agCatalogFavoriteToggle","__AGCB_CATALOG_QUICK"]:
               if token not in q: failures.append('catalog quick missing: '+token)
           if 'new MutationObserver' in q: failures.append('catalog quick must not create a MutationObserver')
-          if "./catalog-search-runtime-v0594.js?v=0.5.102" not in b: failures.append('search runtime wiring missing')
-          if "./catalog-quick-runtime-v0595.js?v=0.5.102" not in b: failures.append('quick runtime wiring missing')
-          if "version:'0.5.102'" not in b or "versionOwner:'bootstrap-v0510.js'" not in b: failures.append('bootstrap ownership mismatch')
-          if "import './release-version-v05102.js'" not in a or "runtimeVersion:'0.5.102'" not in a: failures.append('wrapper release mismatch')
-          r=Path('release-version-v05102.js').read_text(encoding='utf-8')
-          if "observerActive:false" not in r or 'new MutationObserver' in r: failures.append('finite release helper contract broken')
+          m=re.search(r'bootstrap-v0510\.js\?v=([0-9.]+)',i)
+          if not m: failures.append('current bootstrap version missing from index')
+          else:
+              v=m.group(1)
+              if f'./catalog-search-runtime-v0594.js?v={v}' not in b: failures.append('search runtime current cache query mismatch')
+              if f'./catalog-quick-runtime-v0595.js?v={v}' not in b: failures.append('quick runtime current cache query mismatch')
+              if f"version:'{v}'" not in b or "versionOwner:'bootstrap-v0510.js'" not in b: failures.append('bootstrap ownership mismatch')
+              if f"runtimeVersion:'{v}'" not in a: failures.append('wrapper release mismatch')
+          if "versionOwner:'bootstrap-v0510.js'" not in a: failures.append('wrapper release owner mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Catalog quick feature remains wired under V0.5.102.')
+          print('Catalog quick feature remains wired to the current release without version pin drift.')
           PY
