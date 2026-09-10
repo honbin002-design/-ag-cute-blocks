@@ -106,3 +106,4 @@ jobs:
             sys.exit(0)
           sys.exit(f'remote {branch} is not synchronized to {vv}; refusing to hide push race')
           PY
+# V0.5.97 retrigger marker: release-chain sync only; no runtime behavior change.
