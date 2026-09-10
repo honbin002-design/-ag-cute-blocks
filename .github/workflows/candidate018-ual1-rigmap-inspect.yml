@@ -1,0 +1,46 @@
+name: Candidate 018 UAL1 Rigmap Inspect
+on:
+  push:
+    branches: [dev-v0.1]
+    paths: ['.github/workflows/candidate018-ual1-rigmap-inspect.yml']
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned CC0 UAL1 mirror
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual1.gltf
+      - name: Inspect nodes and animation target namespace
+        shell: python
+        run: |
+          import json,pathlib,collections
+          j=json.load(open('/tmp/ual1.gltf',encoding='utf8'))
+          nodes=j.get('nodes',[])
+          anim_targets=[]
+          for a in j.get('animations',[]):
+              for ch in a.get('channels',[]):
+                  ni=ch.get('target',{}).get('node')
+                  if isinstance(ni,int) and ni<len(nodes): anim_targets.append(nodes[ni].get('name'))
+          counts=collections.Counter(x for x in anim_targets if x)
+          report={
+            'nodeCount':len(nodes),
+            'nodeNames':[n.get('name') for n in nodes if n.get('name')],
+            'animationTargetNames':[x for x,_ in counts.most_common()],
+            'targetUseCounts':dict(counts),
+            'sampleAnimations':[a.get('name') for a in j.get('animations',[])[:46]]
+          }
+          pathlib.Path('/tmp/candidate018-ual1-rigmap.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          print('NODE NAMES:')
+          print('\n'.join(report['nodeNames']))
+          print('ANIMATION TARGET NAMES:')
+          print('\n'.join(report['animationTargetNames']))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate018-ual1-rigmap
+          path: /tmp/candidate018-ual1-rigmap.json
+          retention-days: 3
