@@ -21,11 +21,16 @@ jobs:
           test -f netlify.toml
           test -d netlify-test-proxy
           grep -F 'publish = "netlify-test-proxy"' netlify.toml
-          grep -F 'https://honbin002-design.github.io/-ag-cute-blocks/:splat' netlify.toml
+          grep -F 'https://cdn.jsdelivr.net/gh/honbin002-design/-ag-cute-blocks@758f19dd6686e7b1f94928cdb0b9a352ca73165e/:splat' netlify.toml
+          grep -F 'X-AGCB-Environment = "TEST"' netlify.toml
           grep -F 'status = 200' netlify.toml
           grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" bootstrap-v0510.js
+          if grep -F 'https://honbin002-design.github.io/-ag-cute-blocks/:splat' netlify.toml; then
+            echo 'Netlify TEST proxy must not point at the GitHub Pages PROD origin.' >&2
+            exit 1
+          fi
           if grep -R -E 'AGCB_BRIDGE_TOKEN|authToken[[:space:]]*=' netlify.toml netlify-test-proxy; then
             echo 'Secret-like material found in Netlify TEST proxy config' >&2
             exit 1
           fi
-          echo 'Netlify TEST origin configuration is isolated and secret-free.'
+          echo 'Netlify TEST origin configuration is isolated, immutable-snapshot pinned, and secret-free.'
