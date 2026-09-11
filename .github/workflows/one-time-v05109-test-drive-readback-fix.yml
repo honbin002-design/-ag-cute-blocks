@@ -1,0 +1,44 @@
+name: One-time V0.5.109 TEST Drive readback fix
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/one-time-v05109-test-drive-readback-fix.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Activate V0.5.109 TEST runtime
+        shell: python
+        run: |
+          from pathlib import Path
+          for name in ['index.html','app-v0510.js','bootstrap-v0510.js']:
+              p=Path(name); s=p.read_text(encoding='utf-8')
+              s=s.replace('V0.5.108','V0.5.109').replace('0.5.108','0.5.109')
+              if name=='app-v0510.js': s=s.replace('release-version-v05108.js','release-version-v05109.js')
+              if name=='bootstrap-v0510.js': s=s.replace('save-drive-bridge-v05108.js','save-drive-bridge-v05109.js')
+              p.write_text(s,encoding='utf-8')
+      - name: Verify
+        shell: bash
+        run: |
+          grep -q 'V0.5.109' index.html
+          grep -q 'release-version-v05109.js' app-v0510.js
+          grep -q "const release='V0.5.109'" bootstrap-v0510.js
+          grep -q 'save-drive-bridge-v05109.js?v=0.5.109' bootstrap-v0510.js
+          node --check save-drive-bridge-v05109.js
+          node --check release-version-v05109.js
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html app-v0510.js bootstrap-v0510.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'fix(test-drive): activate strict-envelope readback compatibility V0.5.109'
+          git push origin HEAD:dev-v0.1
