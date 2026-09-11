@@ -1,0 +1,12 @@
+[build]
+  publish = "netlify-test-proxy"
+  command = "echo 'AG Cute Blocks TEST proxy build'"
+
+[[redirects]]
+  from = "/*"
+  to = "https://honbin002-design.github.io/-ag-cute-blocks/:splat"
+  status = 200
+  force = true
+
+[build.processing]
+  skip_processing = true
