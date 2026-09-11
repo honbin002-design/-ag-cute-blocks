@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/*"
-  to = "https://cdn.jsdelivr.net/gh/honbin002-design/-ag-cute-blocks@758f19dd6686e7b1f94928cdb0b9a352ca73165e/:splat"
+  to = "https://raw.githubusercontent.com/honbin002-design/-ag-cute-blocks/dev-v0.1/:splat"
   status = 200
   force = true
 
