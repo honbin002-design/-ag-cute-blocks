@@ -1,6 +1,6 @@
 [build]
-  publish = "."
-  command = "echo 'AG Cute Blocks TEST direct static deploy'"
+  publish = "dist-test"
+  command = "bash ./netlify-build-test.sh"
 
 [[headers]]
   for = "/*"
