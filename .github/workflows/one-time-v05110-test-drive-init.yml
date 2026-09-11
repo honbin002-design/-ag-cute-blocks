@@ -1,0 +1,57 @@
+name: One-time V0.5.110 TEST Drive first-save init
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/one-time-v05110-test-drive-init.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev-v0.1
+      - name: Patch V0.5.110 TEST runtime
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          s=s.replace('V0.5.109','V0.5.110').replace('bootstrap-v0510.js?v=0.5.109','bootstrap-v0510.js?v=0.5.110')
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('app-v0510.js'); s=p.read_text(encoding='utf-8')
+          s=s.replace('V0.5.109 keeps bootstrap','V0.5.110 keeps bootstrap')
+          s=s.replace("./release-version-v05109.js","./release-version-v05110.js")
+          s=s.replace("runtimeVersion:'0.5.109'","runtimeVersion:'0.5.110'")
+          s=s.replace('test-initial-save-runtime-v05107.js?v=0.5.109','test-initial-save-runtime-v05107.js?v=0.5.110')
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('bootstrap-v0510.js'); s=p.read_text(encoding='utf-8')
+          s=s.replace('V0.5.109 bootstrap','V0.5.110 bootstrap')
+          s=s.replace("const release='V0.5.109'","const release='V0.5.110'")
+          s=s.replace("version:'0.5.109'","version:'0.5.110'",1)
+          s=s.replace('?v=0.5.109','?v=0.5.110')
+          p.write_text(s,encoding='utf-8')
+      - name: Verify V0.5.110 patch
+        shell: bash
+        run: |
+          grep -q 'V0.5.110' index.html
+          grep -q 'bootstrap-v0510.js?v=0.5.110' index.html
+          grep -q "release-version-v05110.js" app-v0510.js
+          grep -q "runtimeVersion:'0.5.110'" app-v0510.js
+          grep -q "const release='V0.5.110'" bootstrap-v0510.js
+          grep -q "test-drive-backup-setup-v05104.js?v=0.5.110" bootstrap-v0510.js
+          node --check test-drive-backup-setup-v05104.js
+          node --check release-version-v05110.js
+      - name: Commit V0.5.110 patch
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html app-v0510.js bootstrap-v0510.js; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html app-v0510.js bootstrap-v0510.js
+          git commit -m 'fix(test-drive): activate V0.5.110 first-save init gate'
+          git push origin HEAD:dev-v0.1
