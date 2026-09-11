@@ -5,6 +5,7 @@ on:
     branches: [dev-v0.1]
     paths:
       - 'netlify.toml'
+      - 'netlify-build-test.sh'
       - 'bootstrap-v0510.js'
       - '.github/workflows/netlify-test-origin-check.yml'
   workflow_dispatch:
@@ -14,20 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate direct TEST origin isolation
+      - name: Validate explicit TEST artifact deployment
         run: |
           set -euo pipefail
           test -f netlify.toml
-          grep -F 'publish = "."' netlify.toml
-          grep -F "command = \"echo 'AG Cute Blocks TEST direct static deploy'\"" netlify.toml
+          test -f netlify-build-test.sh
+          grep -F 'publish = "dist-test"' netlify.toml
+          grep -F 'command = "bash ./netlify-build-test.sh"' netlify.toml
           grep -F 'X-AGCB-Environment = "TEST"' netlify.toml
           grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" bootstrap-v0510.js
           if grep -E 'cdn\.jsdelivr\.net|raw\.githubusercontent\.com|honbin002-design\.github\.io' netlify.toml; then
-            echo 'TEST must deploy the dev branch directly; external proxy origin is forbidden.' >&2
+            echo 'TEST must deploy a local dev-branch artifact; external proxy origin is forbidden.' >&2
             exit 1
           fi
-          if grep -E 'AGCB_BRIDGE_TOKEN|authToken[[:space:]]*=' netlify.toml; then
+          if grep -E 'AGCB_BRIDGE_TOKEN|authToken[[:space:]]*=' netlify.toml netlify-build-test.sh; then
             echo 'Secret-like material found in Netlify TEST config.' >&2
             exit 1
           fi
-          echo 'Netlify TEST direct deployment is environment-bound, proxy-free, and secret-free.'
+          bash ./netlify-build-test.sh
+          test -f dist-test/index.html
+          test -f dist-test/bootstrap-v0510.js
+          echo 'Netlify TEST artifact is environment-bound, proxy-free, secret-free, and contains a runnable root.'
