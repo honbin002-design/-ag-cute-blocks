@@ -1,17 +1,12 @@
 [build]
-  publish = "netlify-test-proxy"
-  command = "echo 'AG Cute Blocks TEST proxy build'"
-
-[[redirects]]
-  from = "/*"
-  to = "https://raw.githubusercontent.com/honbin002-design/-ag-cute-blocks/dev-v0.1/:splat"
-  status = 200
-  force = true
+  publish = "."
+  command = "echo 'AG Cute Blocks TEST direct static deploy'"
 
 [[headers]]
   for = "/*"
   [headers.values]
     X-AGCB-Environment = "TEST"
+    Cache-Control = "no-cache"
 
 [build.processing]
   skip_processing = true
