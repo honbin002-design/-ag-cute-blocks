@@ -1,0 +1,31 @@
+name: Netlify TEST Origin Gate
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'netlify.toml'
+      - 'netlify-test-proxy/**'
+      - 'bootstrap-v0510.js'
+      - '.github/workflows/netlify-test-origin-check.yml'
+  workflow_dispatch:
+
+jobs:
+  test-origin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate TEST origin isolation
+        run: |
+          set -euo pipefail
+          test -f netlify.toml
+          test -d netlify-test-proxy
+          grep -F 'publish = "netlify-test-proxy"' netlify.toml
+          grep -F 'https://honbin002-design.github.io/-ag-cute-blocks/:splat' netlify.toml
+          grep -F 'status = 200' netlify.toml
+          grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" bootstrap-v0510.js
+          if grep -R -E 'AGCB_BRIDGE_TOKEN|authToken[[:space:]]*=' netlify.toml netlify-test-proxy; then
+            echo 'Secret-like material found in Netlify TEST proxy config' >&2
+            exit 1
+          fi
+          echo 'Netlify TEST origin configuration is isolated and secret-free.'
