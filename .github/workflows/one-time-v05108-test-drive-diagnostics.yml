@@ -18,26 +18,31 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          # index: visible version + bootstrap cache query only
+
           p=Path('index.html'); s=p.read_text(encoding='utf-8')
-          s=s.replace('V0.5.104','V0.5.108')
-          s=s.replace('bootstrap-v0510.js?v=0.5.104','bootstrap-v0510.js?v=0.5.108')
+          for old in ('V0.5.104','V0.5.107'):
+              s=s.replace(old,'V0.5.108')
+          for old in ('bootstrap-v0510.js?v=0.5.104','bootstrap-v0510.js?v=0.5.107'):
+              s=s.replace(old,'bootstrap-v0510.js?v=0.5.108')
           p.write_text(s,encoding='utf-8')
 
-          # app: finite release helper and runtime version
           p=Path('app-v0510.js'); s=p.read_text(encoding='utf-8')
-          s=s.replace("./release-version-v05104.js","./release-version-v05108.js")
-          s=s.replace("runtimeVersion:'0.5.104'","runtimeVersion:'0.5.108'")
-          s=s.replace('V0.5.104 keeps bootstrap','V0.5.108 keeps bootstrap')
+          for old in ('./release-version-v05104.js','./release-version-v05107.js'):
+              s=s.replace(old,'./release-version-v05108.js')
+          for old in ("runtimeVersion:'0.5.104'","runtimeVersion:'0.5.107'"):
+              s=s.replace(old,"runtimeVersion:'0.5.108'")
+          s=s.replace('V0.5.104 keeps bootstrap','V0.5.108 keeps bootstrap').replace('V0.5.107 keeps bootstrap','V0.5.108 keeps bootstrap')
+          s=s.replace('v05107-finite-reload-version-convergence','v05108-finite-reload-version-convergence')
+          s=s.replace('test-initial-save-runtime-v05107.js?v=0.5.107','test-initial-save-runtime-v05107.js?v=0.5.108')
           p.write_text(s,encoding='utf-8')
 
-          # bootstrap: visible owner + cache bust + new Drive bridge
           p=Path('bootstrap-v0510.js'); s=p.read_text(encoding='utf-8')
-          s=s.replace('V0.5.104 bootstrap','V0.5.108 bootstrap')
-          s=s.replace("const release='V0.5.104'","const release='V0.5.108'")
-          s=s.replace("version:'0.5.104'","version:'0.5.108'",1)
+          s=s.replace('V0.5.104 bootstrap','V0.5.108 bootstrap').replace('V0.5.107 bootstrap','V0.5.108 bootstrap')
+          s=s.replace("const release='V0.5.104'","const release='V0.5.108'").replace("const release='V0.5.107'","const release='V0.5.108'")
+          s=s.replace("version:'0.5.104'","version:'0.5.108'",1).replace("version:'0.5.107'","version:'0.5.108'",1)
           s=s.replace('./save-drive-bridge-v05103.js?v=0.5.104','./save-drive-bridge-v05108.js?v=0.5.108')
-          s=s.replace('?v=0.5.104','?v=0.5.108')
+          s=s.replace('./save-drive-bridge-v05103.js?v=0.5.107','./save-drive-bridge-v05108.js?v=0.5.108')
+          s=s.replace('?v=0.5.104','?v=0.5.108').replace('?v=0.5.107','?v=0.5.108')
           p.write_text(s,encoding='utf-8')
       - name: Verify V0.5.108 patch
         shell: bash
@@ -46,6 +51,7 @@ jobs:
           grep -q 'bootstrap-v0510.js?v=0.5.108' index.html
           grep -q "release-version-v05108.js" app-v0510.js
           grep -q "runtimeVersion:'0.5.108'" app-v0510.js
+          grep -q "test-initial-save-runtime-v05107.js?v=0.5.108" app-v0510.js
           grep -q "const release='V0.5.108'" bootstrap-v0510.js
           grep -q "save-drive-bridge-v05108.js?v=0.5.108" bootstrap-v0510.js
           node --check save-drive-bridge-v05108.js
