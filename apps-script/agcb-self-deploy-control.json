@@ -1,0 +1,26 @@
+{
+  "protocol": "AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1",
+  "enabled": true,
+  "project": "AG Cute Blocks",
+  "environment": "TEST",
+  "deploymentId": "AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC",
+  "releaseId": "AGCB-AS-P1-BOOTSTRAP-20260912",
+  "commitSha": "03196197be5f3f20f650a660dd2aa718f244d81c",
+  "files": [
+    {
+      "name": "Code",
+      "type": "SERVER_JS",
+      "path": "apps-script/agcb-save-bridge-v05111.gs"
+    },
+    {
+      "name": "DeployRunner",
+      "type": "SERVER_JS",
+      "path": "apps-script/agcb-self-deploy-runner-p1.gs"
+    },
+    {
+      "name": "appsscript",
+      "type": "JSON",
+      "path": "apps-script/appsscript-selfdeploy-p1.json"
+    }
+  ]
+}
