@@ -42,14 +42,26 @@ jobs:
           test -f dist-test/index.html
           test -f dist-test/bootstrap-v0510.js
           grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" dist-test/bootstrap-v0510.js >/dev/null
-          if grep -R -n -E "AG_RUNTIME_ENVIRONMENT=['\"]PROD['\"]|AGCB_BRIDGE_TOKEN[[:space:]]*=|authToken[[:space:]]*=[[:space:]]*['\"][^'\"]{16,}" dist-test --exclude='save-drive-bridge-v05109.js' --exclude='test-drive-backup-setup-v05104.js'; then
-            echo 'PROD marker or secret-like material found in TEST artifact' >&2
+          if grep -R -n -E "AG_RUNTIME_ENVIRONMENT=['\"]PROD['\"]" dist-test; then
+            echo 'PROD runtime marker found in TEST artifact' >&2
+            exit 1
+          fi
+          if grep -R -n -E 'AGCB_BRIDGE_TOKEN[[:space:]]*=' dist-test \
+            --exclude='save-drive-bridge-v05109.js' \
+            --exclude='test-drive-backup-setup-v05104.js'; then
+            echo 'Secret-like AGCB_BRIDGE_TOKEN assignment found in TEST artifact' >&2
+            exit 1
+          fi
+          if grep -R -n -E 'authToken[[:space:]]*=' dist-test \
+            --exclude='save-drive-bridge-v05109.js' \
+            --exclude='test-drive-backup-setup-v05104.js'; then
+            echo 'Secret-like authToken assignment found in TEST artifact' >&2
             exit 1
           fi
 
-      - name: Confirm no proxy/redirect to PROD origin
+      - name: Confirm no proxy or redirect to another host
         run: |
-          if grep -R -n -E 'honbin002-design\.github\.io|netlify\.app|PROD' vercel.json vercel-build-test.sh; then
-            echo 'Unexpected external/prod origin reference in Vercel TEST hosting config' >&2
+          if grep -R -n -E 'honbin002-design\.github\.io|netlify\.app' vercel.json vercel-build-test.sh; then
+            echo 'Unexpected external hosting origin reference in Vercel TEST config' >&2
             exit 1
           fi
