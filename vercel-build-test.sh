@@ -17,9 +17,20 @@ test -f dist-test/index.html
 test -f dist-test/bootstrap-v0510.js
 grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" dist-test/bootstrap-v0510.js >/dev/null
 
-# Never publish obvious secret material into the static TEST artifact.
-if grep -R -n -E 'AGCB_BRIDGE_TOKEN[[:space:]]*=|authToken[[:space:]]*=[[:space:]]*["'"'][^"'"']{16,}' dist-test --exclude='save-drive-bridge-v05109.js' --exclude='test-drive-backup-setup-v05104.js'; then
-  echo 'Secret-like material found in Vercel TEST artifact.' >&2
+# Never publish obvious secret assignments into the static TEST artifact.
+# The two bridge client files legitimately reference the token/config field names,
+# so exclude them from this static secret-literal scan.
+if grep -R -n -E 'AGCB_BRIDGE_TOKEN[[:space:]]*=' dist-test \
+  --exclude='save-drive-bridge-v05109.js' \
+  --exclude='test-drive-backup-setup-v05104.js'; then
+  echo 'Secret-like AGCB_BRIDGE_TOKEN assignment found in Vercel TEST artifact.' >&2
+  exit 1
+fi
+
+if grep -R -n -E 'authToken[[:space:]]*=' dist-test \
+  --exclude='save-drive-bridge-v05109.js' \
+  --exclude='test-drive-backup-setup-v05104.js'; then
+  echo 'Secret-like authToken assignment found in Vercel TEST artifact.' >&2
   exit 1
 fi
 
