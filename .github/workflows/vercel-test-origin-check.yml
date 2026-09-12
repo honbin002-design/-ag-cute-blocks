@@ -46,16 +46,12 @@ jobs:
             echo 'PROD runtime marker found in TEST artifact' >&2
             exit 1
           fi
-          if grep -R -n -E 'AGCB_BRIDGE_TOKEN[[:space:]]*=' dist-test \
-            --exclude='save-drive-bridge-v05109.js' \
-            --exclude='test-drive-backup-setup-v05104.js'; then
-            echo 'Secret-like AGCB_BRIDGE_TOKEN assignment found in TEST artifact' >&2
+          if grep -R -n -P "AGCB_BRIDGE_TOKEN\\s*=\\s*['\"][^'\"]{16,}['\"]" dist-test; then
+            echo 'Hard-coded AGCB_BRIDGE_TOKEN secret found in TEST artifact' >&2
             exit 1
           fi
-          if grep -R -n -E 'authToken[[:space:]]*=' dist-test \
-            --exclude='save-drive-bridge-v05109.js' \
-            --exclude='test-drive-backup-setup-v05104.js'; then
-            echo 'Secret-like authToken assignment found in TEST artifact' >&2
+          if grep -R -n -P "authToken\\s*=\\s*['\"][^'\"]{16,}['\"]" dist-test; then
+            echo 'Hard-coded authToken secret found in TEST artifact' >&2
             exit 1
           fi
 
