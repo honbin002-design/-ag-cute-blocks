@@ -1,0 +1,51 @@
+name: One-time V0.5.111 index sync
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/one-time-v05111-index-sync.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync only release markers
+        shell: python
+        run: |
+          import pathlib,re,sys
+          p=pathlib.Path('index.html'); s=p.read_text(encoding='utf-8')
+          changes=[]
+          def sub(pattern,repl,label,count=1):
+            global s
+            s,n=re.subn(pattern,repl,s,count=count)
+            if n!=1: sys.exit(f'{label}: expected 1 replacement, got {n}')
+            changes.append(label)
+          sub(r'(<meta name="ag-runtime-version" content=")V0\.5\.110("[^>]*>)',r'\g<1>V0.5.111\2','meta')
+          sub(r'(<div class="pill title">🌈 AG Cute Blocks <small>)V0\.5\.110(</small>)',r'\g<1>V0.5.111\2','badge')
+          sub(r'bootstrap-v0510\.js\?v=0\.5\.110','bootstrap-v0510.js?v=0.5.111','bootstrap-query')
+          sub(r'wardrobe-runtime\.js\?v=0\.5\.104','wardrobe-runtime.js?v=0.5.111','wardrobe-query')
+          sub(r'const V="V0\.5\.110"','const V="V0.5.111"','inline-version')
+          p.write_text(s,encoding='utf-8')
+          print('synced:', ', '.join(changes))
+      - name: Verify
+        run: |
+          grep -F '<meta name="ag-runtime-version" content="V0.5.111">' index.html
+          grep -F '<small>V0.5.111</small>' index.html
+          grep -F 'bootstrap-v0510.js?v=0.5.111' index.html
+          grep -F 'wardrobe-runtime.js?v=0.5.111' index.html
+          grep -F 'const V="V0.5.111"' index.html
+      - name: Commit
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'chore: sync index to V0.5.111'
+          git pull --rebase origin dev-v0.1
+          git push origin HEAD:dev-v0.1
