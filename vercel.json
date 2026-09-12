@@ -1,0 +1,15 @@
+{
+  "buildCommand": "bash ./vercel-build-test.sh",
+  "outputDirectory": "dist-test",
+  "framework": null,
+  "cleanUrls": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-AGCB-Environment", "value": "TEST" },
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    }
+  ]
+}
