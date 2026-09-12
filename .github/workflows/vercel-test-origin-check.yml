@@ -1,0 +1,55 @@
+name: Vercel TEST Origin Gate
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'vercel.json'
+      - 'vercel-build-test.sh'
+      - 'bootstrap-v0510.js'
+      - 'index.html'
+      - '.github/workflows/vercel-test-origin-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-vercel-test-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Vercel config
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const cfg = JSON.parse(fs.readFileSync('vercel.json','utf8'));
+          if (cfg.buildCommand !== 'bash ./vercel-build-test.sh') throw new Error('unexpected buildCommand');
+          if (cfg.outputDirectory !== 'dist-test') throw new Error('unexpected outputDirectory');
+          const headers = Array.isArray(cfg.headers) ? cfg.headers : [];
+          const envHeader = headers.flatMap(x => x.headers || []).find(h => h.key === 'X-AGCB-Environment');
+          if (!envHeader || envHeader.value !== 'TEST') throw new Error('missing TEST environment header');
+          const raw = JSON.stringify(cfg);
+          if (/AGCB_BRIDGE_TOKEN|authToken\s*[:=]\s*["'][^"']{16,}/i.test(raw)) throw new Error('secret-like material in vercel.json');
+          NODE
+
+      - name: Build TEST artifact
+        run: bash ./vercel-build-test.sh
+
+      - name: Validate built artifact
+        run: |
+          test -f dist-test/index.html
+          test -f dist-test/bootstrap-v0510.js
+          grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" dist-test/bootstrap-v0510.js >/dev/null
+          if grep -R -n -E "AG_RUNTIME_ENVIRONMENT=['\"]PROD['\"]|AGCB_BRIDGE_TOKEN[[:space:]]*=|authToken[[:space:]]*=[[:space:]]*['\"][^'\"]{16,}" dist-test --exclude='save-drive-bridge-v05109.js' --exclude='test-drive-backup-setup-v05104.js'; then
+            echo 'PROD marker or secret-like material found in TEST artifact' >&2
+            exit 1
+          fi
+
+      - name: Confirm no proxy/redirect to PROD origin
+        run: |
+          if grep -R -n -E 'honbin002-design\.github\.io|netlify\.app|PROD' vercel.json vercel-build-test.sh; then
+            echo 'Unexpected external/prod origin reference in Vercel TEST hosting config' >&2
+            exit 1
+          fi
