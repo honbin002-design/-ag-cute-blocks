@@ -1,0 +1,40 @@
+name: Save Restore Safety V0.5.111
+on:
+  push:
+    branches: [dev-v0.1]
+  workflow_dispatch:
+jobs:
+  restore-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          node --check save-restore-contract-v05111.js
+          node --check save-drive-bridge-v05111.js
+          node --check test-drive-restore-ui-v05111.js
+      - name: TEST-only restore contract
+        run: |
+          grep -F "const ENV='TEST'" save-restore-contract-v05111.js
+          grep -F "restore-cross-environment-rejected" save-restore-contract-v05111.js
+          grep -F "AGCB_TEST_RESTORE_ROLLBACK_V1" save-restore-contract-v05111.js
+          grep -F "restore-record-outside-project-prefix" save-restore-contract-v05111.js
+      - name: Server keeps PROD and destructive actions disabled
+        run: |
+          grep -F "const AGCB_PROD_WRITE_ENABLED=false" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "prodReadEnabled:false" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "restoreEnabled:false" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "deleteEnabled:false" apps-script/agcb-save-bridge-v05111.gs
+          ! grep -E "action==='RESTORE'|action==='DELETE'" apps-script/agcb-save-bridge-v05111.gs
+      - name: History list and verified readback only
+        run: |
+          grep -F "action==='LIST_HISTORY'" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "agcbFolderContains_" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "server-v05111-history-upgrade-required" save-drive-bridge-v05111.js
+          grep -F "readbackHistory" save-drive-bridge-v05111.js
+      - name: Bootstrap activates V0.5.111 restore
+        run: |
+          grep -F "const release='V0.5.111'" bootstrap-v0510.js
+          grep -F "save-drive-bridge-v05111.js?v=0.5.111" bootstrap-v0510.js
+          grep -F "save-restore-contract-v05111.js?v=0.5.111" bootstrap-v0510.js
+          grep -F "test-drive-restore-ui-v05111.js?v=0.5.111" bootstrap-v0510.js
