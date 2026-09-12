@@ -1,0 +1,45 @@
+name: Apps Script Self Deploy Gate
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'apps-script/agcb-self-deploy-runner-p2.gs'
+      - 'apps-script/agcb-self-deploy-control.json'
+      - 'apps-script/appsscript-selfdeploy-p1.json'
+      - 'apps-script/agcb-save-bridge-v05111.gs'
+      - '.github/workflows/apps-script-self-deploy-check.yml'
+
+jobs:
+  self-deploy-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate control target and immutable TEST policy
+        shell: python
+        run: |
+          import json,pathlib,re,sys
+          c=json.loads(pathlib.Path('apps-script/agcb-self-deploy-control.json').read_text())
+          r=pathlib.Path('apps-script/agcb-self-deploy-runner-p2.gs').read_text()
+          b=pathlib.Path('apps-script/agcb-save-bridge-v05111.gs').read_text()
+          m=json.loads(pathlib.Path('apps-script/appsscript-selfdeploy-p1.json').read_text())
+          assert c['protocol']=='AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1'
+          assert c['enabled'] is True and c['environment']=='TEST'
+          assert re.fullmatch(r'[0-9a-f]{40}',c['commitSha'],re.I)
+          assert c['deploymentId'] in r
+          assert "AGCB_PROD_WRITE_ENABLED=false" in b
+          assert "prodReadEnabled:false" in b
+          assert "restoreEnabled:false" in b
+          assert "deleteEnabled:false" in b
+          assert "env!=='TEST'" in b
+          assert 'https://www.googleapis.com/auth/script.projects' in m['oauthScopes']
+          assert 'https://www.googleapis.com/auth/script.deployments' in m['oauthScopes']
+          assert 'AGCB_SELF_DEPLOY_PREFLIGHT' in r
+          assert 'AGCB_SELF_DEPLOY_BOOTSTRAP_ONCE' in r
+          assert "function agcbDeployRunnerPoll" in r
+          assert "everyMinutes(AGCB_SD_POLL_MINUTES)" in r
+          assert "health.prodWriteEnabled!==false" in r
+          assert "health.prodReadEnabled!==false" in r
+          assert "health.restoreEnabled!==false" in r
+          assert "health.deleteEnabled!==false" in r
+          print('AG Apps Script self-deploy TEST-only safety gate PASS')
