@@ -9,6 +9,8 @@ find . -mindepth 1 -maxdepth 1 \
   ! -name '.github' \
   ! -name 'dist-test' \
   ! -name 'netlify-test-proxy' \
+  ! -name 'apps-script' \
+  ! -name 'tests' \
   ! -name '*.md' \
   -exec cp -R {} dist-test/ \;
 
@@ -17,20 +19,16 @@ test -f dist-test/index.html
 test -f dist-test/bootstrap-v0510.js
 grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" dist-test/bootstrap-v0510.js >/dev/null
 
-# Never publish obvious secret assignments into the static TEST artifact.
-# The two bridge client files legitimately reference the token/config field names,
-# so exclude them from this static secret-literal scan.
-if grep -R -n -E 'AGCB_BRIDGE_TOKEN[[:space:]]*=' dist-test \
-  --exclude='save-drive-bridge-v05109.js' \
-  --exclude='test-drive-backup-setup-v05104.js'; then
-  echo 'Secret-like AGCB_BRIDGE_TOKEN assignment found in Vercel TEST artifact.' >&2
+# Never publish hard-coded secret literals into the static TEST artifact.
+# Variable names such as `authToken` are legitimate client code, so only reject
+# assignments that contain a quoted value long enough to look like a real secret.
+if grep -R -n -P "AGCB_BRIDGE_TOKEN\\s*=\\s*['\"][^'\"]{16,}['\"]" dist-test; then
+  echo 'Hard-coded AGCB_BRIDGE_TOKEN secret found in Vercel TEST artifact.' >&2
   exit 1
 fi
 
-if grep -R -n -E 'authToken[[:space:]]*=' dist-test \
-  --exclude='save-drive-bridge-v05109.js' \
-  --exclude='test-drive-backup-setup-v05104.js'; then
-  echo 'Secret-like authToken assignment found in Vercel TEST artifact.' >&2
+if grep -R -n -P "authToken\\s*=\\s*['\"][^'\"]{16,}['\"]" dist-test; then
+  echo 'Hard-coded authToken secret found in Vercel TEST artifact.' >&2
   exit 1
 fi
 
