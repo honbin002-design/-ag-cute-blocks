@@ -1,0 +1,67 @@
+name: V0.5.111 Release Validation
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/v05111-release-validation.yml'
+      - 'index.html'
+      - 'bootstrap-v0510.js'
+      - 'app-v0510.js'
+      - 'save-drive-bridge-v05111.js'
+      - 'save-restore-contract-v05111.js'
+      - 'test-drive-restore-ui-v05111.js'
+      - 'apps-script/agcb-save-bridge-v05111.gs'
+  workflow_dispatch:
+jobs:
+  validate-v05111:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Current release chain
+        run: |
+          grep -F '<meta name="ag-runtime-version" content="V0.5.111">' index.html
+          grep -F '<small>V0.5.111</small>' index.html
+          grep -F 'bootstrap-v0510.js?v=0.5.111' index.html
+          grep -F 'wardrobe-runtime.js?v=0.5.111' index.html
+          grep -F 'const V="V0.5.111"' index.html
+          grep -F "const release='V0.5.111'" bootstrap-v0510.js
+          grep -F "__AGCB_BOOTSTRAP={version:'0.5.111'" bootstrap-v0510.js
+          grep -F "runtimeVersion:'0.5.111'" app-v0510.js
+      - name: All root JavaScript parses
+        run: |
+          set -euo pipefail
+          for file in *.js; do node --input-type=module --check < "$file"; done
+      - name: TEST environment remains explicit
+        run: |
+          grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" bootstrap-v0510.js
+          ! grep -F "AG_RUNTIME_ENVIRONMENT='PROD'" bootstrap-v0510.js
+      - name: Drive restore safety
+        run: |
+          grep -F "restore-cross-environment-rejected" save-restore-contract-v05111.js
+          grep -F 'AGCB_TEST_RESTORE_ROLLBACK_V1' save-restore-contract-v05111.js
+          grep -F "restore-record-outside-project-prefix" save-restore-contract-v05111.js
+          grep -F "server-v05111-history-upgrade-required" save-drive-bridge-v05111.js
+          grep -F "readbackHistory" save-drive-bridge-v05111.js
+          grep -F "const AGCB_PROD_WRITE_ENABLED=false" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "prodReadEnabled:false" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "restoreEnabled:false" apps-script/agcb-save-bridge-v05111.gs
+          grep -F "deleteEnabled:false" apps-script/agcb-save-bridge-v05111.gs
+          ! grep -E "action==='RESTORE'|action==='DELETE'" apps-script/agcb-save-bridge-v05111.gs
+      - name: Preserve established core guards
+        run: |
+          grep -F 'tree-resource-integrity-preload-v0588.js' app-v0510.js
+          grep -F 'terrain-artificial-water-preload-v0592.js' app-v0510.js
+          grep -F 'build-history-runtime-v0597.js?v=0.5.111' bootstrap-v0510.js
+          grep -F 'catalog-search-runtime-v0594.js?v=0.5.111' bootstrap-v0510.js
+          grep -F 'catalog-quick-runtime-v0595.js?v=0.5.111' bootstrap-v0510.js
+          grep -F 'save-environment-compat-v05100.js?v=0.5.111' bootstrap-v0510.js
+          grep -F 'save-migration-registry-v05101.js?v=0.5.111' bootstrap-v0510.js
+      - name: Vercel TEST artifact build
+        run: |
+          bash ./vercel-build-test.sh
+          test -f dist-test/index.html
+          test -f dist-test/bootstrap-v0510.js
+          grep -F '<meta name="ag-runtime-version" content="V0.5.111">' dist-test/index.html
+          grep -F "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" dist-test/bootstrap-v0510.js
+          test ! -d dist-test/apps-script
+          test ! -d dist-test/tests
