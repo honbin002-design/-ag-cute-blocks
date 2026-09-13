@@ -16,7 +16,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          URL='https://script.google.com/macros/s/AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC/exec'
+          URL='https://script.google.com/macros/s/AKfycbx2kSQg7qx4b5MIRGnc-aPL0vjAXw8Fdbc3whvVf72KooBxmGUesF-pLBaMLopgE8gA/exec'
           body=''
           for i in $(seq 1 48); do
             if body="$(curl -fsSL --max-time 20 "$URL")"; then
