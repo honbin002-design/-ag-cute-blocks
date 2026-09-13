@@ -1,10 +1,10 @@
 {
   "protocol": "AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1",
-  "enabled": true,
+  "enabled": false,
   "project": "AG Cute Blocks",
   "environment": "TEST",
   "deploymentId": "AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC",
-  "releaseId": "AGCB-AS-P3.1-IDEMPOTENT-AUTO-20260913",
+  "releaseId": "AGCB-AS-P3.1-IDEMPOTENT-AUTO-20260913-HOLD",
   "commitSha": "1b5164119fee8c0cb404fdbf42ed5c15e327e747",
   "files": [
     {
