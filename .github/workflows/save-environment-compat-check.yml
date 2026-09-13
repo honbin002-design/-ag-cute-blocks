@@ -17,6 +17,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           s=Path('save-environment-compat-v05100.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           failures=[]
@@ -25,9 +26,14 @@ jobs:
               if token not in s: failures.append('missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', 'location.reload(', 'new MutationObserver']:
               if forbidden in s: failures.append('forbidden mutation: '+forbidden)
-          if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "runtimeEnvironment:'TEST'" not in b: failures.append('TEST runtime environment not explicitly bound')
-          if "./save-environment-compat-v05100.js?v=0.5.103" not in b: failures.append('current compat runtime not wired')
-          if "version:'0.5.103'" not in b: failures.append('bootstrap release mismatch')
+          if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b or "runtimeEnvironment:'TEST'" not in b:
+              failures.append('TEST runtime environment not explicitly bound')
+          if not re.search(r"\./save-environment-compat-v05100\.js\?v=0\.5\.\d+", b):
+              failures.append('current compat runtime not wired')
+          release=re.search(r"const release='V(0\.5\.\d+)'", b)
+          owner=re.search(r"__AGCB_BOOTSTRAP=\{version:'(0\.5\.\d+)'", b)
+          if not release or not owner or release.group(1)!=owner.group(1):
+              failures.append('bootstrap release owner mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Strict PROD/TEST isolation remains active under V0.5.103.')
+          print('Strict PROD/TEST isolation remains active under current TEST release '+release.group(1)+'.')
           PY
