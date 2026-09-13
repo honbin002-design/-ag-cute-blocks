@@ -5,6 +5,7 @@ on:
     branches: [dev-v0.1]
     paths:
       - 'apps-script/agcb-self-deploy-runner-p3.gs'
+      - 'apps-script/agcb-self-deploy-runner-p31.gs'
       - 'apps-script/agcb-self-deploy-control.json'
       - 'apps-script/appsscript-selfdeploy-p1.json'
       - 'apps-script/agcb-save-bridge-v05111.gs'
@@ -17,19 +18,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Validate P3 control, CDN transport and immutable TEST policy
+      - name: Validate control, CDN transport and immutable TEST policy
         shell: python
         run: |
           import json,pathlib,re
           c=json.loads(pathlib.Path('apps-script/agcb-self-deploy-control.json').read_text())
-          r=pathlib.Path('apps-script/agcb-self-deploy-runner-p3.gs').read_text()
+          runner_spec=next(f for f in c['files'] if f.get('name')=='DeployRunner' and f.get('type')=='SERVER_JS')
+          runner_path=runner_spec['path']
+          assert runner_path.startswith('apps-script/agcb-self-deploy-runner-p3') and runner_path.endswith('.gs')
+          r=pathlib.Path(runner_path).read_text()
           b=pathlib.Path('apps-script/agcb-save-bridge-v05111.gs').read_text()
           m=json.loads(pathlib.Path('apps-script/appsscript-selfdeploy-p1.json').read_text())
           assert c['protocol']=='AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1'
-          assert c['enabled'] is True and c['environment']=='TEST'
+          assert isinstance(c['enabled'],bool) and c['environment']=='TEST'
           assert re.fullmatch(r'[0-9a-f]{40}',c['commitSha'],re.I)
           assert c['deploymentId'] in r
-          assert any(f['path']=='apps-script/agcb-self-deploy-runner-p3.gs' for f in c['files'])
           assert 'cdn.jsdelivr.net/gh/' in r
           assert 'cdn.statically.io/gh/' in r
           assert 'api.github.com/repos/' not in r
@@ -53,23 +56,33 @@ jobs:
           assert 'prodReadEnabled:false' in r
           assert 'restoreEnabled:false' in r
           assert 'deleteEnabled:false' in r
-          print('AG Apps Script P3 CDN self-deploy TEST-only safety gate PASS')
-      - name: Parse P3 runner as JavaScript
+          if 'p31' in runner_path:
+            assert 'agcbSdFindMatchingVersion_' in r
+            assert 'agcbSdConfirmDeployment_' in r
+            assert 'newVersionCreated:false' in r
+          print('AG Apps Script CDN self-deploy TEST-only safety gate PASS', 'ENABLED' if c['enabled'] else 'HOLD', runner_path)
+      - name: Parse selected runner as JavaScript
+        shell: bash
         run: |
-          cp apps-script/agcb-self-deploy-runner-p3.gs /tmp/agcb-runner-p3.js
-          node --check /tmp/agcb-runner-p3.js
+          set -euo pipefail
+          RUNNER="$(python -c "import json; c=json.load(open('apps-script/agcb-self-deploy-control.json')); print(next(f['path'] for f in c['files'] if f.get('name')=='DeployRunner'))")"
+          cp "$RUNNER" /tmp/agcb-runner.js
+          node --check /tmp/agcb-runner.js
       - name: Validate pinned source commit and files
         shell: bash
         run: |
           set -euo pipefail
           SHA="$(python -c "import json; print(json.load(open('apps-script/agcb-self-deploy-control.json'))['commitSha'])")"
           git cat-file -e "${SHA}^{commit}"
-          for p in \
-            apps-script/agcb-save-bridge-v05111.gs \
-            apps-script/agcb-self-deploy-runner-p3.gs \
-            apps-script/appsscript-selfdeploy-p1.json; do
+          python - <<'PY' >/tmp/agcb-paths.txt
+          import json
+          c=json.load(open('apps-script/agcb-self-deploy-control.json'))
+          for f in c['files']:
+              print(f['path'])
+          PY
+          while IFS= read -r p; do
             git show "${SHA}:${p}" >/dev/null
-          done
+          done </tmp/agcb-paths.txt
       - name: CDN control transport smoke
         shell: bash
         run: |
@@ -81,6 +94,6 @@ jobs:
           c=json.load(open('/tmp/agcb-control.json'))
           assert c['protocol']=='AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1'
           assert c['environment']=='TEST'
-          assert c['enabled'] is True
-          print('CDN control smoke PASS:', c['releaseId'])
+          assert isinstance(c['enabled'],bool)
+          print('CDN control smoke PASS:', c['releaseId'], 'ENABLED' if c['enabled'] else 'HOLD')
           PY
