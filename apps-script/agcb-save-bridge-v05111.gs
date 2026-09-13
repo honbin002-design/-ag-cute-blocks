@@ -12,7 +12,7 @@ const AGCB_TEST_WRITE_ENABLED=true;
 const AGCB_PROD_WRITE_ENABLED=false;
 const AGCB_TOKEN_PROPERTY='AGCB_BRIDGE_TOKEN';
 function agcbJson_(value){return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON)}
-function doGet(){return agcbJson_({ok:true,project:AGCB_PROJECT,version:AGCB_VERSION,status:'TEST_BRIDGE_READY',prodWriteEnabled:false,prodReadEnabled:false,restoreEnabled:false,deleteEnabled:false,historyListEnabled:true})}
+function doGet(){return agcbJson_({ok:true,project:AGCB_PROJECT,version:AGCB_VERSION,status:'TEST_BRIDGE_READY',selfDeployRuntime:'P3.1-AUTO',prodWriteEnabled:false,prodReadEnabled:false,restoreEnabled:false,deleteEnabled:false,historyListEnabled:true})}
 function agcbFail_(reason){return{ok:false,reason:String(reason||'rejected')}}
 function agcbToken_(){return String(PropertiesService.getScriptProperties().getProperty(AGCB_TOKEN_PROPERTY)||'')}
 function agcbAuth_(payload){const expected=agcbToken_();if(expected.length<32)throw new Error('server-token-not-configured');if(String(payload&&payload.authToken||'')!==expected)throw new Error('unauthorized')}
