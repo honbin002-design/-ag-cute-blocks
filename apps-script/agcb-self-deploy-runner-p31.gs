@@ -5,7 +5,7 @@
  * Never creates a new version when an identical version already exists.
  */
 const AGCB_SD_API='https://script.googleapis.com/v1';
-const AGCB_SD_DEPLOYMENT_ID='AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC';
+const AGCB_SD_DEPLOYMENT_ID='AKfycbx2kSQg7qx4b5MIRGnc-aPL0vjAXw8Fdbc3whvVf72KooBxmGUesF-pLBaMLopgE8gA';
 const AGCB_SD_REPO='honbin002-design/-ag-cute-blocks';
 const AGCB_SD_CONTROL_PATH='apps-script/agcb-self-deploy-control.json';
 const AGCB_SD_PROTOCOL='AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1';
@@ -113,7 +113,6 @@ function agcbSdDeployFromPrepared_(p,force){
     return {status:'NO_CHANGE',releaseId:c.releaseId,versionNumber:p.previousVersion,deploymentId:AGCB_SD_DEPLOYMENT_ID,runner:'P3.1'};
   }
 
-  // Recovery first: if an identical version already exists, reuse it instead of creating another version.
   const existingVersion=agcbSdFindMatchingVersion_(p.scriptId,p.files);
   if(existingVersion){
     if(Number(p.previousVersion)!==Number(existingVersion)){
