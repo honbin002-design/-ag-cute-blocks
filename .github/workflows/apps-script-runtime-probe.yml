@@ -1,0 +1,41 @@
+name: Apps Script Runtime Probe
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - '.github/workflows/apps-script-runtime-probe.yml'
+      - 'apps-script/agcb-self-deploy-control.json'
+
+jobs:
+  apps-script-runtime-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe immutable TEST Web App runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://script.google.com/macros/s/AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC/exec'
+          body=''
+          for i in 1 2 3 4 5; do
+            if body="$(curl -fsSL --max-time 20 --retry 2 --retry-delay 2 "$URL")"; then
+              break
+            fi
+            sleep 8
+          done
+          test -n "$body"
+          printf '%s\n' "$body" | tee /tmp/agcb-runtime.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/agcb-runtime.json'))
+          assert data.get('ok') is True, data
+          assert data.get('project')=='AG Cute Blocks', data
+          assert data.get('status')=='TEST_BRIDGE_READY', data
+          assert data.get('selfDeployRuntime')=='P3.1-AUTO', data
+          assert data.get('prodWriteEnabled') is False, data
+          assert data.get('prodReadEnabled') is False, data
+          assert data.get('restoreEnabled') is False, data
+          assert data.get('deleteEnabled') is False, data
+          print('AG Cute Blocks Apps Script P3.1 runtime probe PASS')
+          PY
