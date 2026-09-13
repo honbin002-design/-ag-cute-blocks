@@ -4,8 +4,8 @@
   "project": "AG Cute Blocks",
   "environment": "TEST",
   "deploymentId": "AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC",
-  "releaseId": "AGCB-AS-P3-CDN-BOOTSTRAP-20260913",
-  "commitSha": "a8edc9f9e7cbecd84ef519ee67596f792c3115a1",
+  "releaseId": "AGCB-AS-P3.1-IDEMPOTENT-AUTO-20260913",
+  "commitSha": "1b5164119fee8c0cb404fdbf42ed5c15e327e747",
   "files": [
     {
       "name": "Code",
@@ -15,7 +15,7 @@
     {
       "name": "DeployRunner",
       "type": "SERVER_JS",
-      "path": "apps-script/agcb-self-deploy-runner-p3.gs"
+      "path": "apps-script/agcb-self-deploy-runner-p31.gs"
     },
     {
       "name": "appsscript",
