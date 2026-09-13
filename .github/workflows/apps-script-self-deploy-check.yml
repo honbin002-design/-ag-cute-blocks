@@ -41,6 +41,8 @@ jobs:
           assert "restoreEnabled:false" in b
           assert "deleteEnabled:false" in b
           assert "env!=='TEST'" in b
+          assert m.get('webapp',{}).get('access')=='ANYONE_ANONYMOUS'
+          assert m.get('webapp',{}).get('executeAs')=='USER_DEPLOYING'
           for scope in [
             'https://www.googleapis.com/auth/script.projects',
             'https://www.googleapis.com/auth/script.deployments',
