@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Validate P3 control, CDN transport and immutable TEST policy
         shell: python
         run: |
@@ -46,9 +48,39 @@ jobs:
           assert 'AGCB_SELF_DEPLOY_BOOTSTRAP_ONCE' in r
           assert 'function agcbDeployRunnerPoll' in r
           assert 'everyMinutes(AGCB_SD_POLL_MINUTES)' in r
-          assert "agcbSdValidateDeployedBridge_" in r
-          assert "prodWriteEnabled:false" in r
-          assert "prodReadEnabled:false" in r
-          assert "restoreEnabled:false" in r
-          assert "deleteEnabled:false" in r
+          assert 'agcbSdValidateDeployedBridge_' in r
+          assert 'prodWriteEnabled:false' in r
+          assert 'prodReadEnabled:false' in r
+          assert 'restoreEnabled:false' in r
+          assert 'deleteEnabled:false' in r
           print('AG Apps Script P3 CDN self-deploy TEST-only safety gate PASS')
+      - name: Parse P3 runner as JavaScript
+        run: |
+          cp apps-script/agcb-self-deploy-runner-p3.gs /tmp/agcb-runner-p3.js
+          node --check /tmp/agcb-runner-p3.js
+      - name: Validate pinned source commit and files
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(python -c "import json; print(json.load(open('apps-script/agcb-self-deploy-control.json'))['commitSha'])")"
+          git cat-file -e "${SHA}^{commit}"
+          for p in \
+            apps-script/agcb-save-bridge-v05111.gs \
+            apps-script/agcb-self-deploy-runner-p3.gs \
+            apps-script/appsscript-selfdeploy-p1.json; do
+            git show "${SHA}:${p}" >/dev/null
+          done
+      - name: CDN control transport smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://cdn.jsdelivr.net/gh/honbin002-design/-ag-cute-blocks@dev-v0.1/apps-script/agcb-self-deploy-control.json"
+          curl -fsSL --retry 3 --retry-delay 2 "$URL" -o /tmp/agcb-control.json
+          python - <<'PY'
+          import json
+          c=json.load(open('/tmp/agcb-control.json'))
+          assert c['protocol']=='AGCB_APPS_SCRIPT_SELF_DEPLOY_CONTROL_V1'
+          assert c['environment']=='TEST'
+          assert c['enabled'] is True
+          print('CDN control smoke PASS:', c['releaseId'])
+          PY
