@@ -3,9 +3,9 @@
   "enabled": true,
   "project": "AG Cute Blocks",
   "environment": "TEST",
-  "deploymentId": "AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC",
-  "releaseId": "AGCB-AS-P3.2-WEBAPP-MANIFEST-RESTORE-20260913",
-  "commitSha": "06fa0ed41bf2d83dfe02ed96d07353197e961c88",
+  "deploymentId": "AKfycbx2kSQg7qx4b5MIRGnc-aPL0vjAXw8Fdbc3whvVf72KooBxmGUesF-pLBaMLopgE8gA",
+  "releaseId": "AGCB-AS-P3.3-REAL-WEBAPP-TARGET-20260913",
+  "commitSha": "46943f497893e94828947452161ce2dc9ca56c7e",
   "files": [
     {
       "name": "Code",
