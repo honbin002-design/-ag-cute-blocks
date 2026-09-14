@@ -1,0 +1,3 @@
+AG Cute Blocks TEST V0.5.113 post-sync validation marker
+Purpose: rerun current CI after release-chain sync and backup UI compatibility marker fix.
+PROD untouched. PROD write/read disabled. Server restore/delete disabled.
