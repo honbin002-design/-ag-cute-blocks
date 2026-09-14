@@ -1,4 +1,4 @@
-name: Save Restore Safety V0.5.111
+name: Save Restore Safety
 on:
   push:
     branches: [dev-v0.1]
@@ -32,9 +32,23 @@ jobs:
           grep -F "agcbFolderContains_" apps-script/agcb-save-bridge-v05111.gs
           grep -F "server-v05111-history-upgrade-required" save-drive-bridge-v05111.js
           grep -F "readbackHistory" save-drive-bridge-v05111.js
-      - name: Bootstrap activates V0.5.111 restore
+      - name: Bootstrap activates current restore components
+        shell: python
         run: |
-          grep -F "const release='V0.5.111'" bootstrap-v0510.js
-          grep -F "save-drive-bridge-v05111.js?v=0.5.111" bootstrap-v0510.js
-          grep -F "save-restore-contract-v05111.js?v=0.5.111" bootstrap-v0510.js
-          grep -F "test-drive-restore-ui-v05111.js?v=0.5.111" bootstrap-v0510.js
+          import pathlib,re,sys
+          b=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          i=pathlib.Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'bootstrap-v0510\.js\?v=([0-9.]+)',i)
+          if not m: sys.exit('current bootstrap version missing from index')
+          v=m.group(1)
+          required=[
+            f"const release='V{v}'",
+            f"version:'{v}'",
+            f'./save-drive-bridge-v05111.js?v={v}',
+            f'./save-restore-contract-v05111.js?v={v}',
+            f'./test-drive-restore-ui-v05111.js?v={v}',
+            "runtimeEnvironment:'TEST'"
+          ]
+          missing=[x for x in required if x not in b]
+          if missing: sys.exit('bootstrap current restore wiring missing: '+repr(missing))
+          print('Current TEST-only restore/history components are wired to release '+v+'.')
