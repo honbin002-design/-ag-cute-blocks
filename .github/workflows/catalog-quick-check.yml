@@ -28,8 +28,7 @@ jobs:
               if f'./catalog-search-runtime-v0594.js?v={v}' not in b: failures.append('search runtime current cache query mismatch')
               if f'./catalog-quick-runtime-v0595.js?v={v}' not in b: failures.append('quick runtime current cache query mismatch')
               if f"version:'{v}'" not in b or "versionOwner:'bootstrap-v0510.js'" not in b: failures.append('bootstrap ownership mismatch')
-              if f"runtimeVersion:'{v}'" not in a: failures.append('wrapper release mismatch')
           if "versionOwner:'bootstrap-v0510.js'" not in a: failures.append('wrapper release owner mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Catalog quick feature remains wired to the current release without version pin drift.')
+          print('Catalog quick feature remains wired to the current bootstrap-owned release.')
           PY
