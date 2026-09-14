@@ -38,17 +38,14 @@ jobs:
           ]:
               if token not in s: failures.append('server missing: '+token)
           for token in [
-            "const VERSION='0.5.111'","const PRIVATE_CONFIG_KEY='AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1'",'bridge-token-too-short',
-            'AUTHENTICATED_TEST_BACKUP_HISTORY_READBACK_NO_SERVER_RESTORE',"action:'BACKUP'","action:'READBACK'","action:'LIST_HISTORY'",
-            'remote-sha256-mismatch','async function probe(','async function listHistory(','async function readbackHistory('
+            "const PRIVATE_CONFIG_KEY='AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1'",'bridge-token-too-short',
+            'AUTHENTICATED_TEST_BACKUP_HISTORY_READBACK_IPHONE_PROXY_NO_SERVER_RESTORE',"action:'BACKUP'","action:'READBACK'","action:'LIST_HISTORY'",
+            'remote-sha256-mismatch','async function probe(','async function listHistory(','async function readbackHistory(',"/api/agcb-drive-bridge"
           ]:
               if token not in c: failures.append('client missing: '+token)
-          if 'ag_cute_blocks_' in "AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1".lower(): failures.append('private config key overlaps save namespace')
           status_body=c.split('function status(){return{',1)[1].split('}}',1)[0]
-          if 'authToken:' in status_body or 'token:' in status_body or 'secret:' in status_body:
-              failures.append('status exposes token value')
-          if 'tokenConfigured:authToken.length>=32' not in status_body:
-              failures.append('status must expose only token configured boolean')
+          if 'authToken:' in status_body or 'token:' in status_body or 'secret:' in status_body: failures.append('status exposes token value')
+          if 'tokenConfigured:authToken.length>=32' not in status_body: failures.append('status must expose only token configured boolean')
           get_body=s.split('function doGet(){return agcbJson_(',1)[1].split(')}',1)[0]
           if 'token' in get_body.lower(): failures.append('public doGet must not expose token metadata')
           post_body=s.split('function doPost(e)',1)[1].split('function agcbSetupTestBridge_',1)[0]
@@ -62,5 +59,5 @@ jobs:
           owner=re.search(r"__AGCB_BOOTSTRAP=\{version:'(0\.5\.\d+)'",b)
           if not release or not owner or release.group(1)!=owner.group(1): failures.append('bootstrap release owner mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Current V0.5.111 TEST Drive bridge/history policy PASS under release '+release.group(1)+'.')
+          print('Current TEST Drive bridge/history policy PASS under release '+release.group(1)+'.')
           PY
