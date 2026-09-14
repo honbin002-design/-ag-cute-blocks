@@ -33,8 +33,7 @@ jobs:
               if f'build-history-runtime-v0597.js?v={v}' not in b: failures.append('build-history current cache query mismatch')
               if f"const release='V{v}'" not in b: failures.append('bootstrap release owner mismatch')
               if f"version:'{v}'" not in b: failures.append('bootstrap version mismatch')
-              if f"runtimeVersion:'{v}'" not in a: failures.append('wrapper runtimeVersion mismatch')
           if "versionOwner:'bootstrap-v0510.js'" not in a: failures.append('wrapper version owner mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Conflict-safe Build History remains wired to the current release without version pin drift.')
+          print('Conflict-safe Build History remains wired to the current bootstrap-owned release.')
           PY
