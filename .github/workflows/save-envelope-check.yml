@@ -17,19 +17,24 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           s=Path('save-envelope-runtime-v05100.js').read_text(encoding='utf-8')
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           a=Path('app-v0510.js').read_text(encoding='utf-8')
-          r=Path('release-version-v05103.js').read_text(encoding='utf-8')
+          i=Path('index.html').read_text(encoding='utf-8')
           failures=[]
           for token in ["const VERSION='0.5.100'","const PROJECT='AG Cute Blocks'","AG_CUTE_BLOCKS_SAVE_ENVELOPE","const PREFIX='ag_cute_blocks_'","environment:env","saveSchema:SAVE_SCHEMA","crypto.subtle.digest('SHA-256'","READ_ONLY_ENV_BOUND_DRIVE_BACKUP_FOUNDATION","captureRaw","capture","verify","readiness"]:
               if token not in s: failures.append('save envelope missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', 'location.reload(', 'new MutationObserver']:
               if forbidden in s: failures.append('read-only foundation contains forbidden mutation: '+forbidden)
-          if "./save-envelope-runtime-v05100.js?v=0.5.103" not in b: failures.append('bootstrap save-envelope wiring missing')
-          if "version:'0.5.103'" not in b or "environment-bound-save-envelope" not in b: failures.append('bootstrap version/target mismatch')
-          if "import './release-version-v05103.js'" not in a or "runtimeVersion:'0.5.103'" not in a: failures.append('app release mismatch')
-          if "const RELEASE='V0.5.103'" not in r or "observerActive:false" not in r or 'new MutationObserver' in r: failures.append('release helper contract broken')
+          m=re.search(r'bootstrap-v0510\.js\?v=([0-9.]+)',i)
+          if not m: failures.append('current bootstrap version missing from index')
+          else:
+              v=m.group(1)
+              if f'./save-envelope-runtime-v05100.js?v={v}' not in b: failures.append('bootstrap save-envelope current cache query missing')
+              if f"const release='V{v}'" not in b or f"version:'{v}'" not in b: failures.append('bootstrap release/version owner mismatch')
+          if 'environment-bound-save-envelope' not in b: failures.append('bootstrap save-envelope target missing')
+          if "versionOwner:'bootstrap-v0510.js'" not in a: failures.append('wrapper version owner mismatch')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Save envelope remains environment-bound and non-destructive under V0.5.103.')
+          print('Save envelope remains environment-bound and non-destructive under the current bootstrap-owned release.')
           PY
