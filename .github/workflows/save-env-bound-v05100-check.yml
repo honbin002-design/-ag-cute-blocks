@@ -16,7 +16,7 @@ jobs:
           node --check save-environment-compat-v05100.js
           node --check save-envelope-runtime-v05100.js
           node --check save-drive-contract-v05100.js
-          node --check save-drive-bridge-v05103.js
+          node --check save-drive-bridge-v05111.js
           node --check test-drive-backup-setup-v05104.js
       - name: Validate isolation, compatibility and current-release binding
         run: |
@@ -25,15 +25,15 @@ jobs:
           import re
           files={p:Path(p).read_text(encoding='utf-8') for p in [
             'save-environment-compat-v05100.js','save-envelope-runtime-v05100.js',
-            'save-drive-contract-v05100.js','save-drive-bridge-v05103.js','test-drive-backup-setup-v05104.js']}
+            'save-drive-contract-v05100.js','save-drive-bridge-v05111.js','test-drive-backup-setup-v05104.js']}
           b=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           i=Path('index.html').read_text(encoding='utf-8')
           alltxt='\n'.join(files.values())
           required=[
             'prod-cannot-read-test-save','test-cannot-read-prod-save','promotion-would-break-existing-prod-save',
             'environment:env','saveSchema:SAVE_SCHEMA','envelope-environment-mismatch','allowCrossEnvironmentRead:false',
-            'VERIFY_BACKWARD_COMPAT','remote-environment-mismatch','v05103-test-bridge-requires-test-runtime',
-            'AUTHENTICATED_TEST_BACKUP_READBACK_ONLY_NO_RESTORE'
+            'VERIFY_BACKWARD_COMPAT','remote-environment-mismatch','test-bridge-requires-test-runtime',
+            'AUTHENTICATED_TEST_BACKUP_HISTORY_READBACK_IPHONE_PROXY_NO_SERVER_RESTORE','/api/agcb-drive-bridge'
           ]
           missing=[x for x in required if x not in alltxt]
           forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true', "action:'RESTORE'", "action:'DELETE'"]
@@ -44,9 +44,8 @@ jobs:
               v=m.group(1)
               if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b: missing.append('TEST runtime binding')
               if f"version:'{v}'" not in b: missing.append('bootstrap version binding')
-              if f'./test-drive-backup-setup-v05104.js?v={v}' not in b: missing.append('TEST Drive setup current cache query')
-              for name in ['save-environment-compat-v05100.js','save-envelope-runtime-v05100.js','save-drive-contract-v05100.js','save-drive-bridge-v05103.js']:
+              for name in ['test-drive-backup-setup-v05104.js','save-environment-compat-v05100.js','save-envelope-runtime-v05100.js','save-drive-contract-v05100.js','save-drive-bridge-v05111.js']:
                   if f'./{name}?v={v}' not in b: missing.append(name+' current cache query')
           if missing or bad: raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
-          print('Environment-bound save isolation and TEST Drive setup stay bound to the current release without version pin drift.')
+          print('Environment-bound save isolation and current TEST Drive bridge stay bound to the current release.')
           PY
