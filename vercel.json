@@ -3,6 +3,12 @@
   "buildCommand": "bash ./vercel-build-test.sh",
   "outputDirectory": "dist-test",
   "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/api/agcb-drive-bridge",
+      "destination": "https://script.google.com/macros/s/AKfycbx2kSQg7qx4b5MIRGnc-aPL0vjAXw8Fdbc3whvVf72KooBxmGUesF-pLBaMLopgE8gA/exec"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
