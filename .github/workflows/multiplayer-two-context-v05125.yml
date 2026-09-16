@@ -1,0 +1,49 @@
+name: Multiplayer Two Context V0.5.125
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'multiplayer-webrtc-test-v05123.js'
+      - 'multiplayer-game-integration-v05124.js'
+      - '.github/workflows/multiplayer-two-context-v05125.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  two-context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static TEST isolation and sync contract
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const t=fs.readFileSync('multiplayer-webrtc-test-v05123.js','utf8');
+          const g=fs.readFileSync('multiplayer-game-integration-v05124.js','utf8');
+          for(const x of ['RTCPeerConnection','createDataChannel','player-state','building-mutation','farming-mutation']) if(!t.includes(x)) throw new Error('missing transport '+x);
+          for(const x of ["environment:'TEST'","prodEligible:false",'playerTransformSyncHz:10','agcb:remote-building-mutation','agcb:remote-farming-mutation']) if(!g.includes(x)) throw new Error('missing integration '+x);
+          if(/PROD[^\n]{0,40}(write|eligible|true)/i.test(t+g)) throw new Error('PROD safety regression');
+          console.log('STATIC_CONTRACT_PASS');
+          NODE
+      - name: Two independent context message convergence
+        run: |
+          node <<'NODE'
+          const {MessageChannel}=require('node:worker_threads');
+          const {port1,port2}=new MessageChannel();
+          const seenA=[],seenB=[];
+          const wait=(arr,n)=>new Promise((ok,bad)=>{let k=0;const id=setInterval(()=>{if(arr.length>=n){clearInterval(id);ok()}else if(++k>100){clearInterval(id);bad(new Error('timeout'))}},10)});
+          port1.on('message',m=>seenA.push(m));port2.on('message',m=>seenB.push(m));
+          const envelope=(type,payload)=>({v:1,env:'TEST',type,payload,at:Date.now()});
+          port1.postMessage(envelope('player-state',{peerId:'A',state:{x:1,y:0,z:2,ry:.5,motion:'walk'}}));
+          port1.postMessage(envelope('building-mutation',{peerId:'A',event:{op:'place',id:'block-1'}}));
+          port2.postMessage(envelope('farming-mutation',{peerId:'B',event:{op:'plant',id:'crop-1'}}));
+          Promise.all([wait(seenA,1),wait(seenB,2)]).then(()=>{
+            if(seenB[0].type!=='player-state'||seenB[1].type!=='building-mutation'||seenA[0].type!=='farming-mutation') throw new Error('convergence mismatch');
+            if([...seenA,...seenB].some(x=>x.env!=='TEST')) throw new Error('environment leak');
+            console.log('TWO_CONTEXT_MESSAGE_CONVERGENCE_PASS');port1.close();port2.close();
+          }).catch(e=>{console.error(e);process.exit(1)});
+          NODE
