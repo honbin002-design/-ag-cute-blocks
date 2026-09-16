@@ -1,4 +1,4 @@
-name: Multiplayer Real WebRTC V0.5.128
+name: Multiplayer Real WebRTC V0.5.129
 on:
   push:
     branches: [dev-v0.1]
@@ -24,7 +24,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run two-page real RTCPeerConnection DataChannel gate
         run: |
-          cat > /tmp/agcb-webrtc.mjs <<'NODE'
+          cat > ./agcb-webrtc-v05129.mjs <<'NODE'
           import { chromium } from 'playwright';
           import http from 'node:http';
           import fs from 'node:fs';
@@ -46,25 +46,25 @@ jobs:
           const offer=await a.evaluate(()=>s.createHostOffer());
           const answer=await b.evaluate(o=>s.acceptHostOffer(o),offer);
           await a.evaluate(ans=>s.acceptGuestAnswer(ans),answer);
-          await Promise.all([a.waitForFunction(()=>s.channel?.readyState==='open',{timeout:15000}),b.waitForFunction(()=>s.channel?.readyState==='open',{timeout:15000})]);
+          await Promise.all([a.waitForFunction(()=>s.channel?.readyState==='open',null,{timeout:15000}),b.waitForFunction(()=>s.channel?.readyState==='open',null,{timeout:15000})]);
           const sent=await a.evaluate(()=>[
             s.sendPlayerState({peerId:'A',state:{x:1,y:0,z:2,ry:.5,motion:'walk'}}),
             s.sendBuildingMutation({peerId:'A',mutationId:'build-real-1',event:{op:'place',id:'block-1'}}),
             s.sendFarmingMutation({peerId:'A',mutationId:'farm-real-1',event:{op:'plant',id:'crop-1'}})
           ]);
           if(sent.some(x=>!x))throw new Error('send returned false');
-          await b.waitForFunction(()=>seen.length===3,{timeout:10000});
+          await b.waitForFunction(()=>seen.length===3,null,{timeout:10000});
           const seen=await b.evaluate(()=>window.seen);
           const types=seen.map(x=>x.type);
           for(const t of ['player-state','building-mutation','farming-mutation'])if(!types.includes(t))throw new Error('missing '+t);
           if(seen.some(x=>x.env!=='TEST'||x.v!==1))throw new Error('TEST envelope isolation failure');
           const back=await b.evaluate(()=>s.sendPlayerState({peerId:'B',state:{x:9,y:0,z:8,ry:1,motion:'run'}}));
           if(!back)throw new Error('reverse send false');
-          await a.waitForFunction(()=>seen.length===1,{timeout:10000});
+          await a.waitForFunction(()=>seen.length===1,null,{timeout:10000});
           const reverse=await a.evaluate(()=>window.seen[0]);
           if(reverse.type!=='player-state'||reverse.payload.peerId!=='B')throw new Error('reverse convergence failure');
           console.log('REAL_CHROMIUM_WEBRTC_TWO_CONTEXT_PASS');
           console.log(JSON.stringify({forward:types,reverse:reverse.type,aStates:await a.evaluate(()=>states),bStates:await b.evaluate(()=>states)}));
           await browser.close();server.close();
           NODE
-          node /tmp/agcb-webrtc.mjs
+          node ./agcb-webrtc-v05129.mjs
