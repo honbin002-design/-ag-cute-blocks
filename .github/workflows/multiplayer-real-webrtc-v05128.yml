@@ -1,0 +1,70 @@
+name: Multiplayer Real WebRTC V0.5.128
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'multiplayer-webrtc-test-v05123.js'
+      - '.github/workflows/multiplayer-real-webrtc-v05128.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-webrtc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run two-page real RTCPeerConnection DataChannel gate
+        run: |
+          cat > /tmp/agcb-webrtc.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import http from 'node:http';
+          import fs from 'node:fs';
+          const moduleText=fs.readFileSync('multiplayer-webrtc-test-v05123.js','utf8');
+          const server=http.createServer((req,res)=>{
+            res.setHeader('Cache-Control','no-store');
+            if(req.url==='/multiplayer-webrtc-test-v05123.js'){res.setHeader('Content-Type','text/javascript');res.end(moduleText);return;}
+            res.setHeader('Content-Type','text/html');
+            res.end(`<script type="module">import {AGCBPeerSession} from '/multiplayer-webrtc-test-v05123.js';window.ready=true;window.make=()=>{window.seen=[];window.states=[];window.s=new AGCBPeerSession({onMessage:m=>seen.push(m),onState:s=>states.push(s)});return true};</script>`);
+          });
+          await new Promise(r=>server.listen(0,'127.0.0.1',r));
+          const port=server.address().port, browser=await chromium.launch({headless:true});
+          const ctxA=await browser.newContext(),ctxB=await browser.newContext();
+          const a=await ctxA.newPage(),b=await ctxB.newPage();
+          const url=`http://127.0.0.1:${port}/`;
+          await Promise.all([a.goto(url),b.goto(url)]);
+          await Promise.all([a.waitForFunction(()=>window.ready),b.waitForFunction(()=>window.ready)]);
+          await Promise.all([a.evaluate(()=>make()),b.evaluate(()=>make())]);
+          const offer=await a.evaluate(()=>s.createHostOffer());
+          const answer=await b.evaluate(o=>s.acceptHostOffer(o),offer);
+          await a.evaluate(ans=>s.acceptGuestAnswer(ans),answer);
+          await Promise.all([a.waitForFunction(()=>s.channel?.readyState==='open',{timeout:15000}),b.waitForFunction(()=>s.channel?.readyState==='open',{timeout:15000})]);
+          const sent=await a.evaluate(()=>[
+            s.sendPlayerState({peerId:'A',state:{x:1,y:0,z:2,ry:.5,motion:'walk'}}),
+            s.sendBuildingMutation({peerId:'A',mutationId:'build-real-1',event:{op:'place',id:'block-1'}}),
+            s.sendFarmingMutation({peerId:'A',mutationId:'farm-real-1',event:{op:'plant',id:'crop-1'}})
+          ]);
+          if(sent.some(x=>!x))throw new Error('send returned false');
+          await b.waitForFunction(()=>seen.length===3,{timeout:10000});
+          const seen=await b.evaluate(()=>window.seen);
+          const types=seen.map(x=>x.type);
+          for(const t of ['player-state','building-mutation','farming-mutation'])if(!types.includes(t))throw new Error('missing '+t);
+          if(seen.some(x=>x.env!=='TEST'||x.v!==1))throw new Error('TEST envelope isolation failure');
+          const back=await b.evaluate(()=>s.sendPlayerState({peerId:'B',state:{x:9,y:0,z:8,ry:1,motion:'run'}}));
+          if(!back)throw new Error('reverse send false');
+          await a.waitForFunction(()=>seen.length===1,{timeout:10000});
+          const reverse=await a.evaluate(()=>window.seen[0]);
+          if(reverse.type!=='player-state'||reverse.payload.peerId!=='B')throw new Error('reverse convergence failure');
+          console.log('REAL_CHROMIUM_WEBRTC_TWO_CONTEXT_PASS');
+          console.log(JSON.stringify({forward:types,reverse:reverse.type,aStates:await a.evaluate(()=>states),bStates:await b.evaluate(()=>states)}));
+          await browser.close();server.close();
+          NODE
+          node /tmp/agcb-webrtc.mjs
