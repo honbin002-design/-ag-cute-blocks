@@ -1,0 +1,51 @@
+name: Multiplayer Three Context V0.5.127
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'multiplayer-webrtc-test-v05123.js'
+      - 'multiplayer-game-integration-v05124.js'
+      - 'multiplayer-hub-v05126.js'
+      - '.github/workflows/multiplayer-three-context-v05127.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  three-context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify three-player TEST contract
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const h=fs.readFileSync('multiplayer-hub-v05126.js','utf8');
+          for(const x of ['MAX_GUESTS=2',"totalTargetPlayers:3","topology:'HOST_RELAY'",'guestToGuestRelay:true',"environment:'TEST'",'prodEligible:false']) if(!h.includes(x)) throw new Error('missing '+x);
+          console.log('THREE_PLAYER_STATIC_CONTRACT_PASS');
+          NODE
+      - name: Three independent contexts converge through host relay
+        run: |
+          node <<'NODE'
+          const {MessageChannel}=require('node:worker_threads');
+          const a=new MessageChannel(),b=new MessageChannel();
+          const hostSeen=[],aSeen=[],bSeen=[],seen=new Set();
+          const env=(type,payload,at)=>({v:1,env:'TEST',type,payload,at});
+          a.port1.on('message',m=>relay('A',m)); b.port1.on('message',m=>relay('B',m));
+          a.port2.on('message',m=>aSeen.push(m)); b.port2.on('message',m=>bSeen.push(m));
+          function relay(from,m){if(m.env!=='TEST')throw new Error('env leak');const id=m.payload?.mutationId||`${from}:${m.type}:${m.at}`;if(seen.has(id))return;seen.add(id);hostSeen.push({from,m});const out=env(m.type,{...m.payload,relayFrom:from},m.at);if(from!=='A')a.port1.postMessage(out);if(from!=='B')b.port1.postMessage(out)}
+          const wait=(fn)=>new Promise((ok,bad)=>{let n=0;const i=setInterval(()=>{if(fn()){clearInterval(i);ok()}else if(++n>100){clearInterval(i);bad(new Error('timeout'))}},10)});
+          a.port2.postMessage(env('player-state',{peerId:'A',state:{x:3,z:4,motion:'run'}},1));
+          a.port2.postMessage(env('building-mutation',{peerId:'A',mutationId:'build-1',event:{op:'place'}},2));
+          b.port2.postMessage(env('farming-mutation',{peerId:'B',mutationId:'farm-1',event:{op:'plant'}},3));
+          Promise.all([wait(()=>hostSeen.length===3),wait(()=>aSeen.length===1),wait(()=>bSeen.length===2)]).then(()=>{
+            if(!bSeen.some(x=>x.type==='player-state')||!bSeen.some(x=>x.type==='building-mutation'))throw new Error('A to B relay fail');
+            if(!aSeen.some(x=>x.type==='farming-mutation'))throw new Error('B to A relay fail');
+            if([...aSeen,...bSeen].some(x=>x.env!=='TEST'))throw new Error('TEST isolation fail');
+            console.log('THREE_CONTEXT_HOST_RELAY_CONVERGENCE_PASS');
+            a.port1.close();a.port2.close();b.port1.close();b.port2.close();
+          }).catch(e=>{console.error(e);process.exit(1)});
+          NODE
