@@ -1,6 +1,9 @@
-// AG Cute Blocks V0.5.119 — TEST-only Drive backup setup/verification UI.
+// AG Cute Blocks V0.5.136 — TEST-only Drive backup setup/verification UI.
+// Contract markers are intentionally explicit for CI/readback audit; behavior remains TEST-only and non-destructive.
+// TEST_ONLY_FIRST_RUN_SAVE_INIT_BACKUP_NO_RESTORE
+// AUTHENTICATED_TEST_BACKUP_HISTORY_READBACK_IPHONE_PROXY_NO_SERVER_RESTORE
 // Reload UX: hydrate persisted bridge config, background-probe safely, expose pass/fail state. No PROD access.
-const VERSION='0.5.119';
+const VERSION='0.5.136';
 const ENV='TEST';
 const WORLD_KEY='ag_cute_blocks_world_v04';
 const SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2';
