@@ -19,27 +19,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in *.js; do
+          while IFS= read -r -d '' file; do
             echo "Checking $file"
             node --input-type=module --check < "$file"
-          done
+          done < <(find . -type f -name '*.js' -not -path './node_modules/*' -print0)
 
       - name: Validate relative named imports
         shell: python
         run: |
           import pathlib,re,sys
-          files={p.name:p.read_text(encoding='utf-8') for p in pathlib.Path('.').glob('*.js')}
+          root=pathlib.Path('.').resolve()
+          paths=[p.resolve() for p in pathlib.Path('.').rglob('*.js') if 'node_modules' not in p.parts]
+          files={p:p.read_text(encoding='utf-8') for p in paths}
           failures=[]
           export_re=re.compile(r'export\s+(?:async\s+)?(?:function|class|const|let|var)\s+([A-Za-z_$][\w$]*)')
           export_list_re=re.compile(r'export\s*\{([^}]+)\}')
-          import_re=re.compile(r'import\s*\{([^}]+)\}\s*from\s*[\'\"](\./[^\'\"]+)[\'\"]')
-          for source_name,source in files.items():
+          import_re=re.compile(r'import\s*\{([^}]+)\}\s*from\s*[\'\"](\.{1,2}/[^\'\"]+)[\'\"]')
+          for source_path,source in files.items():
             for names,target in import_re.findall(source):
-              target_name=pathlib.Path(target.split('?')[0]).name
-              if target_name not in files:
-                failures.append(f'{source_name}: missing relative module {target}')
+              clean=target.split('?')[0].split('#')[0]
+              target_path=(source_path.parent/clean).resolve()
+              if target_path.suffix=='': target_path=target_path.with_suffix('.js')
+              try: target_path.relative_to(root)
+              except ValueError:
+                failures.append(f'{source_path.relative_to(root)}: relative module escapes repository {target}')
                 continue
-              target_src=files[target_name]
+              if target_path not in files:
+                failures.append(f'{source_path.relative_to(root)}: missing relative module {target}')
+                continue
+              target_src=files[target_path]
               exports=set(export_re.findall(target_src))
               for block in export_list_re.findall(target_src):
                 for item in block.split(','):
@@ -48,10 +56,10 @@ jobs:
               for item in names.split(','):
                 imported=item.strip().split(' as ')[0].strip()
                 if imported and imported not in exports:
-                  failures.append(f'{source_name}: imports {imported} from {target_name}, but it is not exported')
+                  failures.append(f'{source_path.relative_to(root)}: imports {imported} from {target_path.relative_to(root)}, but it is not exported')
           if failures:
             print('\n'.join(failures));sys.exit(1)
-          print('Relative named-import validation passed.')
+          print(f'Relative named-import validation passed across {len(files)} JavaScript modules.')
 
       - name: Resolve current release and core app
         shell: python
