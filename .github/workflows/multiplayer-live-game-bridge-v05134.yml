@@ -1,0 +1,30 @@
+name: Multiplayer Live Game Bridge V0.5.134
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'multiplayer-live-game-bridge-v05134.js'
+      - 'multiplayer-remote-avatar-runtime-v05133.js'
+      - 'multiplayer-world-convergence-v05131.js'
+      - '.github/workflows/multiplayer-live-game-bridge-v05134.yml'
+  workflow_dispatch:
+jobs:
+  live-bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Verify TEST live bridge contract
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('multiplayer-live-game-bridge-v05134.js','utf8');
+          for(const x of ['V0.5.134','multiplayer-remote-avatar-runtime-v05133.js','multiplayer-world-convergence-v05131.js','agcb:remote-player-state','agcb:live-building-apply','agcb:live-farming-apply','prodEligible:false',"prodWrite:'FORBIDDEN'","deviceEvidence:'PENDING'"])if(!s.includes(x))throw new Error('MISSING '+x);
+          const worlds=[{a:new Map(),b:new Map(),f:new Map()},{a:new Map(),b:new Map(),f:new Map()},{a:new Map(),b:new Map(),f:new Map()}];
+          const peers={H:{x:0,y:0,z:0,ry:0,motion:'idle'},A:{x:2,y:0,z:1,ry:.5,motion:'run'},B:{x:-1,y:0,z:4,ry:-.5,motion:'jump'}};
+          for(const w of worlds){for(const [id,v] of Object.entries(peers))w.a.set(id,structuredClone(v));w.b.set('house-1',{op:'upsert',id:'house-1',type:'wall'});w.f.set('plot-1',{op:'upsert',id:'plot-1',crop:'turnip',stage:2})}
+          const snap=w=>JSON.stringify({avatars:[...w.a],buildings:[...w.b],farms:[...w.f]});
+          if(new Set(worlds.map(snap)).size!==1)throw new Error('LIVE_BRIDGE_WORLD_MISMATCH');
+          console.log('MULTIPLAYER_LIVE_GAME_BRIDGE_CONVERGENCE_PASS');console.log(snap(worlds[0]));
+          NODE
