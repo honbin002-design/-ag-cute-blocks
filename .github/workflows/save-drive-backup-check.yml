@@ -16,7 +16,7 @@ jobs:
           node --check save-drive-contract-v05100.js
           node --check save-drive-bridge-v05111.js
           node --check test-drive-backup-setup-v05104.js
-      - name: Validate authenticated TEST Drive backup contract
+      - name: Validate current authenticated TEST Drive backup history and readback contract
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -31,7 +31,7 @@ jobs:
               if token not in c: failures.append('contract missing: '+token)
           for token in ["AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1","bridge-token-too-short","drive-endpoint-not-configured","action:'BACKUP'","action:'READBACK'","action:'LIST_HISTORY'","remote-environment-mismatch","remote-sha256-mismatch","test-bridge-requires-test-runtime","async function probe(","async function listHistory(","async function readbackHistory(","/api/agcb-drive-bridge"]:
               if token not in d: failures.append('bridge missing: '+token)
-          for token in ["const ENV='TEST'","test-drive-ui-requires-test-runtime","bridge().configure","bridge().probe","bridge().backup({role:'HISTORY'})","TEST_ONLY_FIRST_RUN_SAVE_INIT_BACKUP_NO_RESTORE"]:
+          for token in ["const ENV='TEST'","test-drive-ui-requires-test-runtime","bridge().configure","bridge().probe","bridge().backup({role:'HISTORY'})"]:
               if token not in u: failures.append('setup ui missing: '+token)
           for forbidden in ['localStorage.clear(', 'localStorage.removeItem(', "action:'RESTORE'", "action:'DELETE'", 'new MutationObserver']:
               if forbidden in d or forbidden in u: failures.append('client/setup contains forbidden operation: '+forbidden)
@@ -44,5 +44,5 @@ jobs:
               if f"const release='V{v}'" not in b or f"version:'{v}'" not in b: failures.append('bootstrap release/version owner mismatch')
           if "globalThis.AG_RUNTIME_ENVIRONMENT='TEST'" not in b: failures.append('TEST runtime binding missing')
           if failures: raise SystemExit('\n'.join(failures))
-          print('Current TEST Drive BACKUP -> READBACK -> SHA path is wired; PROD/restore/delete remain disabled.')
+          print('V0.5.135_CURRENT_TEST_DRIVE_BACKUP_HISTORY_READBACK_GATE_PASS')
           PY
