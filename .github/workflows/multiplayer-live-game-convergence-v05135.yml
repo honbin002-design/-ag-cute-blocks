@@ -1,0 +1,42 @@
+name: Multiplayer Real Live Game Convergence V0.5.135
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'multiplayer-live-game-bridge-v05135.js'
+      - '.github/workflows/multiplayer-live-game-convergence-v05135.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-live-game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Install Playwright Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify real WebRTC avatars plus building and farming converge
+        run: |
+          cat > ./agcb-live-v05135.mjs <<'NODE'
+          import{chromium}from'playwright';import http from'node:http';import fs from'node:fs';
+          const names=['multiplayer-webrtc-test-v05123.js','multiplayer-hub-v05126.js','multiplayer-remote-avatar-runtime-v05133.js','multiplayer-world-convergence-v05131.js','multiplayer-live-game-bridge-v05135.js'];const files=Object.fromEntries(names.map(n=>['/'+n,fs.readFileSync(n,'utf8')]));
+          const html=`<script type="module">import{AGCBPeerSession}from'/multiplayer-webrtc-test-v05123.js';import{AGCBMultiplayerHostHub}from'/multiplayer-hub-v05126.js';import{installAGCBMultiplayerLiveBridgeV05135}from'/multiplayer-live-game-bridge-v05135.js';
+          class V{constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z}set(x,y,z){this.x=x;this.y=y;this.z=z}}class O{constructor(){this.position=new V();this.rotation={y:0};this.userData={};this.children=[];this.parent=null}add(o){o.parent=this;this.children.push(o)}remove(o){this.children=this.children.filter(x=>x!==o);o.parent=null}}class Group extends O{}class Mesh extends O{constructor(g,m){super();this.geometry=g;this.material=m}}class BoxGeometry{}class MeshStandardMaterial{};window.THREE={Group,Mesh,BoxGeometry,MeshStandardMaterial};window.scene=new Group();window.bridge=installAGCBMultiplayerLiveBridgeV05135({scene,THREE});window.seen=[];
+          window.makeGuest=id=>{window.selfId=id;window.s=new AGCBPeerSession({onMessage:m=>{seen.push(m);bridge.routeNetworkMessage(m)}})};window.makeHost=()=>{window.selfId='H';window.h=new AGCBMultiplayerHostHub({hostId:'H',onMessage:x=>{seen.push(x.message);bridge.routeNetworkMessage(x.message)}})};window.localWorld=(type,p)=>document.dispatchEvent(new CustomEvent(type==='building-mutation'?'agcb:remote-building-mutation':'agcb:remote-farming-mutation',{detail:p}));window.ready=true;</script>`;
+          const server=http.createServer((q,r)=>{if(files[q.url]){r.setHeader('Content-Type','text/javascript');return r.end(files[q.url])}r.setHeader('Content-Type','text/html');r.end(html)});await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true}),url=`http://127.0.0.1:${server.address().port}/`;const cs=await Promise.all([0,1,2].map(()=>browser.newContext()));const[H,A,B]=await Promise.all(cs.map(async c=>{const p=await c.newPage();await p.goto(url);await p.waitForFunction(()=>ready);return p}));await H.evaluate(()=>makeHost());await A.evaluate(()=>makeGuest('A'));await B.evaluate(()=>makeGuest('B'));
+          async function connect(id,p){const o=await H.evaluate(id=>h.createGuestOffer(id),id),a=await p.evaluate(o=>s.acceptHostOffer(o),o);await H.evaluate(x=>h.acceptGuestAnswer(x.id,x.a),{id,a})}await connect('A',A);await connect('B',B);await Promise.all([H.waitForFunction(()=>[...h.guests.values()].every(s=>s.channel?.readyState==='open'),null,{timeout:15000}),A.waitForFunction(()=>s.channel?.readyState==='open',null,{timeout:15000}),B.waitForFunction(()=>s.channel?.readyState==='open',null,{timeout:15000})]);
+          const motions=['idle','walk','run','jump'];for(let i=0;i<motions.length;i++){const motion=motions[i];await A.evaluate(({motion,i})=>s.sendPlayerState({peerId:'A',state:{x:1+i,y:i===3?1:0,z:2,ry:.5+i/10,motion}}),{motion,i});await B.evaluate(({motion,i})=>s.sendPlayerState({peerId:'B',state:{x:9-i,y:i===3?1:0,z:8,ry:1+i/10,motion}}),{motion,i});await H.evaluate(({motion,i})=>h.broadcastPlayerState({x:5,y:i===3?1:0,z:5+i,ry:.2+i/10,motion}),{motion,i});await new Promise(r=>setTimeout(r,80))}
+          await Promise.all([H.waitForFunction(()=>bridge.avatars.snapshot().length===2),A.waitForFunction(()=>bridge.avatars.snapshot().length===2),B.waitForFunction(()=>bridge.avatars.snapshot().length===2)]);
+          await A.evaluate(()=>{const p={peerId:'A',mutationId:'build-a135',event:{op:'place',id:'house-a',kind:'wood'}};localWorld('building-mutation',p);s.sendBuildingMutation(p);const f={peerId:'A',mutationId:'farm-a135',event:{op:'plant',id:'plot-a',crop:'turnip'}};localWorld('farming-mutation',f);s.sendFarmingMutation(f)});await B.evaluate(()=>{const p={peerId:'B',mutationId:'build-b135',event:{op:'place',id:'house-b',kind:'stone'}};localWorld('building-mutation',p);s.sendBuildingMutation(p);const f={peerId:'B',mutationId:'farm-b135',event:{op:'plant',id:'plot-b',crop:'corn'}};localWorld('farming-mutation',f);s.sendFarmingMutation(f)});
+          await Promise.all([H,A,B].map(p=>p.waitForFunction(()=>bridge.world.state.buildings.size===2&&bridge.world.state.farms.size===2,null,{timeout:10000})));
+          const snaps=await Promise.all([H,A,B].map(p=>p.evaluate(()=>({avatars:bridge.avatars.snapshot(),world:bridge.world.snapshot(),sceneRemote:scene.children.filter(x=>x.userData?.isRemotePlayer).map(x=>({peerId:x.userData.peerId,isRemotePlayer:x.userData.isRemotePlayer,motion:x.userData.motion,childCount:x.children.length}))}))));
+          const expected=[['A','B'],['B','H'],['A','H']];snaps.forEach((s,i)=>{const ids=s.avatars.map(x=>x.peerId).sort();if(JSON.stringify(ids)!==JSON.stringify(expected[i]))throw new Error('REMOTE_IDS_'+i+' '+JSON.stringify(ids));if(s.avatars.some(x=>x.motion!=='jump'||!Number.isFinite(x.x)||!Number.isFinite(x.y)||!Number.isFinite(x.z)||!Number.isFinite(x.ry)))throw new Error('REMOTE_TRANSFORM_MOTION_'+i);if(s.sceneRemote.length!==2||s.sceneRemote.some(x=>!x.isRemotePlayer||x.childCount<1))throw new Error('THREE_REMOTE_GROUP_'+i)});
+          const canon=x=>JSON.stringify({buildings:[...x.world.buildings].sort(),farms:[...x.world.farms].sort()});if(new Set(snaps.map(canon)).size!==1)throw new Error('WORLD_MISMATCH '+JSON.stringify(snaps));if(snaps.some(x=>x.world.environment!=='TEST'))throw new Error('ENVIRONMENT_LEAK');console.log('REAL_CHROMIUM_THREE_LIVE_GAME_CONVERGENCE_PASS');console.log(JSON.stringify(snaps));await browser.close();server.close();
+          NODE
+          node ./agcb-live-v05135.mjs
