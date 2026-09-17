@@ -18,7 +18,7 @@ jobs:
           node --check save-drive-contract-v05100.js
           node --check save-drive-bridge-v05111.js
           node --check test-drive-backup-setup-v05104.js
-      - name: Validate isolation, compatibility and current-release binding
+      - name: Validate isolation compatibility and current TEST history/readback binding
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -33,7 +33,8 @@ jobs:
             'prod-cannot-read-test-save','test-cannot-read-prod-save','promotion-would-break-existing-prod-save',
             'environment:env','saveSchema:SAVE_SCHEMA','envelope-environment-mismatch','allowCrossEnvironmentRead:false',
             'VERIFY_BACKWARD_COMPAT','remote-environment-mismatch','test-bridge-requires-test-runtime',
-            'AUTHENTICATED_TEST_BACKUP_HISTORY_READBACK_IPHONE_PROXY_NO_SERVER_RESTORE','/api/agcb-drive-bridge'
+            "action:'BACKUP'","action:'READBACK'","action:'LIST_HISTORY'",'async function readbackHistory(',
+            '/api/agcb-drive-bridge'
           ]
           missing=[x for x in required if x not in alltxt]
           forbidden=['localStorage.clear(', 'localStorage.removeItem(', 'destructiveRestore:true', "action:'RESTORE'", "action:'DELETE'"]
@@ -47,5 +48,5 @@ jobs:
               for name in ['test-drive-backup-setup-v05104.js','save-environment-compat-v05100.js','save-envelope-runtime-v05100.js','save-drive-contract-v05100.js','save-drive-bridge-v05111.js']:
                   if f'./{name}?v={v}' not in b: missing.append(name+' current cache query')
           if missing or bad: raise SystemExit('missing='+repr(missing)+' forbidden='+repr(bad))
-          print('Environment-bound save isolation and current TEST Drive bridge stay bound to the current release.')
+          print('V0.5.135_ENVIRONMENT_BOUND_TEST_DRIVE_GATE_PASS')
           PY
