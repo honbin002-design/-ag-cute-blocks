@@ -1,0 +1,102 @@
+name: Multiplayer Real Three Browser V0.5.130
+
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'multiplayer-webrtc-test-v05123.js'
+      - 'multiplayer-hub-v05126.js'
+      - '.github/workflows/multiplayer-real-three-browser-v05130.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-three-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run Host plus two Guests real RTCPeerConnection relay gate
+        run: |
+          cat > ./agcb-webrtc-v05130.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import http from 'node:http';
+          import fs from 'node:fs';
+          const peerText=fs.readFileSync('multiplayer-webrtc-test-v05123.js','utf8');
+          const hubText=fs.readFileSync('multiplayer-hub-v05126.js','utf8');
+          const server=http.createServer((req,res)=>{
+            res.setHeader('Cache-Control','no-store');
+            if(req.url==='/multiplayer-webrtc-test-v05123.js'){res.setHeader('Content-Type','text/javascript');res.end(peerText);return;}
+            if(req.url==='/multiplayer-hub-v05126.js'){res.setHeader('Content-Type','text/javascript');res.end(hubText);return;}
+            res.setHeader('Content-Type','text/html');
+            res.end(`<script type="module">
+              import {AGCBPeerSession} from '/multiplayer-webrtc-test-v05123.js';
+              import {AGCBMultiplayerHostHub} from '/multiplayer-hub-v05126.js';
+              window.ready=true; window.seen=[]; window.states=[];
+              window.makeHost=()=>{window.hub=new AGCBMultiplayerHostHub({hostId:'H',onMessage:m=>seen.push(m),onState:s=>states.push(s)});return true};
+              window.makeGuest=()=>{window.s=new AGCBPeerSession({onMessage:m=>seen.push(m),onState:s=>states.push(s)});return true};
+            </script>`);
+          });
+          await new Promise(r=>server.listen(0,'127.0.0.1',r));
+          const port=server.address().port,browser=await chromium.launch({headless:true});
+          const hostCtx=await browser.newContext(),aCtx=await browser.newContext(),bCtx=await browser.newContext();
+          const host=await hostCtx.newPage(),a=await aCtx.newPage(),b=await bCtx.newPage();
+          const url=`http://127.0.0.1:${port}/`;
+          await Promise.all([host.goto(url),a.goto(url),b.goto(url)]);
+          await Promise.all([host.waitForFunction(()=>ready),a.waitForFunction(()=>ready),b.waitForFunction(()=>ready)]);
+          await host.evaluate(()=>makeHost()); await a.evaluate(()=>makeGuest()); await b.evaluate(()=>makeGuest());
+          async function connectGuest(id,page){
+            const offer=await host.evaluate(id=>hub.createGuestOffer(id),id);
+            const answer=await page.evaluate(o=>s.acceptHostOffer(o),offer);
+            await host.evaluate(({id,answer})=>hub.acceptGuestAnswer(id,answer),{id,answer});
+          }
+          await connectGuest('A',a); await connectGuest('B',b);
+          await Promise.all([
+            host.waitForFunction(()=>[...hub.guests.values()].length===2&&[...hub.guests.values()].every(x=>x.channel?.readyState==='open'),null,{timeout:15000}),
+            a.waitForFunction(()=>s.channel?.readyState==='open',null,{timeout:15000}),
+            b.waitForFunction(()=>s.channel?.readyState==='open',null,{timeout:15000})
+          ]);
+          const aSent=await a.evaluate(()=>[
+            s.sendPlayerState({peerId:'A',state:{x:1,y:0,z:2,ry:.5,motion:'walk'}}),
+            s.sendBuildingMutation({peerId:'A',mutationId:'build-130-a',event:{op:'place',id:'block-a'}}),
+            s.sendFarmingMutation({peerId:'A',mutationId:'farm-130-a',event:{op:'plant',id:'crop-a'}})
+          ]);
+          if(aSent.some(x=>!x))throw new Error('A send returned false');
+          await b.waitForFunction(()=>seen.length===3,null,{timeout:10000});
+          const bSeen=await b.evaluate(()=>seen);
+          const types=bSeen.map(x=>x.type);
+          for(const t of ['player-state','building-mutation','farming-mutation'])if(!types.includes(t))throw new Error('B missing relay '+t);
+          if(bSeen.some(x=>x.env!=='TEST'||x.v!==1||x.payload?.relayFrom!=='A'))throw new Error('A to B relay envelope failure');
+          const bSent=await b.evaluate(()=>[
+            s.sendPlayerState({peerId:'B',state:{x:9,y:0,z:8,ry:1,motion:'run'}}),
+            s.sendBuildingMutation({peerId:'B',mutationId:'build-130-b',event:{op:'remove',id:'block-b'}}),
+            s.sendFarmingMutation({peerId:'B',mutationId:'farm-130-b',event:{op:'harvest',id:'crop-b'}})
+          ]);
+          if(bSent.some(x=>!x))throw new Error('B send returned false');
+          await a.waitForFunction(()=>seen.length===3,null,{timeout:10000});
+          const aSeen=await a.evaluate(()=>seen);
+          const aTypes=aSeen.map(x=>x.type);
+          for(const t of ['player-state','building-mutation','farming-mutation'])if(!aTypes.includes(t))throw new Error('A missing relay '+t);
+          if(aSeen.some(x=>x.env!=='TEST'||x.v!==1||x.payload?.relayFrom!=='B'))throw new Error('B to A relay envelope failure');
+          const hostSeen=await host.evaluate(()=>seen);
+          if(hostSeen.length!==6)throw new Error('Host did not receive all guest messages: '+hostSeen.length);
+          const hostBroadcast=await host.evaluate(()=>hub.broadcastPlayerState({x:5,y:0,z:5,ry:0,motion:'idle'}));
+          if(hostBroadcast!==2)throw new Error('Host broadcast did not reach two guests');
+          await Promise.all([a.waitForFunction(()=>seen.length===4,null,{timeout:10000}),b.waitForFunction(()=>seen.length===4,null,{timeout:10000})]);
+          const aLast=await a.evaluate(()=>seen.at(-1)),bLast=await b.evaluate(()=>seen.at(-1));
+          if(aLast.type!=='player-state'||bLast.type!=='player-state'||aLast.payload.peerId!=='H'||bLast.payload.peerId!=='H')throw new Error('Host broadcast convergence failure');
+          console.log('REAL_CHROMIUM_WEBRTC_THREE_BROWSER_HOST_RELAY_PASS');
+          console.log(JSON.stringify({aToB:types,bToA:aTypes,hostReceived:hostSeen.length,hostBroadcast,hostStates:await host.evaluate(()=>states)}));
+          await browser.close();server.close();
+          NODE
+          node ./agcb-webrtc-v05130.mjs
