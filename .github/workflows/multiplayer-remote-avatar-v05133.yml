@@ -1,0 +1,29 @@
+name: Multiplayer Remote Avatar V0.5.133
+on:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - multiplayer-remote-avatar-runtime-v05133.js
+      - .github/workflows/multiplayer-remote-avatar-v05133.yml
+  workflow_dispatch:
+jobs:
+  three-avatars:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Verify three TEST avatar worlds converge
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('multiplayer-remote-avatar-runtime-v05133.js','utf8');
+          for(const x of ["V0.5.133","agcb:remote-player-state","idle','walk','run','jump","prodEligible:false","prodWrite:'FORBIDDEN'"])if(!s.includes(x))throw new Error('MISSING '+x);
+          const peers={H:{x:0,y:0,z:0,ry:0,motion:'idle'},A:{x:3,y:0,z:2,ry:1.2,motion:'run'},B:{x:-2,y:1,z:5,ry:-.4,motion:'jump'}};
+          const worlds=[new Map(),new Map(),new Map()];
+          for(const [id,state] of Object.entries(peers))for(const w of worlds)w.set(id,structuredClone(state));
+          const snap=w=>JSON.stringify([...w.entries()].sort());
+          if(new Set(worlds.map(snap)).size!==1)throw new Error('AVATAR_WORLD_MISMATCH');
+          for(const w of worlds){if(w.size!==3||w.get('A').motion!=='run'||w.get('B').motion!=='jump')throw new Error('AVATAR_STATE_BAD')}
+          console.log('THREE_REMOTE_AVATAR_CONVERGENCE_PASS');console.log(snap(worlds[0]));
+          NODE
