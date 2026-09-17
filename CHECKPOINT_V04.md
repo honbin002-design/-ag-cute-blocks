@@ -11,10 +11,18 @@ Status: `SAFE_STOP / HANDOFF_READY`
 - This file remains the single GitHub Checkpoint mechanism. Do not create model-, mode-, or window-specific checkpoints.
 - Google Drive `AG Cute Blocks｜CURRENT` is the single CURRENT/handoff state.
 - Existing historical checkpoint/progress records remain history and are not deleted.
-- Original permanent rules + Unified Behavior Master V1.1 compatibility layer remain active.
+- Original permanent rules plus the project-local ACTIVE imported behavior rules remain active.
+- The master version (currently V1.1) records the source used for import; it is NOT a project-local file that a new window must search for.
+
+## Imported ACTIVE behavior location
+- Google Drive root: `AG專用`
+- PROJECT_FOLDER_ID: `1m7bO8WF0ilYhaRMxDi_PnS9cDl_ShSwo`
+- ACTIVE imported behavior document: `20260917_AG_統一行為準則V1.1_相容導入`
+- FILE_ID: `1zGFlGqUUedL25AcPLN29eDg05St4rpxClFSFNp9Rg8Y`
+- New windows must read this imported ACTIVE location. Do not search the project for a separate `V1.1` master file.
 
 ## Latest source
-- `dev-v0.1` runtime source before this documentation checkpoint: `7627983452f14b8c88eadd1fec48777d7086374b`
+- `dev-v0.1` runtime source before documentation-only handoff commits: `7627983452f14b8c88eadd1fec48777d7086374b`
 - V0.5.135 live-game bridge source: `2fded05294140279a8b071cf7ded5ec5ff121ec8`
 - V0.5.135 real three-browser live-game convergence workflow: `7627983452f14b8c88eadd1fec48777d7086374b`
 
@@ -55,18 +63,19 @@ After these formal gates pass, first formal release may proceed. Content expansi
 - Do not promote these candidates to PROD while visual/license gates are unresolved.
 
 ## Open work after handoff
-1. Re-read Google Drive `AG Cute Blocks｜CURRENT` and this checkpoint before doing any new work.
-2. Inspect root causes of old CI failures only; do not assume multiplayer regression:
+1. On `讀取專屬資料夾行為準則`, identify `AG專用` from Project permanent settings and read the ACTIVE imported behavior document at FILE_ID `1zGFlGqUUedL25AcPLN29eDg05St4rpxClFSFNp9Rg8Y`; do not search for a separate V1.1 master inside the project.
+2. Read Google Drive `AG Cute Blocks｜CURRENT` and this checkpoint.
+3. Inspect root causes of old CI failures only; do not assume multiplayer regression:
    - Drive Backup Gate Run `35183506873`
    - Save Environment Bound Gate Run `35183506852`
-3. Fix only if still relevant and an actual root cause is confirmed; do not rerun unrelated PASS gates.
-4. Continue original release roadmap: formal character visual/license gate, building/planting stability, remaining true multiplayer device/network gates, then first formal release.
+4. Fix only if still relevant and an actual root cause is confirmed; do not rerun unrelated PASS gates.
+5. Continue original release roadmap: formal character visual/license gate, building/planting stability, remaining true multiplayer device/network gates, then first formal release.
 
 ## Handoff behavior
-- Unified Behavior Master V1.1 is active through the project compatibility layer.
 - `交接工作視窗` persists until Safe Stop is saved and both CURRENT + this checkpoint are updated.
 - After handoff, this old window must not blindly continue; it must re-read CURRENT + Checkpoint first because another window may have advanced the project.
-- `讀取專屬資料夾行為準則` must locate the project by the Project permanent name/folder ID, read ACTIVE rules, CURRENT, and this Checkpoint, then minimally read roadmap/dependencies/active AGPB and resume directly.
+- `讀取專屬資料夾行為準則` must locate the project by Project permanent name/folder ID, read the project-local ACTIVE imported behavior location above, original permanent rules, CURRENT, and this Checkpoint, then minimally read roadmap/dependencies/active AGPB and resume directly.
+- Do not require a new window to locate a project-local file named after the master version. The master version is provenance, not the runtime lookup key.
 
 ## Safe-stop statement
-No half-completed formal deployment/write is pending. V0.5.135 real-browser gate is complete and recorded. The project is recoverable from this point.
+The handoff-reading correction requested by the user is complete and persisted in the project-local ACTIVE imported behavior document, CURRENT, and this checkpoint. No half-completed formal deployment/write is pending. V0.5.135 real-browser gate is complete and recorded. The project is recoverable from this point.
