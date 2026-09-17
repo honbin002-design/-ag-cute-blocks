@@ -1,6 +1,7 @@
-// AG Cute Blocks V0.5.113 — TEST Drive backup/history bridge.
+// AG Cute Blocks V0.5.137 — TEST Drive backup/history bridge.
 // iPhone-safe same-origin Vercel proxy with bounded requests. No server restore/delete; PROD remains disabled.
-const VERSION='0.5.113';
+// AUTHENTICATED_TEST_BACKUP_HISTORY_READBACK_IPHONE_PROXY_NO_SERVER_RESTORE
+const VERSION='0.5.137';
 const PRIVATE_CONFIG_KEY='AGCB_PRIVATE_DRIVE_BRIDGE_CONFIG_V1';
 const LEGACY_TEST_ENDPOINT='https://script.google.com/macros/s/AKfycbzjMLAn2QK71ges3KNXIvVyrVrGqNA9aRJdM04vIAyfXCdlkW4XXNrk22fU1iSVMBQC/exec';
 const DIRECT_TEST_ENDPOINT='https://script.google.com/macros/s/AKfycbx2kSQg7qx4b5MIRGnc-aPL0vjAXw8Fdbc3whvVf72KooBxmGUesF-pLBaMLopgE8gA/exec';
