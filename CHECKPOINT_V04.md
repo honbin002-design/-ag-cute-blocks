@@ -2,7 +2,7 @@
 
 Date: 2026-09-17
 Branch: `dev-v0.1`
-Runtime version: `V0.5.135`
+Runtime version: `V0.5.137`
 Project folder: `AG專用`
 PROJECT_FOLDER_ID: `1m7bO8WF0ilYhaRMxDi_PnS9cDl_ShSwo`
 Status: `SAFE_STOP / HANDOFF_READY`
@@ -11,15 +11,15 @@ Status: `SAFE_STOP / HANDOFF_READY`
 - This file remains the single GitHub Checkpoint mechanism. Do not create model-, mode-, or window-specific checkpoints.
 - Google Drive `AG Cute Blocks｜CURRENT` is the single CURRENT/handoff state.
 - Existing historical checkpoint/progress records remain history and are not deleted.
-- Original permanent rules plus the project-local ACTIVE imported behavior rules remain active.
-- The master version (currently V1.1) records the source used for import; it is NOT a project-local file that a new window must search for.
+- Project-local ACTIVE behavior file is the sole day-to-day behavior authority; new windows do not depend on any external/central master.
 
-## Imported ACTIVE behavior location
+## Project-local ACTIVE behavior authority
 - Google Drive root: `AG專用`
 - PROJECT_FOLDER_ID: `1m7bO8WF0ilYhaRMxDi_PnS9cDl_ShSwo`
-- ACTIVE imported behavior document: `20260917_AG_統一行為準則V1.1_相容導入`
-- FILE_ID: `1zGFlGqUUedL25AcPLN29eDg05St4rpxClFSFNp9Rg8Y`
-- New windows must read this imported ACTIVE location. Do not search the project for a separate `V1.1` master file.
+- PROJECT_RULES_FOLDER_ID: `1m7bO8WF0ilYhaRMxDi_PnS9cDl_ShSwo`
+- PROJECT_RULES_FILE_NAME: `20260917_AG_統一行為準則V1.1_相容導入`
+- PROJECT_RULES_FILE_ID: `1zGFlGqUUedL25AcPLN29eDg05St4rpxClFSFNp9Rg8Y`
+- New windows read this project-local ACTIVE file directly; no external master read/search is required.
 
 ## Latest source
 - `dev-v0.1` runtime source before documentation-only handoff commits: `7627983452f14b8c88eadd1fec48777d7086374b`
@@ -62,20 +62,18 @@ After these formal gates pass, first formal release may proceed. Content expansi
 - Technical PASS does not equal final visual or licensing PASS.
 - Do not promote these candidates to PROD while visual/license gates are unresolved.
 
-## Open work after handoff
-1. On `讀取專屬資料夾行為準則`, identify `AG專用` from Project permanent settings and read the ACTIVE imported behavior document at FILE_ID `1zGFlGqUUedL25AcPLN29eDg05St4rpxClFSFNp9Rg8Y`; do not search for a separate V1.1 master inside the project.
-2. Read Google Drive `AG Cute Blocks｜CURRENT` and this checkpoint.
-3. Inspect root causes of old CI failures only; do not assume multiplayer regression:
-   - Drive Backup Gate Run `35183506873`
-   - Save Environment Bound Gate Run `35183506852`
-4. Fix only if still relevant and an actual root cause is confirmed; do not rerun unrelated PASS gates.
-5. Continue original release roadmap: formal character visual/license gate, building/planting stability, remaining true multiplayer device/network gates, then first formal release.
+## Current safe-stop / open work
+- V0.5.136: Drive Backup Gate, Save Environment Bound Gate, Save Environment Compatibility, Save Envelope, Backward Compatibility and Restore Safety = PASS.
+- Save Drive Server Gate failure was isolated to a missing static client contract marker, not a Drive/PROD-TEST functional regression.
+- V0.5.137 commit: `6b7b711260158aa513e0f53041e28780797e7ab6`; minimal marker alignment in `save-drive-bridge-v05111.js`, with Drive behavior and PROD/TEST isolation unchanged.
+- Resume by checking only the V0.5.137 Save Drive Server Gate. PASS closes this CI repair and returns to the first-release remaining gates. FAIL means inspect only that run/job/log and apply the smallest root-cause fix.
+- Do not rerun unrelated PASS gates.
 
 ## Handoff behavior
 - `交接工作視窗` persists until Safe Stop is saved and both CURRENT + this checkpoint are updated.
 - After handoff, this old window must not blindly continue; it must re-read CURRENT + Checkpoint first because another window may have advanced the project.
-- `讀取專屬資料夾行為準則` must locate the project by Project permanent name/folder ID, read the project-local ACTIVE imported behavior location above, original permanent rules, CURRENT, and this Checkpoint, then minimally read roadmap/dependencies/active AGPB and resume directly.
-- Do not require a new window to locate a project-local file named after the master version. The master version is provenance, not the runtime lookup key.
+- `讀取專屬資料夾行為準則` must locate the project by permanent name/folder ID, read the project-local ACTIVE rules file above, CURRENT, and this Checkpoint, then minimally read roadmap/dependencies/active AGPB and resume directly.
+- Do not read or search an external/central behavior master as a day-to-day startup dependency.
 
 ## Safe-stop statement
-The handoff-reading correction requested by the user is complete and persisted in the project-local ACTIVE imported behavior document, CURRENT, and this checkpoint. No half-completed formal deployment/write is pending. V0.5.135 real-browser gate is complete and recorded. The project is recoverable from this point.
+V0.5.137 is committed at `6b7b711260158aa513e0f53041e28780797e7ab6`. No half-completed formal write/deployment is pending. The next action is a narrow read-only check of the V0.5.137 Save Drive Server Gate. The project is recoverable from this point using the project-local ACTIVE rules + Drive CURRENT + this checkpoint.
