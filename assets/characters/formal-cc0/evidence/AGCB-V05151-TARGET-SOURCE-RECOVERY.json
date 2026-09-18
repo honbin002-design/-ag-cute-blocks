@@ -1,0 +1,41 @@
+{
+  "evidenceId": "AGCB-V05151-TARGET-SOURCE-RECOVERY",
+  "release": "V0.5.151",
+  "environment": "TEST",
+  "projectFolderId": "1m7bO8WF0ilYhaRMxDi_PnS9cDl_ShSwo",
+  "driveSource": {
+    "manifestFileId": "18TmqLi0JlcZlUaV706XplXoS019Gmj8o",
+    "part001FileId": "1En1yMUwJNEVOQ9of5po7-q-vo3bXW71F",
+    "part002FileId": "1Y7msXyMiiOAvMwXk3opTs_RsDXJo0V7I",
+    "part003FileId": "1u3l-nIJKXbawt7ILfZPQmofUIhFHs5im",
+    "reassembledBytes": 128968391,
+    "reassembledSha256": "fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40",
+    "archiveIntegrity": "PASS"
+  },
+  "targets": {
+    "formalCc0Male01": {
+      "gltf": "Superhero_Male_FullBody.gltf",
+      "gltfBytes": 30989,
+      "gltfSha256": "e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4",
+      "bin": "Superhero_Male_FullBody.bin",
+      "binBytes": 720076,
+      "binSha256": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+      "manifestMatch": "PASS"
+    },
+    "formalCc0Female01": {
+      "gltf": "Superhero_Female_FullBody.gltf",
+      "gltfBytes": 31656,
+      "gltfSha256": "adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4",
+      "bin": "Superhero_Female_FullBody.bin",
+      "binBytes": 990808,
+      "binSha256": "3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208",
+      "manifestMatch": "PASS"
+    }
+  },
+  "targetSourceRecovery": "PASS",
+  "nextGate": "RETARGET_BINARY_MATERIALIZATION",
+  "runtimePlayback": "PENDING",
+  "visualDeformation": "PENDING",
+  "prodEligible": false,
+  "prodPromotion": "HOLD"
+}
