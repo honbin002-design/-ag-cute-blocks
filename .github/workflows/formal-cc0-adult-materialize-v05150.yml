@@ -1,0 +1,59 @@
+name: Formal CC0 Adult Materialization V0.5.150
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-adult-materialize-v05150.yml'
+  workflow_dispatch:
+
+jobs:
+  materialization-preflight:
+    name: AGCB-V05150-MATERIALIZATION-PREFLIGHT
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 UAL donor
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/AnimationLibrary_Godot_Standard.bin
+          curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/UAL_LICENSE.txt
+      - name: Build deterministic materialization plan
+        shell: python
+        run: |
+          import json,pathlib,hashlib,sys
+          evidence='AGCB-V05150-MATERIALIZATION-PREFLIGHT'
+          ual=json.load(open('/tmp/ual.gltf','r',encoding='utf8'))
+          names={a.get('name') for a in ual.get('animations',[])}
+          clips={'Idle':'Idle_Loop','Walk':'Walk_Loop','Run':'Jog_Fwd_Loop','Jump_Start':'Jump_Start','Jump_Loop':'Jump_Loop','Jump_Land':'Jump_Land'}
+          missing=[v for v in clips.values() if v not in names]
+          errors=[]
+          if missing: errors.append('missing donor clips: '+','.join(missing))
+          lic=pathlib.Path('/tmp/UAL_LICENSE.txt').read_text(encoding='utf8',errors='ignore')
+          if 'CC0' not in lic and 'public domain' not in lic.lower(): errors.append('CC0 marker missing')
+          donor_sha=hashlib.sha256(pathlib.Path('/tmp/ual.gltf').read_bytes()).hexdigest()
+          donor_bin_sha=hashlib.sha256(pathlib.Path('/tmp/AnimationLibrary_Godot_Standard.bin').read_bytes()).hexdigest()
+          plan={
+            'evidenceId':evidence,'release':'V0.5.150','environment':'TEST','prodEligible':False,
+            'targets':{
+              'formalCc0Male01':{'jointCount':65,'output':'assets/characters/formal-cc0/runtime/formalCc0Male01-retarget-v05150.glb'},
+              'formalCc0Female01':{'jointCount':65,'output':'assets/characters/formal-cc0/runtime/formalCc0Female01-retarget-v05150.glb'}},
+            'donor':{'source':'Quaternius UAL Standard pinned mirror','license':'CC0-1.0','gltfSha256':donor_sha,'binSha256':donor_bin_sha,'animationCount':len(names)},
+            'clipMap':clips,
+            'retargetRules':['bind-pose rotational delta','bilateral shoulders independent','gameplay controller owns root translation'],
+            'preflight':'PASS' if not errors else 'FAIL',
+            'binaryMaterialization':'READY_NOT_YET_BUILT' if not errors else 'HOLD',
+            'runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD','errors':errors}
+          out=pathlib.Path('/tmp/AGCB-V05150-MATERIALIZATION-PREFLIGHT.json')
+          out.write_text(json.dumps(plan,ensure_ascii=False,indent=2),encoding='utf8')
+          print(json.dumps(plan,ensure_ascii=False,indent=2))
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05150-MATERIALIZATION-PREFLIGHT
+          path: /tmp/AGCB-V05150-MATERIALIZATION-PREFLIGHT.json
+          retention-days: 3
