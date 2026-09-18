@@ -1,0 +1,34 @@
+{
+  "evidenceId": "AGCB-V05147-RETARGET-EXECUTION",
+  "environment": "TEST",
+  "prodEligible": false,
+  "targets": [
+    "formalCc0Male01",
+    "formalCc0Female01"
+  ],
+  "targetJointCount": 65,
+  "source": "Quaternius Universal Animation Library Standard",
+  "license": "CC0-1.0",
+  "requiredClips": [
+    "Idle_Loop",
+    "Walk_Loop",
+    "Jog_Fwd_Loop",
+    "Jump_Start",
+    "Jump_Loop",
+    "Jump_Land"
+  ],
+  "sourceAnimationCount": 46,
+  "structuralRetargetMethod": "bind-pose rotational delta; bilateral shoulders independent",
+  "contractExecution": "PASS",
+  "targetBinaryMaterialization": "PENDING",
+  "runtimePlayback": "PENDING",
+  "visualDeformation": "PENDING",
+  "prodPromotion": "HOLD",
+  "errors": [],
+  "workflowRunId": 35321070691,
+  "workflowJobId": 105523447102,
+  "artifactId": 10536574873,
+  "artifactDigest": "sha256:6f24f881ca707a147153cf1a27cbb699dee76b0e51c763d389a06b7a67e62bcd",
+  "verifiedByReadback": true,
+  "note": "Persisted from the successfully executed isolated V0.5.147 GitHub Actions artifact. This is execution-contract evidence only; it does not claim target binary materialization, runtime playback, visual deformation, or PROD promotion."
+}
