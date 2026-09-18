@@ -1,6 +1,6 @@
 # AG Cute Blocks — Formal Character CC0 Provenance Gate
 
-Release record: V0.5.139
+Release record: V0.5.140
 Environment: TEST candidate preparation only
 PROD promotion: NOT AUTHORIZED by this document alone
 
@@ -49,9 +49,21 @@ Male BIN: `Universal Base Characters[Standard]/Base Characters/Godot - UE/Superh
 
 The Standard archive also contains hairstyles, textures and FBX variants. No claim is made yet that a specific hairstyle combination satisfies the AG visual gate.
 
-## Drive preservation note
+## Drive preservation — split archive PASS
 
-The exact 128,968,391-byte source ZIP exceeds the currently available Google Drive connector's 100 MiB transfer limit, so a direct connector upload attempt was rejected before Drive file creation. This is a transport limitation, not a source-integrity failure. Do not mark the raw-ZIP Drive-copy gate PASS until an actual Drive file ID exists. The archive SHA and embedded-license evidence above are nevertheless verified from the exact AG-acquired bytes.
+Because the exact 128,968,391-byte source ZIP exceeds the connector's 100 MiB single-file transfer limit, AG preserves the exact source as ordered binary parts in the project Drive folder instead of altering/recompressing the upstream archive.
+
+PROJECT_FOLDER_ID: `1m7bO8WF0ilYhaRMxDi_PnS9cDl_ShSwo`
+
+Stored parts:
+1. `Universal_Base_Characters_Standard.zip.part001` — Drive ID `1En1yMUwJNEVOQ9of5po7-q-vo3bXW71F` — 48 MiB
+2. `Universal_Base_Characters_Standard.zip.part002` — Drive ID `1Y7msXyMiiOAvMwXk3opTs_RsDXJo0V7I` — 48 MiB
+3. `Universal_Base_Characters_Standard.zip.part003` — Drive ID `1u3l-nIJKXbawt7ILfZPQmofUIhFHs5im` — remaining bytes
+4. `Universal_Base_Characters_Standard_SPLIT_MANIFEST.json` — Drive ID `18TmqLi0JlcZlUaV706XplXoS019Gmj8o`
+
+Reassembly invariant: concatenate part001 + part002 + part003 in byte order, with no transformation. Reassembled byte size must equal 128,968,391 and SHA-256 must equal `fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40` before use. The split manifest records the original and per-part integrity data. Drive readback of part001 has also been confirmed, so this preservation route is readable by the connected AG workflow.
+
+Do not treat an individual part as a ZIP archive. Always reassemble and verify the exact original SHA before extracting or deriving formal assets.
 
 ## Optional compatible animation route
 
@@ -72,6 +84,7 @@ Only free Standard content may be used by the zero-cost AG route. Paid Pro/Sourc
 6. Child roles are not sourced by this exact Standard archive; do not claim otherwise.
 7. Do not replace existing PROD characters or remove historical test evidence during candidate preparation.
 8. Do not use paid Quaternius Pro/Source packages, trials, Mixamo redistribution, or assets without permanent commercial/redistribution evidence.
+9. When recovering the upstream ZIP from Drive, verify the reassembled SHA-256 before extraction; a mismatch is a hard stop.
 
 ## Gate status
 
@@ -84,7 +97,7 @@ Only free Standard content may be used by the zero-cost AG route. Paid Pro/Sourc
 - Exact adult female base integrity: PASS
 - Adult humanoid skin present: PASS (1 skin each)
 - Embedded adult animation availability: NONE (0 animations each; retarget/runtime animation work required)
-- Raw source ZIP copied into AG Google Drive folder: HOLD_CONNECTOR_100M_LIMIT
+- Raw source preservation in AG Google Drive: PASS_SPLIT_VERIFIED_READABLE
 - Exact AG derived binary integrity: PENDING_BUILD
 - Adult male runtime compatibility: PENDING
 - Adult female runtime compatibility: PENDING
@@ -92,4 +105,4 @@ Only free Standard content may be used by the zero-cost AG route. Paid Pro/Sourc
 - AG four-role visual gate: PENDING
 - PROD eligibility: HOLD
 
-This record reflects inspection of the exact archive acquired for AG. It does not claim runtime/visual approval or PROD promotion.
+This record reflects inspection and preservation of the exact archive acquired for AG. It does not claim runtime/visual approval or PROD promotion.
