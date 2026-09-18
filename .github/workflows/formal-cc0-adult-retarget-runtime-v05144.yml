@@ -1,4 +1,4 @@
-name: Formal CC0 Adult Retarget Runtime V0.5.144
+name: Formal CC0 Adult Retarget Runtime V0.5.145
 
 on:
   push:
@@ -9,7 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  retarget-runtime-contract:
+  retarget-runtime-contract-v05145:
+    name: AGCB-V05145-RETARGET-EVIDENCE
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,10 +22,11 @@ jobs:
           curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
           curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/AnimationLibrary_Godot_Standard.bin
           curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/UAL_LICENSE.txt
-      - name: Validate runtime retarget build contract
+      - name: Validate uniquely identifiable retarget contract
         shell: python
         run: |
-          import json,pathlib,re
+          import json,pathlib
+          evidence='AGCB-V05145-RETARGET-EVIDENCE'
           gate=pathlib.Path('assets/characters/formal-cc0/formal-cc0-adult-animation-retarget-gate-v05143.js').read_text(encoding='utf8')
           ual=json.load(open('/tmp/ual.gltf','r',encoding='utf8'))
           names={a.get('name') for a in ual.get('animations',[])}
@@ -36,24 +38,14 @@ jobs:
           if missing: errors.append('UAL missing clips: '+','.join(missing))
           license_text=pathlib.Path('/tmp/UAL_LICENSE.txt').read_text(encoding='utf8',errors='ignore')
           if 'CC0' not in license_text and 'public domain' not in license_text.lower(): errors.append('CC0 license marker not found')
-          report={
-            'release':'V0.5.144','environment':'TEST','prodEligible':False,
-            'targets':['formalCc0Male01','formalCc0Female01'],
-            'targetJointCount':65,'source':'Quaternius UAL pinned mirror','sourceLicense':'CC0-1.0',
-            'clips':required,'sourceAnimationCount':len(names),
-            'retargetMethod':'bind-pose rotational delta; bilateral shoulders independent',
-            'binaryBuild':'PENDING_TARGET_BINARY_MATERIALIZATION',
-            'runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD',
-            'errors':errors
-          }
-          pathlib.Path('/tmp/formal-cc0-adult-retarget-runtime-v05144.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          report={'evidenceId':evidence,'release':'V0.5.145','environment':'TEST','prodEligible':False,'targets':['formalCc0Male01','formalCc0Female01'],'targetJointCount':65,'source':'Quaternius UAL pinned mirror','sourceLicense':'CC0-1.0','clips':required,'sourceAnimationCount':len(names),'retargetMethod':'bind-pose rotational delta; bilateral shoulders independent','contractGate':'PASS' if not errors else 'FAIL','binaryBuild':'PENDING_TARGET_BINARY_MATERIALIZATION','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD','errors':errors}
+          pathlib.Path('/tmp/AGCB-V05145-RETARGET-EVIDENCE.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          print(evidence)
           print(json.dumps(report,ensure_ascii=False,indent=2))
           if errors: raise SystemExit(1)
-          print('FORMAL CC0 ADULT RETARGET RUNTIME CONTRACT: PASS')
-          print('NOTE: source/target contract only. Generated binary playback and visual deformation remain pending.')
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: formal-cc0-adult-retarget-runtime-v05144
-          path: /tmp/formal-cc0-adult-retarget-runtime-v05144.json
+          name: AGCB-V05145-RETARGET-EVIDENCE
+          path: /tmp/AGCB-V05145-RETARGET-EVIDENCE.json
           retention-days: 3
