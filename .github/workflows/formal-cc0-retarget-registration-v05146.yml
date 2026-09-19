@@ -1,0 +1,20 @@
+name: Formal CC0 Retarget Registration V0.5.146
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-retarget-registration-v05146.yml'
+  workflow_dispatch:
+
+jobs:
+  registration-proof:
+    name: AGCB-V05146-WORKFLOW-REGISTRATION
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Prove isolated TEST workflow registration
+        run: |
+          echo 'AGCB-V05146-WORKFLOW-REGISTRATION'
+          echo 'TEST ONLY - NO PROD CHARACTER PROMOTION'
+          echo 'Purpose: prove default-branch registration path before importing retarget execution gate.'

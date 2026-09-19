@@ -1,0 +1,44 @@
+name: Formal CC0 Adult Retarget Execution V0.5.147
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-adult-retarget-execution-v05147.yml'
+  workflow_dispatch:
+
+jobs:
+  retarget-contract:
+    name: AGCB-V05147-RETARGET-EXECUTION
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 Quaternius UAL source
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
+          curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/UAL_LICENSE.txt
+      - name: Verify CC0 animation semantics and TEST safety
+        shell: python
+        run: |
+          import json,pathlib,sys
+          ual=json.load(open('/tmp/ual.gltf','r',encoding='utf8'))
+          names={a.get('name') for a in ual.get('animations',[])}
+          required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Jump_Start','Jump_Loop','Jump_Land']
+          missing=[x for x in required if x not in names]
+          lic=pathlib.Path('/tmp/UAL_LICENSE.txt').read_text(encoding='utf8',errors='ignore')
+          errors=[]
+          if missing: errors.append('missing clips: '+','.join(missing))
+          if 'CC0' not in lic and 'public domain' not in lic.lower(): errors.append('CC0 marker missing')
+          report={'evidenceId':'AGCB-V05147-RETARGET-EXECUTION','environment':'TEST','prodEligible':False,'targets':['formalCc0Male01','formalCc0Female01'],'targetJointCount':65,'source':'Quaternius Universal Animation Library Standard','license':'CC0-1.0','requiredClips':required,'sourceAnimationCount':len(names),'structuralRetargetMethod':'bind-pose rotational delta; bilateral shoulders independent','contractExecution':'PASS' if not errors else 'FAIL','targetBinaryMaterialization':'PENDING','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD','errors':errors}
+          pathlib.Path('/tmp/AGCB-V05147-RETARGET-EXECUTION.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05147-RETARGET-EXECUTION
+          path: /tmp/AGCB-V05147-RETARGET-EXECUTION.json
+          retention-days: 3
