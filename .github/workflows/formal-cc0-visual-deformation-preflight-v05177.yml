@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Acquire pinned targets with complete sibling texture set
+      - name: Acquire pinned targets with exact texture URI aliases
         run: |
           set -euo pipefail
           mkdir -p /tmp/proj/targets
@@ -23,6 +23,11 @@ jobs:
               n=x['name']
               if n.startswith(('Superhero_Male_FullBody','Superhero_Female_FullBody','T_Hair_','T_Eye_','T_Superhero_Male_','T_Superhero_Female_')):
                   urllib.request.urlretrieve(x['download_url'],'/tmp/proj/targets/'+n)
+          p='/tmp/proj/targets'
+          aliases={'T_Eye_Normal.png':'T_Eye_Normal_png.png','T_Hair_1_Normal.png':'T_Hair_1_Normal_png.png','T_Hair_2_Normal.png':'T_Hair_2_Normal_png.png'}
+          for src,dst in aliases.items():
+              if os.path.exists(os.path.join(p,src)) and not os.path.exists(os.path.join(p,dst)):
+                  import shutil; shutil.copyfile(os.path.join(p,src),os.path.join(p,dst))
           PY
           curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip
           unzip -q /tmp/g.zip -d /tmp/g
@@ -30,6 +35,7 @@ jobs:
           printf '[application]\nconfig/name="AGCB V05177"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot
           /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25 2>&1 | tee /tmp/import.log
           ! grep -q "couldn't be loaded" /tmp/import.log
+          ! grep -q "Can't open file from path" /tmp/import.log
       - name: Validate mesh skeleton bindings and finite rest transforms
         run: |
           cat > /tmp/proj/check.gd <<'EOF'
