@@ -1,0 +1,70 @@
+name: Formal CC0 Animation Root Resolution V0.5.176
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-animation-root-resolution-v05176.yml']
+  workflow_dispatch:
+jobs:
+  resolve:
+    name: AGCB-V05176-ANIMATION-ROOT-RESOLUTION
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned donor targets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor /tmp/proj/targets
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/a.gltf; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          TB='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'; for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fsSL "$TB/$f" -o "/tmp/proj/targets/$f"; done
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64; printf '[application]\nconfig/name="AGCB V05176"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot; /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25
+      - name: Require zero unresolved tracks and distinct runtime poses
+        run: |
+          cat > /tmp/proj/test.gd <<'EOF'
+          extends SceneTree
+          var clips=["Idle","Walk","Jog_Fwd","Jump","Jump_Start","Jump_Land"]
+          var bm={"root":"root","DEF-hips":"pelvis","DEF-spine.001":"spine_01","DEF-spine.002":"spine_02","DEF-spine.003":"spine_03","DEF-neck":"neck_01","DEF-head":"Head","DEF-shoulder.L":"clavicle_l","DEF-upper_arm.L":"upperarm_l","DEF-forearm.L":"lowerarm_l","DEF-hand.L":"hand_l","DEF-shoulder.R":"clavicle_r","DEF-upper_arm.R":"upperarm_r","DEF-forearm.R":"lowerarm_r","DEF-hand.R":"hand_r","DEF-thigh.L":"thigh_l","DEF-shin.L":"calf_l","DEF-foot.L":"foot_l","DEF-toe.L":"ball_l","DEF-thigh.R":"thigh_r","DEF-shin.R":"calf_r","DEF-foot.R":"foot_r","DEF-toe.R":"ball_r"}
+          func scan(n,s,p):
+              if n is Skeleton3D:s.append(n)
+              if n is AnimationPlayer:p.append(n)
+              for c in n.get_children():scan(c,s,p)
+          func make_lib(src,track_base):
+              var out=AnimationLibrary.new()
+              for cn in clips:
+                  var a=src[cn];var b=Animation.new();b.length=a.length;b.loop_mode=a.loop_mode
+                  for i in range(a.get_track_count()):
+                      var bone=str(a.track_get_path(i)).get_slice(":",1)
+                      if not bm.has(bone):continue
+                      var ni=b.add_track(a.track_get_type(i));b.track_set_path(ni,NodePath(track_base+":"+bm[bone]));b.track_set_interpolation_type(ni,a.track_get_interpolation_type(i))
+                      for k in range(a.track_get_key_count(i)):b.track_insert_key(ni,a.track_get_key_time(i,k),a.track_get_key_value(i,k),a.track_get_key_transition(i,k))
+                  out.add_animation(cn,b)
+              return out
+          func signature(sk):
+              var a=[]
+              for bn in bm.values():
+                  var t=sk.get_bone_pose(sk.find_bone(bn));a.append([t.origin.x,t.origin.y,t.origin.z,t.basis.x.x,t.basis.x.y,t.basis.x.z,t.basis.y.x,t.basis.y.y,t.basis.y.z])
+              return JSON.stringify(a)
+          func _initialize():
+              var dr=load("res://donor/a.gltf").instantiate();var ds=[];var dp=[];scan(dr,ds,dp);var src={}
+              for ln in dp[0].get_animation_library_list():var l=dp[0].get_animation_library(ln);for an in l.get_animation_list():src[str(an)]=l.get_animation(an)
+              var report={"evidenceId":"AGCB-V05176-ANIMATION-ROOT-RESOLUTION","release":"V0.5.176","environment":"TEST","prodEligible":false,"targets":{},"errors":[]}
+              for sex in ["Male","Female"]:
+                  var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();get_root().add_child(r);var ss=[];var pp=[];scan(r,ss,pp);var sk=ss[0];var ap=AnimationPlayer.new();r.add_child(ap);ap.root_node=NodePath("..");var track_base=str(r.get_path_to(sk));ap.add_animation_library("",make_lib(src,track_base));var resolved=0
+                  for b in bm.values():if ap.get_node_or_null(NodePath("../"+track_base))==sk and sk.find_bone(b)>=0:resolved+=1
+                  var sigs={};var stats={}
+                  for cn in clips:
+                      sk.reset_bone_poses();ap.play(cn);ap.seek(min(src[cn].length*0.5,0.6),true);sigs[cn]=signature(sk);stats[cn]={"playing":ap.current_animation==cn,"signatureHash":sigs[cn].hash()}
+                  var unique={};for v in sigs.values():unique[v]=true
+                  report.targets[sex]={"animationRoot":str(ap.root_node),"trackBase":track_base,"resolvedCore":resolved,"uniquePoseCount":unique.size(),"clips":stats};if resolved!=23:report.errors.append(sex+" unresolved core tracks");if unique.size()<4:report.errors.append(sex+" insufficient distinct poses "+str(unique.size()))
+                  r.queue_free()
+              dr.free();report.gate="PASS" if report.errors.is_empty() else "FAIL";report.runtimePlayback="PASS" if report.errors.is_empty() else "FAIL";report.nextGate="VISUAL_DEFORMATION_GATE" if report.errors.is_empty() else "HOLD";report.visualDeformation="PENDING";report.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05176-ANIMATION-ROOT-RESOLUTION.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close();print(JSON.stringify(report));quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://test.gd 2>&1 | tee /tmp/run.log
+          ! grep -q "couldn't resolve track" /tmp/run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05176-ANIMATION-ROOT-RESOLUTION
+          path: |
+            /tmp/AGCB-V05176-ANIMATION-ROOT-RESOLUTION.json
+            /tmp/run.log
+          retention-days: 3
