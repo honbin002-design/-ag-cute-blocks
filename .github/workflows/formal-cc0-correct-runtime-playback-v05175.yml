@@ -1,0 +1,56 @@
+name: Formal CC0 Correct Runtime Playback V0.5.175
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-correct-runtime-playback-v05175.yml']
+  workflow_dispatch:
+jobs:
+  playback:
+    name: AGCB-V05175-CORRECT-RUNTIME-PLAYBACK
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned donor targets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor /tmp/proj/targets
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/a.gltf; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          TB='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'; for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fsSL "$TB/$f" -o "/tmp/proj/targets/$f"; done
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64; printf '[application]\nconfig/name="AGCB V05175"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot; /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25
+      - name: Correct tracks and verify real Skeleton3D pose changes
+        run: |
+          cat > /tmp/proj/test.gd <<'EOF'
+          extends SceneTree
+          var clips=["Idle","Walk","Jog_Fwd","Jump","Jump_Start","Jump_Land"]
+          var bm={"root":"root","DEF-hips":"pelvis","DEF-spine.001":"spine_01","DEF-spine.002":"spine_02","DEF-spine.003":"spine_03","DEF-neck":"neck_01","DEF-head":"Head","DEF-shoulder.L":"clavicle_l","DEF-upper_arm.L":"upperarm_l","DEF-forearm.L":"lowerarm_l","DEF-hand.L":"hand_l","DEF-shoulder.R":"clavicle_r","DEF-upper_arm.R":"upperarm_r","DEF-forearm.R":"lowerarm_r","DEF-hand.R":"hand_r","DEF-thigh.L":"thigh_l","DEF-shin.L":"calf_l","DEF-foot.L":"foot_l","DEF-toe.L":"ball_l","DEF-thigh.R":"thigh_r","DEF-shin.R":"calf_r","DEF-foot.R":"foot_r","DEF-toe.R":"ball_r"}
+          func scan(n,s,p):
+              if n is Skeleton3D:s.append(n)
+              if n is AnimationPlayer:p.append(n)
+              for c in n.get_children():scan(c,s,p)
+          func make_lib(src,sk_path):
+              var out=AnimationLibrary.new()
+              for cn in clips:
+                  var a=src[cn];var b=Animation.new();b.length=a.length;b.loop_mode=a.loop_mode
+                  for i in range(a.get_track_count()):
+                      var bone=str(a.track_get_path(i)).get_slice(":",1);if not bm.has(bone):continue
+                      var ni=b.add_track(a.track_get_type(i));b.track_set_path(ni,NodePath(sk_path+":"+bm[bone]));b.track_set_interpolation_type(ni,a.track_get_interpolation_type(i));for k in range(a.track_get_key_count(i)):b.track_insert_key(ni,a.track_get_key_time(i,k),a.track_get_key_value(i,k),a.track_get_key_transition(i,k))
+                  out.add_animation(cn,b)
+              return out
+          func _initialize():
+              var dr=load("res://donor/a.gltf").instantiate();var ds=[];var dp=[];scan(dr,ds,dp);var src={};for ln in dp[0].get_animation_library_list():var l=dp[0].get_animation_library(ln);for an in l.get_animation_list():src[str(an)]=l.get_animation(an)
+              var report={"evidenceId":"AGCB-V05175-CORRECT-RUNTIME-PLAYBACK","release":"V0.5.175","environment":"TEST","prodEligible":false,"results":{},"errors":[]}
+              for sex in ["Male","Female"]:
+                  var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();get_root().add_child(r);var ss=[];var pp=[];scan(r,ss,pp);var sk=ss[0];var ap=AnimationPlayer.new();sk.get_parent().add_child(ap);var rel=str(ap.get_path_to(sk));ap.add_animation_library("",make_lib(src,rel));var sr={}
+                  for cn in clips:
+                      sk.reset_bone_poses();var before=[];for bn in bm.values():before.append(sk.get_bone_pose(sk.find_bone(bn)));ap.play(cn);ap.seek(min(src[cn].length*0.5,0.6),true);var changed=0;var maxrot=0.0;var maxpos=0.0;for j in range(bm.size()):var now=sk.get_bone_pose(sk.find_bone(bm.values()[j]));var rd=before[j].basis.get_rotation_quaternion().angle_to(now.basis.get_rotation_quaternion());var pd=before[j].origin.distance_to(now.origin);if rd>0.00001 or pd>0.00001:changed+=1;maxrot=max(maxrot,rd);maxpos=max(maxpos,pd)
+                      sr[cn]={"playing":ap.current_animation==cn,"changedCoreBones":changed,"maxRotationDelta":maxrot,"maxPositionDelta":maxpos,"skeletonTrackBase":rel};if ap.current_animation!=cn or changed==0:report.errors.append(sex+" "+cn+" playback not measurable")
+                  report.results[sex]=sr;r.queue_free()
+              dr.free();report.gate="PASS" if report.errors.is_empty() else "FAIL";report.runtimePlayback="PASS" if report.errors.is_empty() else "FAIL";report.nextGate="VISUAL_DEFORMATION_GATE" if report.errors.is_empty() else "HOLD";report.visualDeformation="PENDING";report.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05175-CORRECT-RUNTIME-PLAYBACK.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close();print(JSON.stringify(report));quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://test.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05175-CORRECT-RUNTIME-PLAYBACK
+          path: /tmp/AGCB-V05175-CORRECT-RUNTIME-PLAYBACK.json
+          retention-days: 3
