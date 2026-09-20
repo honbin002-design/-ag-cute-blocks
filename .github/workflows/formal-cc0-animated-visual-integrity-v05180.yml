@@ -1,0 +1,75 @@
+name: Formal CC0 Animated Visual Integrity V0.5.180
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-animated-visual-integrity-v05180.yml']
+  workflow_dispatch:
+jobs:
+  integrity:
+    name: AGCB-V05180-ANIMATED-VISUAL-INTEGRITY
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned donor and complete targets
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor /tmp/proj/targets
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/a.gltf; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          API='https://api.github.com/repos/BoQsc/gpu-marching-cubes/contents/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE?ref=54368c0875c5f72be00160fafb040c6ce5c4e760'; curl -fsSL "$API" -o /tmp/list.json
+          python3 - <<'PY'
+          import json,urllib.request,os,shutil
+          p='/tmp/proj/targets'
+          for x in json.load(open('/tmp/list.json')):
+            n=x['name']
+            if n.startswith(('Superhero_Male_FullBody','Superhero_Female_FullBody','T_Hair_','T_Eye_','T_Superhero_Male_','T_Superhero_Female_')): urllib.request.urlretrieve(x['download_url'],p+'/'+n)
+          for s,d in {'T_Eye_Normal.png':'T_Eye_Normal_png.png','T_Hair_1_Normal.png':'T_Hair_1_Normal_png.png','T_Hair_2_Normal.png':'T_Hair_2_Normal_png.png'}.items():
+            if os.path.exists(p+'/'+s) and not os.path.exists(p+'/'+d): shutil.copyfile(p+'/'+s,p+'/'+d)
+          PY
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64; printf '[application]\nconfig/name="AGCB V05180"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot; /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25 >/tmp/import.log 2>&1
+      - name: Measure target rest hierarchy skin bindings and multi-sample pose deltas
+        run: |
+          cat > /tmp/proj/check.gd <<'EOF'
+          extends SceneTree
+          var clips=["Idle","Walk","Jog_Fwd","Jump","Jump_Start","Jump_Land"]
+          var bm={"root":"root","DEF-hips":"pelvis","DEF-spine.001":"spine_01","DEF-spine.002":"spine_02","DEF-spine.003":"spine_03","DEF-neck":"neck_01","DEF-head":"Head","DEF-shoulder.L":"clavicle_l","DEF-upper_arm.L":"upperarm_l","DEF-forearm.L":"lowerarm_l","DEF-hand.L":"hand_l","DEF-shoulder.R":"clavicle_r","DEF-upper_arm.R":"upperarm_r","DEF-forearm.R":"lowerarm_r","DEF-hand.R":"hand_r","DEF-thigh.L":"thigh_l","DEF-shin.L":"calf_l","DEF-foot.L":"foot_l","DEF-toe.L":"ball_l","DEF-thigh.R":"thigh_r","DEF-shin.R":"calf_r","DEF-foot.R":"foot_r","DEF-toe.R":"ball_r"}
+          func scan(n,s,m,p):
+            if n is Skeleton3D:s.append(n)
+            if n is MeshInstance3D:m.append(n)
+            if n is AnimationPlayer:p.append(n)
+            for c in n.get_children():scan(c,s,m,p)
+          func make_lib(src,base):
+            var out=AnimationLibrary.new()
+            for cn in clips:
+              var a=src[cn];var b=Animation.new();b.length=a.length;b.loop_mode=a.loop_mode
+              for i in range(a.get_track_count()):
+                var bone=str(a.track_get_path(i)).get_slice(":",1)
+                if not bm.has(bone):continue
+                var ni=b.add_track(a.track_get_type(i));b.track_set_path(ni,NodePath(base+":"+bm[bone]));b.track_set_interpolation_type(ni,a.track_get_interpolation_type(i));for k in range(a.track_get_key_count(i)):b.track_insert_key(ni,a.track_get_key_time(i,k),a.track_get_key_value(i,k),a.track_get_key_transition(i,k))
+              out.add_animation(cn,b)
+            return out
+          func _initialize():
+            var dr=load("res://donor/a.gltf").instantiate();var ds=[];var dm=[];var dp=[];scan(dr,ds,dm,dp);var src={};for ln in dp[0].get_animation_library_list():var l=dp[0].get_animation_library(ln);for an in l.get_animation_list():src[str(an)]=l.get_animation(an)
+            var report={"evidenceId":"AGCB-V05180-ANIMATED-VISUAL-INTEGRITY","release":"V0.5.180","environment":"TEST","prodEligible":false,"targets":{},"errors":[]}
+            for sex in ["Male","Female"]:
+              var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();get_root().add_child(r);var ss=[];var mm=[];var pp=[];scan(r,ss,mm,pp);var sk=ss[0];var ap=AnimationPlayer.new();r.add_child(ap);ap.root_node=NodePath("..");var base=str(r.get_path_to(sk));ap.add_animation_library("",make_lib(src,base));var skin=[]
+              for m in mm:skin.append({"mesh":m.name,"skinBinds":m.skin.get_bind_count() if m.skin else 0,"skeleton":str(m.skeleton)})
+              var cs={}
+              for cn in clips:
+                var samples=[];var moving_union={}
+                for frac in [0.2,0.5,0.8]:
+                  sk.reset_bone_poses();var before=[];for bn in bm.values():before.append(sk.get_bone_pose(sk.find_bone(bn)));ap.play(cn);ap.seek(src[cn].length*frac,true);var changed=[]
+                  for j in range(bm.size()):
+                    var now=sk.get_bone_pose(sk.find_bone(bm.values()[j]));var rd=before[j].basis.get_rotation_quaternion().angle_to(now.basis.get_rotation_quaternion());var pd=before[j].origin.distance_to(now.origin);if rd>0.001 or pd>0.001:changed.append(bm.values()[j]);moving_union[bm.values()[j]]=true
+                  samples.append({"fraction":frac,"changedCore":changed.size(),"bones":changed})
+                cs[cn]={"samples":samples,"movingCoreUnion":moving_union.size()}
+                if cn in ["Walk","Jog_Fwd","Jump","Jump_Start","Jump_Land"] and moving_union.size()<6:report.errors.append(sex+" "+cn+" insufficient core motion "+str(moving_union.size()))
+              report.targets[sex]={"boneCount":sk.get_bone_count(),"skins":skin,"clips":cs};r.queue_free()
+            dr.free();report.gate="PASS" if report.errors.is_empty() else "FAIL";report.nextGate="VISUAL_MOTION_CAPTURE" if report.errors.is_empty() else "RETARGET_POSE_CORRECTION";report.visualReviewFinding="V05179 male frames appeared near T-pose while female showed clear locomotion; this gate quantifies target-side motion before promotion";report.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05180.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close();print(JSON.stringify(report));quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://check.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05180-ANIMATED-VISUAL-INTEGRITY
+          path: /tmp/AGCB-V05180.json
+          retention-days: 3
