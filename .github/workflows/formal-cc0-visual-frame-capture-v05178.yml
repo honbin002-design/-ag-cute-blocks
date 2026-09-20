@@ -25,7 +25,7 @@ jobs:
             if os.path.exists(p+'/'+s) and not os.path.exists(p+'/'+d): shutil.copyfile(p+'/'+s,p+'/'+d)
           PY
           curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
-          printf '[application]\nconfig/name="AGCB V05178"\nrun/main_scene="res://capture.tscn"\n[display]\nwindow/size/viewport_width=900\nwindow/size/viewport_height=900\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"\n' > /tmp/proj/project.godot
+          printf '[application]\nconfig/name="AGCB V05178"\nrun/main_scene="res://capture.tscn"\n[display]\nwindow/size/viewport_width=900\nwindow/size/viewport_height=900\nwindow/size/window_width_override=900\nwindow/size/window_height_override=900\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"\n' > /tmp/proj/project.godot
           /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25 >/tmp/import.log 2>&1
           ! grep -q "couldn't be loaded" /tmp/import.log; ! grep -q "Can't open file from path" /tmp/import.log
       - name: Build deterministic visual scene and capture male female frames
@@ -37,12 +37,14 @@ jobs:
           func _ready():
             var env=WorldEnvironment.new();var e=Environment.new();e.background_mode=Environment.BG_COLOR;e.background_color=Color(0.82,0.84,0.88);e.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;e.ambient_light_color=Color.WHITE;e.ambient_light_energy=1.2;env.environment=e;add_child(env)
             var light=DirectionalLight3D.new();light.rotation_degrees=Vector3(-35,-25,0);light.light_energy=1.8;add_child(light)
-            var cam=Camera3D.new();cam.position=Vector3(0,1.05,3.2);cam.look_at_from_position(cam.position,Vector3(0,1.0,0));add_child(cam)
+            var cam=Camera3D.new();cam.position=Vector3(0,1.05,3.2);cam.look_at_from_position(cam.position,Vector3(0,1.0,0));cam.current=true;add_child(cam)
             call_deferred("capture_next")
           func capture_next():
             if idx>=queue.size():get_tree().quit();return
-            var sex=queue[idx];var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();r.name="Subject";add_child(r);await get_tree().process_frame;await get_tree().process_frame
-            var img=get_viewport().get_texture().get_image();img.save_png("/tmp/AGCB-V05178-"+sex+"-REST.png");r.queue_free();await get_tree().process_frame;idx+=1;capture_next()
+            var sex=queue[idx];var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();r.name="Subject";add_child(r)
+            for i in range(8):await get_tree().process_frame
+            var img=get_viewport().get_texture().get_image();var err=img.save_png("/tmp/AGCB-V05178-"+sex+"-REST.png");print("CAPTURE ",sex," size=",img.get_size()," err=",err)
+            r.queue_free();await get_tree().process_frame;idx+=1;capture_next()
           EOF
           cat > /tmp/proj/capture.tscn <<'EOF'
           [gd_scene load_steps=2 format=3]
@@ -50,14 +52,19 @@ jobs:
           [node name="Capture" type="Node3D"]
           script = ExtResource("1")
           EOF
-          xvfb-run -a /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --path /tmp/proj --editor --quit-after 180 >/tmp/capture.log 2>&1 || true
+          set +e
+          xvfb-run -a /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --path /tmp/proj --rendering-method gl_compatibility --audio-driver Dummy >/tmp/capture.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/capture.log
+          test $rc -eq 0
           test -s /tmp/AGCB-V05178-Male-REST.png
           test -s /tmp/AGCB-V05178-Female-REST.png
           python3 - <<'PY'
           import os,json
           r={'evidenceId':'AGCB-V05178-VISUAL-FRAME-CAPTURE','release':'V0.5.178','environment':'TEST','prodEligible':False,'frames':{},'errors':[]}
           for s in ('Male','Female'):
-            p=f'/tmp/AGCB-V05178-{s}-REST.png'; z=os.path.getsize(p); r['frames'][s]={'path':os.path.basename(p),'bytes':z};
+            p=f'/tmp/AGCB-V05178-{s}-REST.png';z=os.path.getsize(p);r['frames'][s]={'path':os.path.basename(p),'bytes':z}
             if z<10000:r['errors'].append(s+' frame suspiciously small')
           r['gate']='PASS' if not r['errors'] else 'FAIL';r['nextGate']='VISUAL_REVIEW' if not r['errors'] else 'HOLD';r['prodPromotion']='HOLD'
           open('/tmp/AGCB-V05178-VISUAL-FRAME-CAPTURE.json','w').write(json.dumps(r,indent=2));print(json.dumps(r));raise SystemExit(0 if not r['errors'] else 2)
