@@ -1,0 +1,44 @@
+name: AGCB V0.5.186 Runtime Integration Gate
+
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check adapter
+        run: node --check runtime-character-integration-v05186.js
+      - name: Verify protected runtime remains untouched by candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev-v0.1 --depth=1
+          changed="$(git diff --name-only origin/dev-v0.1...HEAD)"
+          echo "$changed"
+          forbidden='^(index\.html|app.*\.js|ag-original-character-runtime\.js|aim-reticle-runtime\.js|building-extension\.js|life-.*\.js|multiplayer-.*\.js)$'
+          if echo "$changed" | grep -E "$forbidden"; then
+            echo 'Protected gameplay runtime changed in isolated adapter gate.' >&2
+            exit 1
+          fi
+      - name: Verify adapter contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          f=runtime-character-integration-v05186.js
+          grep -q "IDLE:'Idle'" "$f"
+          grep -q "WALK:'Walk'" "$f"
+          grep -q "JOG:'Jog'" "$f"
+          grep -q "JUMP:'Jump'" "$f"
+          grep -q "mode:'fallback'" "$f"
+          grep -q "AnimationMixer" "$f"
+          grep -q "crossFadeTo" "$f"
+          grep -q "LoopOnce" "$f"
+          grep -q "LoopRepeat" "$f"
+          echo 'V0.5.186 isolated adapter contract PASS'
