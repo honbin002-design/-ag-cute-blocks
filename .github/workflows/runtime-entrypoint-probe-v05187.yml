@@ -1,0 +1,53 @@
+name: AGCB V0.5.187 Runtime Entrypoint Probe
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract exact V0.5.113 runtime anchors
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,json
+          s=Path('index.html').read_text(encoding='utf-8')
+          terms=['runToggle','jump','requestAnimationFrame','player.position','velocity','animate(','function animate','render(','ag-original-character-runtime']
+          out={'evidenceId':'AGCB-V05187-RUNTIME-ENTRYPOINT-PROBE','runtimeVersion':'V0.5.113','bytes':len(s.encode()),'anchors':{}}
+          for term in terms:
+            hits=[]
+            start=0
+            while True:
+              i=s.find(term,start)
+              if i<0: break
+              hits.append({'offset':i,'context':s[max(0,i-500):min(len(s),i+900)]})
+              start=i+len(term)
+            out['anchors'][term]=hits[:12]
+          scripts=re.findall(r'<script[^>]*>(.*?)</script>',s,re.S|re.I)
+          out['inlineScriptCount']=len(scripts)
+          out['inlineScriptBytes']=[len(x.encode()) for x in scripts]
+          Path('/tmp/AGCB-V05187-entrypoints.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          # Human-readable focused evidence, deliberately small enough for logs/artifact review.
+          lines=[]
+          for term,hits in out['anchors'].items():
+            lines.append('\n===== '+term+' =====')
+            for n,h in enumerate(hits):
+              lines.append(f"--- hit {n+1} offset {h['offset']} ---\n{h['context']}")
+          Path('/tmp/AGCB-V05187-entrypoints.txt').write_text('\n'.join(lines),encoding='utf-8')
+          print(json.dumps({k:(len(v) if isinstance(v,list) else v) for k,v in out['anchors'].items()},indent=2))
+          if not out['anchors']['runToggle'] or not out['anchors']['jump']:
+            raise SystemExit('required control anchors missing')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AGCB-V05187-RUNTIME-ENTRYPOINT-PROBE
+          path: |
+            /tmp/AGCB-V05187-entrypoints.json
+            /tmp/AGCB-V05187-entrypoints.txt
+          retention-days: 3
