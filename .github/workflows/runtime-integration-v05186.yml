@@ -13,14 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Syntax check adapter
         run: node --check runtime-character-integration-v05186.js
       - name: Verify protected runtime remains untouched by candidate
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin dev-v0.1 --depth=1
-          changed="$(git diff --name-only origin/dev-v0.1...HEAD)"
+          git fetch origin dev-v0.1:refs/remotes/origin/dev-v0.1
+          base="$(git merge-base origin/dev-v0.1 HEAD)"
+          test -n "$base"
+          changed="$(git diff --name-only "$base"..HEAD)"
           echo "$changed"
           forbidden='^(index\.html|app.*\.js|ag-original-character-runtime\.js|aim-reticle-runtime\.js|building-extension\.js|life-.*\.js|multiplayer-.*\.js)$'
           if echo "$changed" | grep -E "$forbidden"; then
