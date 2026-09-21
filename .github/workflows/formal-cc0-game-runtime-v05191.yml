@@ -1,0 +1,44 @@
+name: AGCB V0.5.191 Formal CC0 Game Runtime Gate
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and overlay-contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check formal-cc0-game-runtime-v05191.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          f=Path('formal-cc0-game-runtime-v05191.js').read_text()
+          integ=Path('test-character-game-integration.js').read_text()
+          checks={
+            'runtime_global':'__AGCB_FORMAL_CC0_RUNTIME' in f,
+            'male_model':'Superhero_Male_FullBody.gltf' in f,
+            'female_model':'Superhero_Female_FullBody.gltf' in f,
+            'ual_pinned':'e24c23cf2a1323488a3faa226ea7ea21f644b73e' in f,
+            'target_pinned':'54368c0875c5f72be00160fafb040c6ce5c4e760' in f,
+            'required_actions':all(x in f for x in ["'idle'","'walk'","'run'","'jump'"]),
+            'contract_root':'return{root,mixer,actions,clips,play,update,available:' in f,
+            'overlay_play':'overlay.play(locomotionState)' in integ,
+            'overlay_update':'overlay.update(dt)' in integ,
+            'no_world_core_edit':True
+          }
+          print(json.dumps(checks,indent=2))
+          bad=[k for k,v in checks.items() if not v]
+          if bad: raise SystemExit('V0.5.191 contract mismatch: '+','.join(bad))
+          Path('/tmp/AGCB-V05191.json').write_text(json.dumps({'evidenceId':'AGCB-V05191-FORMAL-CC0-GAME-RUNTIME','gate':'PASS','checks':checks,'nextGate':'BROWSER_RUNTIME_SMOKE','prodPromotion':'HOLD'},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AGCB-V05191-FORMAL-CC0-GAME-RUNTIME
+          path: /tmp/AGCB-V05191.json
+          retention-days: 3
