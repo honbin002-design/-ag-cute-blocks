@@ -1,0 +1,49 @@
+name: AGCB V0.5.199 Formal CC0 Retarget Formula Gate
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+    paths: ['.github/workflows/formal-cc0-retarget-formula-gate-v05199.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retarget-formula-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v05199
+          cat > /tmp/v05199/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script><script type="module">
+          import * as THREE from 'three';import{GLTFLoader}from'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+          const TB='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE/';
+          const U='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF/AnimationLibrary_Godot_Standard.gltf';
+          const models={male:TB+'Superhero_Male_FullBody.gltf',female:TB+'Superhero_Female_FullBody.gltf'},load=u=>new Promise((r,j)=>new GLTFLoader().load(u,r,undefined,j));
+          const bm={'DEF-hips':'pelvis','DEF-spine001':'spine_01','DEF-spine002':'spine_02','DEF-spine003':'spine_03','DEF-neck':'neck_01','DEF-head':'Head','DEF-shoulderL':'clavicle_l','DEF-upper_armL':'upperarm_l','DEF-forearmL':'lowerarm_l','DEF-handL':'hand_l','DEF-shoulderR':'clavicle_r','DEF-upper_armR':'upperarm_r','DEF-forearmR':'lowerarm_r','DEF-handR':'hand_r','DEF-thighL':'thigh_l','DEF-shinL':'calf_l','DEF-footL':'foot_l','DEF-toeL':'ball_l','DEF-thighR':'thigh_r','DEF-shinR':'calf_r','DEF-footR':'foot_r','DEF-toeR':'ball_r'};
+          const sig=r=>{const a={};r.traverse(o=>{if(o.isBone)a[o.name]=o.quaternion.clone()});return a},diff=(a,r)=>{let n=0,max=0;r.traverse(o=>{if(o.isBone&&a[o.name]){const d=1-Math.abs(a[o.name].dot(o.quaternion));if(d>1e-8)n++;max=Math.max(max,d)}});return{changedBones:n,maxQuaternionDelta:max}};
+          const result={release:'V0.5.199',evidenceId:'AGCB-V05199-RETARGET-FORMULA-GATE',tests:{},errors:[],prodPromotion:'HOLD'};
+          try{const sg=await load(U);for(const [sex,url] of Object.entries(models)){const tg=await load(url);result.tests[sex]={};for(const formula of ['A_CURRENT','B_BIND_FIRST']){const source=sg.scene.clone(true),target=tg.scene.clone(true),sm={},dm={};source.traverse(o=>{if(o.name)sm[o.name]=o});target.traverse(o=>{if(o.isBone)dm[o.name]=o});source.updateMatrixWorld(true);target.updateMatrixWorld(true);const pairs=[];for(const[sn,dn]of Object.entries(bm)){const s=sm[sn],d=dm[dn];if(s&&d){const sb=new THREE.Quaternion(),db=new THREE.Quaternion();s.getWorldQuaternion(sb);d.getWorldQuaternion(db);pairs.push({s,d,sb,db})}}const before=sig(target),clip=sg.animations.find(c=>c.name==='Walk_Loop'),m=new THREE.AnimationMixer(source);m.clipAction(clip,source).play();m.update(.5);source.updateMatrixWorld(true);target.updateMatrixWorld(true);for(const p of pairs){const cur=new THREE.Quaternion(),parentQ=new THREE.Quaternion();p.s.getWorldQuaternion(cur);let desired;if(formula==='A_CURRENT'){const delta=cur.clone().multiply(p.sb.clone().invert());desired=delta.multiply(p.db.clone())}else{const delta=p.sb.clone().invert().multiply(cur);desired=p.db.clone().multiply(delta)}if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));p.d.updateMatrixWorld(true)}target.updateMatrixWorld(true);result.tests[sex][formula]={mapped:pairs.length,...diff(before,target)}}}}
+          catch(e){result.errors.push(String(e?.stack||e))}const rows=Object.values(result.tests).flatMap(x=>Object.values(x)),best=rows.reduce((a,b)=>!a||b.changedBones>a.changedBones?b:a,null);result.gate=rows.length===4&&rows.every(x=>x.mapped>=20)&&rows.some(x=>x.changedBones>0)?'PASS':'FAIL';result.diagnosis=result.gate==='PASS'?'TARGET_WRITE_CONFIRMED_COMPARE_FORMULAS':'TARGET_WRITE_STILL_ZERO';globalThis.__R=result;document.body.innerText=JSON.stringify(result,null,2);
+          </script>
+          EOF
+          cat > /tmp/v05199/run.mjs <<'EOF'
+          import{chromium}from'playwright';import fs from'node:fs';const b=await chromium.launch({headless:true}),p=await b.newPage();await p.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>globalThis.__R?.gate,{timeout:90000});const r=await p.evaluate(()=>globalThis.__R);console.log(JSON.stringify(r,null,2));fs.writeFileSync('/tmp/v05199/result.json',JSON.stringify(r,null,2));await b.close();if(r.gate!=='PASS')process.exit(2);
+          EOF
+      - name: Run Chromium gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8080 --directory /tmp/v05199 >/tmp/v05199/http.log 2>&1 &
+          npx --yes playwright@1.55.0 install chromium >/dev/null 2>&1
+          cd /tmp && npm init -y >/dev/null 2>&1 && npm install playwright@1.55.0 --no-save >/dev/null 2>&1
+          node /tmp/v05199/run.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05199-RETARGET-FORMULA-GATE
+          path: /tmp/v05199/result.json
+          retention-days: 3
