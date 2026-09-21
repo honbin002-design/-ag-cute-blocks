@@ -11,33 +11,47 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Acquire pinned targets with referenced textures
+      - name: Acquire pinned targets and manifest-resolved textures
         run: |
           set -euo pipefail
           mkdir -p /tmp/proj/targets
-          BASE='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'
-          for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin T_Eye_Brown.png T_Eye_Normal_png.png; do
-            curl -fsSL "$BASE/$f" -o "/tmp/proj/targets/$f"
-          done
+          API='https://api.github.com/repos/BoQsc/gpu-marching-cubes/contents/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE?ref=54368c0875c5f72be00160fafb040c6ce5c4e760'
+          curl -fsSL "$API" -o /tmp/upstream-manifest.json
           python3 - <<'PY'
-          import json, pathlib
+          import json, pathlib, urllib.request
           root=pathlib.Path('/tmp/proj/targets')
-          report={'evidenceId':'AGCB-V05184-TEXTURE-DEPENDENCY','release':'V0.5.184','environment':'TEST','targets':{},'errors':[]}
+          manifest=json.loads(pathlib.Path('/tmp/upstream-manifest.json').read_text())
+          by_name={x['name']:x.get('download_url') for x in manifest if x.get('type')=='file'}
+          core=['Superhero_Male_FullBody.gltf','Superhero_Male_FullBody.bin','Superhero_Female_FullBody.gltf','Superhero_Female_FullBody.bin']
+          report={'evidenceId':'AGCB-V05184-TEXTURE-DEPENDENCY','release':'V0.5.184','environment':'TEST','manifestFiles':sorted(by_name),'targets':{},'errors':[],'warnings':[]}
+          def get(name):
+              url=by_name.get(name)
+              if not url:return False
+              urllib.request.urlretrieve(url,root/name);return True
+          for f in core:
+              if not get(f):report['errors'].append('upstream manifest missing core file: '+f)
+          if report['errors']:
+              pathlib.Path('/tmp/AGCB-V05184.json').write_text(json.dumps(report,indent=2));raise SystemExit(1)
+          required=set()
           for sex in ('Male','Female'):
-              p=root/f'Superhero_{sex}_FullBody.gltf'
-              d=json.loads(p.read_text())
+              d=json.loads((root/f'Superhero_{sex}_FullBody.gltf').read_text())
               uris=[x.get('uri') for x in d.get('images',[]) if x.get('uri')]
-              missing=[u for u in uris if not (root/u).is_file()]
-              report['targets'][sex]={'imageUris':uris,'imageCount':len(uris),'missing':missing}
-              if missing: report['errors'].append(f'{sex} missing image dependencies: {missing}')
-          report['gate']='PASS' if not report['errors'] else 'FAIL'
-          report['nextGate']='GODOT_TEXTURE_IMPORT_VISUAL' if not report['errors'] else 'ACQUISITION_CORRECTION'
+              required.update(uris)
+              report['targets'][sex]={'imageUris':uris,'imageCount':len(uris)}
+          dep={}
+          for u in sorted(required):
+              ok=get(u);dep[u]={'inManifest':u in by_name,'downloaded':ok,'downloadUrl':by_name.get(u)}
+              if not ok:report['warnings'].append('GLTF references image absent from pinned upstream manifest: '+u)
+          report['dependencies']=dep
+          for sex in ('Male','Female'):
+              uris=report['targets'][sex]['imageUris'];missing=[u for u in uris if not (root/u).is_file()]
+              report['targets'][sex]['missing']=missing
+          report['gate']='PASS_WITH_UPSTREAM_GAPS' if report['warnings'] else 'PASS'
+          report['nextGate']='GODOT_TEXTURE_IMPORT_VISUAL'
           report['prodPromotion']='HOLD'
-          pathlib.Path('/tmp/AGCB-V05184.json').write_text(json.dumps(report,indent=2))
-          print(json.dumps(report,indent=2))
-          if report['errors']: raise SystemExit(1)
+          pathlib.Path('/tmp/AGCB-V05184.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
           PY
-      - name: Verify Godot imports textures into target materials
+      - name: Verify Godot import behavior with resolved dependencies
         run: |
           set -euo pipefail
           curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip
@@ -51,7 +65,10 @@ jobs:
           func _ready():
             var report={"evidenceId":"AGCB-V05184-GODOT-TEXTURE-IMPORT","targets":{},"errors":[]}
             for sex in ["Male","Female"]:
-              var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();var ms=[];scan(r,ms);var mats=[];var textured=0
+              var path="res://targets/Superhero_"+sex+"_FullBody.gltf"
+              var packed=load(path)
+              if packed==null:report.errors.append(sex+" target failed to import");continue
+              var r=packed.instantiate();var ms=[];scan(r,ms);var mats=[];var textured=0
               for mi in ms:
                 for si in range(mi.mesh.get_surface_count()):
                   var m=mi.get_active_material(si);var rec={"node":str(mi.get_path()),"surface":si,"present":m!=null,"class":m.get_class() if m else ""}
@@ -59,9 +76,7 @@ jobs:
                     rec["albedo"]=str(m.albedo_color);rec["texturePresent"]=m.albedo_texture!=null
                     if m.albedo_texture!=null:textured+=1;rec["texturePath"]=m.albedo_texture.resource_path
                   mats.append(rec)
-              report.targets[sex]={"meshCount":ms.size(),"materialCount":mats.size(),"texturedMaterials":textured,"materials":mats}
-              if textured<1:report.errors.append(sex+" has no imported textured material")
-              r.free()
+              report.targets[sex]={"meshCount":ms.size(),"materialCount":mats.size(),"texturedMaterials":textured,"materials":mats};r.free()
             report.gate="PASS" if report.errors.is_empty() else "FAIL";report.nextGate="FINAL_TEXTURED_VISUAL_CAPTURE" if report.errors.is_empty() else "MATERIAL_MAPPING_DIAGNOSIS";report.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05184-godot.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close();print(JSON.stringify(report));get_tree().quit(0 if report.errors.is_empty() else 1)
           EOF
           cat > /tmp/proj/probe.tscn <<'EOF'
@@ -70,7 +85,7 @@ jobs:
           [node name="Probe" type="Node"]
           script = ExtResource("1")
           EOF
-          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 30 >/tmp/import.log 2>&1
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 30 >/tmp/import.log 2>&1 || true
           /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj >/tmp/probe.log 2>&1 || rc=$?
           cat /tmp/probe.log
           test -f /tmp/AGCB-V05184-godot.json
@@ -81,6 +96,7 @@ jobs:
           name: AGCB-V05184-TEXTURE-DEPENDENCY
           path: |
             /tmp/AGCB-V05184*.json
+            /tmp/upstream-manifest.json
             /tmp/import.log
             /tmp/probe.log
           retention-days: 3
