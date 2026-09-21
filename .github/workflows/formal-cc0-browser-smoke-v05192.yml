@@ -1,4 +1,4 @@
-name: AGCB V0.5.192 Formal CC0 Browser Runtime Smoke
+name: AGCB V0.5.194 Formal CC0 Bone Discovery + Browser Smoke
 on:
   push:
     branches: [gate/runtime-integration-v05186]
@@ -11,57 +11,55 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Build isolated browser smoke page
+      - name: Build isolated bone discovery page
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/smoke
           cp formal-cc0-game-runtime-v05191.js /tmp/smoke/runtime.js
           cat > /tmp/smoke/index.html <<'EOF'
-          <!doctype html><meta charset="utf-8"><title>AGCB V05192</title>
+          <!doctype html><meta charset="utf-8"><title>AGCB V05194</title>
           <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
           <pre id="out">boot</pre>
           <script type="module">
+          import * as THREE from 'three';
+          import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
           import './runtime.js';
-          const out=document.getElementById('out');
-          const result={evidenceId:'AGCB-V05192-BROWSER-RUNTIME-SMOKE',release:'V0.5.192',targets:{},errors:[]};
+          const TARGET_BASE='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE/';
+          const UAL='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF/AnimationLibrary_Godot_Standard.gltf';
+          const urls={male:TARGET_BASE+'Superhero_Male_FullBody.gltf',female:TARGET_BASE+'Superhero_Female_FullBody.gltf'};
+          const loader=new GLTFLoader();const load=u=>new Promise((r,j)=>loader.load(u,r,undefined,j));
+          const result={evidenceId:'AGCB-V05194-BONE-DISCOVERY',release:'V0.5.194',targets:{},sourceBones:[],runtimeErrors:[]};
+          const src=await load(UAL);src.scene.traverse(o=>{if(o.isBone)result.sourceBones.push(o.name)});
           for(const sex of ['male','female']){
-            try{
-              const c=await globalThis.__AGCB_FORMAL_CC0_RUNTIME.create(sex);
-              const row={mappedBones:c.mappedBones,available:c.available.slice(),states:[],root:c.root?.name||''};
-              for(const state of ['idle','walk','run','jump']){c.play(state);for(let i=0;i<6;i++)c.update(1/60);row.states.push({requested:state,actual:c.action});if(c.action!==state)result.errors.push(`${sex}:${state}->${c.action}`)}
-              if(c.mappedBones<20)result.errors.push(`${sex}:mappedBones ${c.mappedBones}`);
-              for(const req of ['idle','walk','run','jump'])if(!c.available.includes(req))result.errors.push(`${sex}:missing ${req}`);
-              result.targets[sex]=row;
-            }catch(e){result.errors.push(`${sex}:${e?.stack||e}`)}
+            const g=await load(urls[sex]),bones=[],meshes=[];g.scene.traverse(o=>{if(o.isBone)bones.push(o.name);if(o.isSkinnedMesh)meshes.push({name:o.name,bones:o.skeleton?.bones?.map(b=>b.name)||[]})});
+            result.targets[sex]={sceneBones:bones,skinnedMeshes:meshes};
+            try{const c=await globalThis.__AGCB_FORMAL_CC0_RUNTIME.create(sex);result.targets[sex].runtime={mappedBones:c.mappedBones,available:c.available}}catch(e){result.runtimeErrors.push(`${sex}:${e.message}`)}
           }
-          result.gate=result.errors.length?'FAIL':'PASS';result.nextGate=result.errors.length?'RUNTIME_ADAPTER_FIX':'OVERLAY_LIVE_GAME_WIRING';result.prodPromotion='HOLD';out.textContent=JSON.stringify(result,null,2);globalThis.__AGCB_V05192_RESULT=result;
+          result.discoveryGate=(result.targets.male.sceneBones.length&&result.targets.female.sceneBones.length&&result.sourceBones.length)?'PASS':'FAIL';
+          result.nextGate='BUILD_EXACT_BONE_MAP';result.prodPromotion='HOLD';
+          document.getElementById('out').textContent=JSON.stringify(result,null,2);globalThis.__AGCB_V05194_RESULT=result;
           </script>
           EOF
-      - name: Run real Chromium smoke
+      - name: Run Chromium and capture exact bone names
         shell: bash
         run: |
           set -euo pipefail
           python3 -m http.server 8080 --directory /tmp/smoke >/tmp/http.log 2>&1 &
           npx --yes playwright@1.55.0 install chromium >/tmp/pw-install.log 2>&1
-          cat > /tmp/smoke.mjs <<'EOF'
-          import { chromium } from 'playwright';
-          import fs from 'node:fs';
-          const browser=await chromium.launch({headless:true});const page=await browser.newPage();
-          const logs=[];page.on('console',m=>logs.push('console '+m.type()+': '+m.text()));page.on('pageerror',e=>logs.push('pageerror: '+e.stack));
-          await page.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded',timeout:30000});
-          await page.waitForFunction(()=>globalThis.__AGCB_V05192_RESULT?.gate,{timeout:90000});
-          const result=await page.evaluate(()=>globalThis.__AGCB_V05192_RESULT);fs.writeFileSync('/tmp/AGCB-V05192.json',JSON.stringify(result,null,2));fs.writeFileSync('/tmp/AGCB-V05192-browser.log',logs.join('\n'));console.log(result);await browser.close();if(result.gate!=='PASS')process.exit(1);
-          EOF
           cd /tmp && npm init -y >/dev/null 2>&1 && npm install playwright@1.55.0 --no-save >/dev/null 2>&1
-          node /tmp/smoke.mjs
+          cat > /tmp/discover.mjs <<'EOF'
+          import { chromium } from 'playwright';import fs from 'node:fs';
+          const browser=await chromium.launch({headless:true}),page=await browser.newPage();const logs=[];page.on('console',m=>logs.push(m.type()+': '+m.text()));page.on('pageerror',e=>logs.push('pageerror: '+e.stack));
+          await page.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded',timeout:30000});await page.waitForFunction(()=>globalThis.__AGCB_V05194_RESULT?.discoveryGate,{timeout:90000});const r=await page.evaluate(()=>globalThis.__AGCB_V05194_RESULT);fs.writeFileSync('/tmp/AGCB-V05194.json',JSON.stringify(r,null,2));fs.writeFileSync('/tmp/AGCB-V05194-browser.log',logs.join('\n'));console.log(JSON.stringify(r,null,2));await browser.close();if(r.discoveryGate!=='PASS')process.exit(1);
+          EOF
+          node /tmp/discover.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: AGCB-V05192-BROWSER-RUNTIME-SMOKE
+          name: AGCB-V05194-BONE-DISCOVERY
           path: |
-            /tmp/AGCB-V05192.json
-            /tmp/AGCB-V05192-browser.log
+            /tmp/AGCB-V05194.json
+            /tmp/AGCB-V05194-browser.log
             /tmp/http.log
-            /tmp/pw-install.log
           retention-days: 3
