@@ -1,0 +1,60 @@
+name: AGCB V0.5.198 Source Animation Diagnostic
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-motion-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source diagnostic page
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source-diag
+          cat > /tmp/source-diag/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8"><title>AGCB V05198</title>
+          <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+          <script type="module">
+          import * as THREE from 'three';
+          import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+          const U='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF/AnimationLibrary_Godot_Standard.gltf';
+          const load=u=>new Promise((r,j)=>new GLTFLoader().load(u,r,undefined,j));
+          const sig=root=>{const m={};root.traverse(o=>{if(o.isBone)m[o.name]=[o.quaternion.x,o.quaternion.y,o.quaternion.z,o.quaternion.w,o.position.x,o.position.y,o.position.z]});return m};
+          const delta=(a,b)=>{let changed=0,max=0;for(const [n,x] of Object.entries(a)){const y=b[n];if(!y)continue;let d=0;for(let i=0;i<x.length;i++)d+=Math.abs(x[i]-y[i]);if(d>1e-5)changed++;max=Math.max(max,d)}return{changedBones:changed,maxDelta:max}};
+          const result={release:'V0.5.198',evidenceId:'AGCB-V05198-SOURCE-MOTION-DIAGNOSTIC',clips:[],tests:{},errors:[],prodPromotion:'HOLD'};
+          try{
+            const g=await load(U),clips=g.animations||[];result.clips=clips.map(c=>({name:c.name,duration:c.duration,tracks:c.tracks.length,sample:c.tracks.slice(0,5).map(t=>t.name)}));
+            const wanted=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Jump_Loop'];
+            for(const mode of ['original','clone']){
+              const root=mode==='original'?g.scene:g.scene.clone(true),mixer=new THREE.AnimationMixer(root),base=sig(root);result.tests[mode]={};
+              for(const want of wanted){const raw=clips.find(c=>c.name===want)||clips.find(c=>c.name.toLowerCase().includes(want.split('_')[0].toLowerCase()));if(!raw){result.errors.push(`${mode}:${want}:missing`);continue}const action=mixer.clipAction(raw,root);action.reset().setLoop(THREE.LoopRepeat,Infinity).play();mixer.update(.5);root.updateMatrixWorld(true);const d=delta(base,sig(root));result.tests[mode][want]={clip:raw.name,tracks:raw.tracks.length,...d};action.stop();mixer.stopAllAction();mixer.setTime(0);if(d.changedBones===0)result.errors.push(`${mode}:${want}:no-source-motion`)}
+            }
+          }catch(e){result.errors.push(String(e?.stack||e))}
+          const originalMoves=Object.values(result.tests.original||{}).some(x=>x.changedBones>0),cloneMoves=Object.values(result.tests.clone||{}).some(x=>x.changedBones>0);
+          result.diagnosis=originalMoves?(cloneMoves?'SOURCE_AND_CLONE_BIND_OK':'CLONE_BIND_FAILURE'):'SOURCE_CLIP_BIND_FAILURE';result.gate=originalMoves?'PASS':'FAIL';result.nextGate=originalMoves?'FIX_RETARGET_OR_CLONE_BIND':'REWRITE_SOURCE_BINDING';globalThis.__AGCB_V05198_RESULT=result;document.body.innerText=JSON.stringify(result,null,2);
+          </script>
+          EOF
+      - name: Run Chromium diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8080 --directory /tmp/source-diag >/tmp/http.log 2>&1 &
+          npx --yes playwright@1.55.0 install chromium >/tmp/pw-install.log 2>&1
+          cd /tmp && npm init -y >/dev/null 2>&1 && npm install playwright@1.55.0 --no-save >/dev/null 2>&1
+          cat > /tmp/source-diag.mjs <<'EOF'
+          import{chromium}from'playwright';import fs from'node:fs';const b=await chromium.launch({headless:true}),p=await b.newPage();const logs=[];p.on('pageerror',e=>logs.push(e.stack));await p.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded',timeout:30000});await p.waitForFunction(()=>globalThis.__AGCB_V05198_RESULT?.diagnosis,{timeout:90000});const r=await p.evaluate(()=>globalThis.__AGCB_V05198_RESULT);fs.writeFileSync('/tmp/AGCB-V05198.json',JSON.stringify(r,null,2));fs.writeFileSync('/tmp/AGCB-V05198.log',logs.join('\n'));console.log(JSON.stringify(r,null,2));await b.close();
+          EOF
+          node /tmp/source-diag.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05198-SOURCE-MOTION-DIAGNOSTIC
+          path: |
+            /tmp/AGCB-V05198.json
+            /tmp/AGCB-V05198.log
+          retention-days: 3
