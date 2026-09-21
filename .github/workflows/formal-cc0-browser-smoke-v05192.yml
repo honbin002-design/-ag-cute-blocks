@@ -1,0 +1,67 @@
+name: AGCB V0.5.192 Formal CC0 Browser Runtime Smoke
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated browser smoke page
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/smoke
+          cp formal-cc0-game-runtime-v05191.js /tmp/smoke/runtime.js
+          cat > /tmp/smoke/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8"><title>AGCB V05192</title>
+          <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+          <pre id="out">boot</pre>
+          <script type="module">
+          import './runtime.js';
+          const out=document.getElementById('out');
+          const result={evidenceId:'AGCB-V05192-BROWSER-RUNTIME-SMOKE',release:'V0.5.192',targets:{},errors:[]};
+          for(const sex of ['male','female']){
+            try{
+              const c=await globalThis.__AGCB_FORMAL_CC0_RUNTIME.create(sex);
+              const row={mappedBones:c.mappedBones,available:c.available.slice(),states:[],root:c.root?.name||''};
+              for(const state of ['idle','walk','run','jump']){c.play(state);for(let i=0;i<6;i++)c.update(1/60);row.states.push({requested:state,actual:c.action});if(c.action!==state)result.errors.push(`${sex}:${state}->${c.action}`)}
+              if(c.mappedBones<20)result.errors.push(`${sex}:mappedBones ${c.mappedBones}`);
+              for(const req of ['idle','walk','run','jump'])if(!c.available.includes(req))result.errors.push(`${sex}:missing ${req}`);
+              result.targets[sex]=row;
+            }catch(e){result.errors.push(`${sex}:${e?.stack||e}`)}
+          }
+          result.gate=result.errors.length?'FAIL':'PASS';result.nextGate=result.errors.length?'RUNTIME_ADAPTER_FIX':'OVERLAY_LIVE_GAME_WIRING';result.prodPromotion='HOLD';out.textContent=JSON.stringify(result,null,2);globalThis.__AGCB_V05192_RESULT=result;
+          </script>
+          EOF
+      - name: Run real Chromium smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8080 --directory /tmp/smoke >/tmp/http.log 2>&1 &
+          npx --yes playwright@1.55.0 install chromium >/tmp/pw-install.log 2>&1
+          cat > /tmp/smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const browser=await chromium.launch({headless:true});const page=await browser.newPage();
+          const logs=[];page.on('console',m=>logs.push('console '+m.type()+': '+m.text()));page.on('pageerror',e=>logs.push('pageerror: '+e.stack));
+          await page.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded',timeout:30000});
+          await page.waitForFunction(()=>globalThis.__AGCB_V05192_RESULT?.gate,{timeout:90000});
+          const result=await page.evaluate(()=>globalThis.__AGCB_V05192_RESULT);fs.writeFileSync('/tmp/AGCB-V05192.json',JSON.stringify(result,null,2));fs.writeFileSync('/tmp/AGCB-V05192-browser.log',logs.join('\n'));console.log(result);await browser.close();if(result.gate!=='PASS')process.exit(1);
+          EOF
+          cd /tmp && npm init -y >/dev/null 2>&1 && npm install playwright@1.55.0 --no-save >/dev/null 2>&1
+          node /tmp/smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05192-BROWSER-RUNTIME-SMOKE
+          path: |
+            /tmp/AGCB-V05192.json
+            /tmp/AGCB-V05192-browser.log
+            /tmp/http.log
+            /tmp/pw-install.log
+          retention-days: 3
