@@ -1,0 +1,42 @@
+name: AGCB V0.5.188 Runtime Loader Chain Probe
+on:
+  push:
+    branches: [gate/runtime-integration-v05186]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve scripts and runtime candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,json
+          html=Path('index.html').read_text(encoding='utf-8')
+          tags=re.findall(r'<script\b[^>]*>(?:.*?)</script>',html,re.S|re.I)
+          srcs=[]
+          for tag in tags:
+            m=re.search(r'\bsrc=["\']([^"\']+)',tag,re.I)
+            if m: srcs.append(m.group(1))
+          files=[]
+          for p in Path('.').glob('*.js'):
+            s=p.read_text(encoding='utf-8',errors='ignore')
+            score=sum(k in s for k in ['requestAnimationFrame','THREE.','player','velocity','jump','joystick','AnimationMixer'])
+            files.append({'path':str(p),'bytes':len(s.encode()),'score':score,'anchors':{k:s.count(k) for k in ['requestAnimationFrame','THREE.','player','velocity','jump','joystick','AnimationMixer']}})
+          files.sort(key=lambda x:(-x['score'],-x['bytes']))
+          out={'evidenceId':'AGCB-V05188-RUNTIME-LOADER-CHAIN','scriptTags':tags,'externalSrcs':srcs,'runtimeCandidates':files[:30]}
+          Path('/tmp/AGCB-V05188-loader-chain.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps({'externalSrcs':srcs,'topCandidates':files[:15]},ensure_ascii=False,indent=2))
+          if not srcs: raise SystemExit('No external script src found in index.html')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05188-RUNTIME-LOADER-CHAIN
+          path: /tmp/AGCB-V05188-loader-chain.json
+          retention-days: 3
