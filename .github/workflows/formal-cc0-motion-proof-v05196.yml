@@ -1,4 +1,4 @@
-name: AGCB V0.5.202 Real Target Bone Motion Proof
+name: AGCB V0.5.203 Real Target Bone Motion Proof
 on:
   push:
     branches: [gate/runtime-integration-v05186]
@@ -21,22 +21,23 @@ jobs:
           mkdir -p /tmp/motion
           cp formal-cc0-game-runtime-v05191.js /tmp/motion/runtime.js
           cat > /tmp/motion/index.html <<'EOF'
-          <!doctype html><meta charset="utf-8"><title>AGCB V05202</title>
+          <!doctype html><meta charset="utf-8"><title>AGCB V05203</title>
           <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
           <script type="module">
           import './runtime.js';
           const states=['idle','walk','run','jump'];
-          const result={evidenceId:'AGCB-V05202-REAL-TARGET-BONE-MOTION',release:'V0.5.202',targets:{},errors:[],prodPromotion:'HOLD'};
+          const result={evidenceId:'AGCB-V05203-REAL-TARGET-BONE-MOTION',release:'V0.5.203',targets:{},errors:[],prodPromotion:'HOLD'};
           const sig=root=>{const a=[];root.traverse(o=>{if(o.isBone)a.push([o.name,o.quaternion.x,o.quaternion.y,o.quaternion.z,o.quaternion.w,o.position.x,o.position.y,o.position.z])});return a};
           const diff=(a,b)=>{let n=0,max=0;const bm=new Map(b.map(x=>[x[0],x]));for(const x of a){const y=bm.get(x[0]);if(!y)continue;let d=0;for(let i=1;i<x.length;i++)d+=Math.abs(x[i]-y[i]);if(d>1e-5)n++;max=Math.max(max,d)}return{changedBones:n,maxDelta:max}};
           for(const sex of ['male','female']){
             try{
-              const c=await globalThis.__AGCB_FORMAL_CC0_RUNTIME.create(sex);const base=sig(c.root),row={mappedBones:c.mappedBones,states:{}};
+              const c=await globalThis.__AGCB_FORMAL_CC0_RUNTIME.create(sex);const base=sig(c.root),row={mappedBones:c.mappedBones,skeletonIdentityOK:c.skeletonIdentityOK,states:{}};
+              if(c.skeletonIdentityOK!==true)result.errors.push(`${sex}:skeletonIdentityOK=${c.skeletonIdentityOK}`);
               for(const state of states){c.play(state);for(let i=0;i<30;i++)c.update(1/60);const now=sig(c.root),d=diff(base,now);row.states[state]={actual:c.action,...d};if(c.action!==state)result.errors.push(`${sex}:${state}:action=${c.action}`);if(d.changedBones<8)result.errors.push(`${sex}:${state}:changedBones=${d.changedBones}`)}
               result.targets[sex]=row;
             }catch(e){result.errors.push(`${sex}:${e?.stack||e}`)}
           }
-          result.gate=result.errors.length?'FAIL':'PASS';result.nextGate=result.gate==='PASS'?'LIVE_OVERLAY_VISUAL_GATE':'MOTION_RETARGET_FIX';globalThis.__AGCB_V05202_RESULT=result;document.body.innerText=JSON.stringify(result,null,2);
+          result.gate=result.errors.length?'FAIL':'PASS';result.nextGate=result.gate==='PASS'?'LIVE_OVERLAY_VISUAL_GATE':'MOTION_RETARGET_FIX';globalThis.__AGCB_V05203_RESULT=result;document.body.innerText=JSON.stringify(result,null,2);
           </script>
           EOF
       - name: Run Chromium motion proof
@@ -47,14 +48,14 @@ jobs:
           npx --yes playwright@1.55.0 install chromium >/tmp/pw-install.log 2>&1
           cd /tmp && npm init -y >/dev/null 2>&1 && npm install playwright@1.55.0 --no-save >/dev/null 2>&1
           cat > /tmp/motion.mjs <<'EOF'
-          import {chromium} from 'playwright';import fs from'node:fs';const b=await chromium.launch({headless:true}),p=await b.newPage();const logs=[];p.on('pageerror',e=>logs.push(e.stack));await p.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded',timeout:30000});await p.waitForFunction(()=>globalThis.__AGCB_V05202_RESULT?.gate,{timeout:90000});const r=await p.evaluate(()=>globalThis.__AGCB_V05202_RESULT);fs.writeFileSync('/tmp/AGCB-V05202.json',JSON.stringify(r,null,2));fs.writeFileSync('/tmp/AGCB-V05202.log',logs.join('\n'));console.log(JSON.stringify(r,null,2));await b.close();if(r.gate!=='PASS')process.exit(1);
+          import {chromium} from 'playwright';import fs from'node:fs';const b=await chromium.launch({headless:true}),p=await b.newPage();const logs=[];p.on('pageerror',e=>logs.push(e.stack));await p.goto('http://127.0.0.1:8080',{waitUntil:'domcontentloaded',timeout:30000});await p.waitForFunction(()=>globalThis.__AGCB_V05203_RESULT?.gate,{timeout:90000});const r=await p.evaluate(()=>globalThis.__AGCB_V05203_RESULT);fs.writeFileSync('/tmp/AGCB-V05203.json',JSON.stringify(r,null,2));fs.writeFileSync('/tmp/AGCB-V05203.log',logs.join('\n'));console.log(JSON.stringify(r,null,2));await b.close();if(r.gate!=='PASS')process.exit(1);
           EOF
           node /tmp/motion.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: AGCB-V05202-REAL-TARGET-BONE-MOTION
+          name: AGCB-V05203-REAL-TARGET-BONE-MOTION
           path: |
-            /tmp/AGCB-V05202.json
-            /tmp/AGCB-V05202.log
+            /tmp/AGCB-V05203.json
+            /tmp/AGCB-V05203.log
           retention-days: 3
