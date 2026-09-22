@@ -1,0 +1,60 @@
+name: Formal CC0 Real Target Bone Discovery V0.5.167
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-real-target-bone-discovery-v05167.yml']
+  workflow_dispatch:
+jobs:
+  discover:
+    name: AGCB-V05167-REAL-TARGET-BONE-DISCOVERY
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire exact targets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/targets
+          BASE='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'
+          for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fsSL "$BASE/$f" -o "/tmp/proj/targets/$f"; done
+          echo 'e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4  /tmp/proj/targets/Superhero_Male_FullBody.gltf' | sha256sum -c -
+          echo '459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f  /tmp/proj/targets/Superhero_Male_FullBody.bin' | sha256sum -c -
+          echo 'adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4  /tmp/proj/targets/Superhero_Female_FullBody.gltf' | sha256sum -c -
+          echo '3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208  /tmp/proj/targets/Superhero_Female_FullBody.bin' | sha256sum -c -
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip
+          unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05167"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 20
+      - name: Discover real bone names and corrected map
+        run: |
+          cat > /tmp/proj/probe.gd <<'EOF'
+          extends SceneTree
+          func fs(n):
+              if n is Skeleton3D: return n
+              for c in n.get_children():
+                  var x=fs(c)
+                  if x!=null: return x
+              return null
+          func _initialize():
+              var report={"evidenceId":"AGCB-V05167-REAL-TARGET-BONE-DISCOVERY","release":"V0.5.167","environment":"TEST","prodEligible":false,"targets":{},"errors":[]}
+              for sex in ["Male","Female"]:
+                  var inst=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate(); var sk=fs(inst); var names=[]
+                  for i in range(sk.get_bone_count()): names.append(str(sk.get_bone_name(i)))
+                  var head_candidates=[]
+                  for n in names:
+                      var l=n.to_lower()
+                      if "head" in l or "neck" in l: head_candidates.append(n)
+                  report.targets[sex]={"boneCount":sk.get_bone_count(),"headNeckCandidates":head_candidates,"allBones":names}
+                  inst.free()
+              var m=report.targets.Male.headNeckCandidates; var f=report.targets.Female.headNeckCandidates
+              if m!=f: report.errors.append("male/female head-neck naming differs")
+              if m.is_empty(): report.errors.append("no head-neck candidate")
+              report.gate="PASS" if report.errors.is_empty() else "FAIL"; report.nextGate="CORRECT_REAL_TARGET_BONEMAP" if report.errors.is_empty() else "HOLD"; report.prodPromotion="HOLD"
+              var out=FileAccess.open("/tmp/AGCB-V05167-REAL-TARGET-BONE-DISCOVERY.json",FileAccess.WRITE); out.store_string(JSON.stringify(report,"  ")); out.close(); print(JSON.stringify(report)); quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05167-REAL-TARGET-BONE-DISCOVERY
+          path: /tmp/AGCB-V05167-REAL-TARGET-BONE-DISCOVERY.json
+          retention-days: 3

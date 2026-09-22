@@ -1,0 +1,65 @@
+name: Formal CC0 Normalized Retarget Input V0.5.171
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-normalized-retarget-input-v05171.yml']
+  workflow_dispatch:
+jobs:
+  normalize:
+    name: AGCB-V05171-NORMALIZED-RETARGET-INPUT
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned donor targets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor /tmp/proj/targets
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'
+          curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.gltf
+          curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          TB='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'
+          for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fsSL "$TB/$f" -o "/tmp/proj/targets/$f"; done
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05171"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25
+      - name: Validate normalized gameplay contract and retarget track compatibility
+        run: |
+          cat > /tmp/proj/probe.gd <<'EOF'
+          extends SceneTree
+          var contract={"idle":"Idle","walk":"Walk","run":"Jog_Fwd","jump":"Jump","jump_start":"Jump_Start","jump_land":"Jump_Land"}
+          var donor_to_target={"root":"root","DEF-hips":"pelvis","DEF-spine.001":"spine_01","DEF-spine.002":"spine_02","DEF-spine.003":"spine_03","DEF-neck":"neck_01","DEF-head":"Head","DEF-shoulder.L":"clavicle_l","DEF-upper_arm.L":"upperarm_l","DEF-forearm.L":"lowerarm_l","DEF-hand.L":"hand_l","DEF-shoulder.R":"clavicle_r","DEF-upper_arm.R":"upperarm_r","DEF-forearm.R":"lowerarm_r","DEF-hand.R":"hand_r","DEF-thigh.L":"thigh_l","DEF-shin.L":"calf_l","DEF-foot.L":"foot_l","DEF-toe.L":"ball_l","DEF-thigh.R":"thigh_r","DEF-shin.R":"calf_r","DEF-foot.R":"foot_r","DEF-toe.R":"ball_r"}
+          func walk(n,o):
+              if n is Skeleton3D: o.skeletons.append(n)
+              if n is AnimationPlayer: o.players.append(n)
+              for c in n.get_children(): walk(c,o)
+          func _initialize():
+              var report={"evidenceId":"AGCB-V05171-NORMALIZED-RETARGET-INPUT","release":"V0.5.171","environment":"TEST","prodEligible":false,"contract":contract,"clips":{},"targets":{},"errors":[]}
+              var root=load("res://donor/AnimationLibrary_Godot_Standard.gltf").instantiate(); var d={"skeletons":[],"players":[]}; walk(root,d); var p=d.players[0]; var available={}
+              for ln in p.get_animation_library_list():
+                  var lib=p.get_animation_library(ln)
+                  for an in lib.get_animation_list(): available[str(an)]=lib.get_animation(an)
+              for role in contract:
+                  var an=contract[role]
+                  if not available.has(an): report.errors.append("missing clip "+an); continue
+                  var a=available[an]; var mapped_tracks=0
+                  for i in range(a.get_track_count()):
+                      var path=str(a.track_get_path(i)); var bone=path.get_slice(":",1)
+                      if donor_to_target.has(bone): mapped_tracks+=1
+                  report.clips[role]={"source":an,"length":a.length,"loopMode":a.loop_mode,"trackCount":a.get_track_count(),"mappedCoreTracks":mapped_tracks}
+                  if mapped_tracks<20: report.errors.append(an+" insufficient core tracks")
+              for sex in ["Male","Female"]:
+                  var inst=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate(); var x={"skeletons":[],"players":[]}; walk(inst,x); var names={}
+                  for i in range(x.skeletons[0].get_bone_count()): names[str(x.skeletons[0].get_bone_name(i))]=true
+                  var ok=0
+                  for b in donor_to_target.values(): if names.has(b): ok+=1
+                  report.targets[sex]={"boneCount":x.skeletons[0].get_bone_count(),"mappedCoreBones":ok}; if ok!=23: report.errors.append(sex+" target core map not 23/23"); inst.free()
+              root.free(); report.gate="PASS" if report.errors.is_empty() else "FAIL"; report.nextGate="LIVE_RETARGET_MATERIALIZATION" if report.errors.is_empty() else "HOLD"; report.runtimePlayback="PENDING"; report.visualDeformation="PENDING"; report.prodPromotion="HOLD"
+              var f=FileAccess.open("/tmp/AGCB-V05171-NORMALIZED-RETARGET-INPUT.json",FileAccess.WRITE); f.store_string(JSON.stringify(report,"  ")); f.close(); print(JSON.stringify(report)); quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05171-NORMALIZED-RETARGET-INPUT
+          path: /tmp/AGCB-V05171-NORMALIZED-RETARGET-INPUT.json
+          retention-days: 3

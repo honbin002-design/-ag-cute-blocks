@@ -1,0 +1,51 @@
+name: Formal CC0 Live Retarget Import Discovery V0.5.170
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-live-retarget-import-discovery-v05170.yml']
+  workflow_dispatch:
+jobs:
+  discover:
+    name: AGCB-V05170-LIVE-RETARGET-IMPORT-DISCOVERY
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire donor and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'
+          curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.gltf
+          curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05170"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25
+      - name: Enumerate exact imported animation names and track targets
+        run: |
+          cat > /tmp/proj/probe.gd <<'EOF'
+          extends SceneTree
+          func walk(n,out):
+              if n is Skeleton3D: out.skeletons.append(n)
+              if n is AnimationPlayer: out.players.append(n)
+              for c in n.get_children(): walk(c,out)
+          func _initialize():
+              var root=load("res://donor/AnimationLibrary_Godot_Standard.gltf").instantiate(); var d={"skeletons":[],"players":[]}; walk(root,d)
+              var clips={}
+              for p in d.players:
+                  for ln in p.get_animation_library_list():
+                      var lib=p.get_animation_library(ln)
+                      for an in lib.get_animation_list():
+                          var a=lib.get_animation(an); var paths=[]
+                          for i in range(a.get_track_count()):
+                              var q=str(a.track_get_path(i)); if not paths.has(q): paths.append(q)
+                          clips[str(an)]={"length":a.length,"loopMode":a.loop_mode,"trackCount":a.get_track_count(),"samplePaths":paths.slice(0,8)}
+              var report={"evidenceId":"AGCB-V05170-LIVE-RETARGET-IMPORT-DISCOVERY","release":"V0.5.170","environment":"TEST","prodEligible":false,"playerCount":d.players.size(),"skeletonCount":d.skeletons.size(),"clips":clips,"clipCount":clips.size(),"gate":"PASS" if clips.size()>0 else "FAIL","nextGate":"NORMALIZE_IMPORTED_CLIP_NAMES" if clips.size()>0 else "HOLD","prodPromotion":"HOLD"}
+              var f=FileAccess.open("/tmp/AGCB-V05170-LIVE-RETARGET-IMPORT-DISCOVERY.json",FileAccess.WRITE); f.store_string(JSON.stringify(report,"  ")); f.close(); print(JSON.stringify(report)); root.free(); quit(0 if clips.size()>0 else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05170-LIVE-RETARGET-IMPORT-DISCOVERY
+          path: /tmp/AGCB-V05170-LIVE-RETARGET-IMPORT-DISCOVERY.json
+          retention-days: 3

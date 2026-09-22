@@ -1,0 +1,58 @@
+name: Formal CC0 Adult Donor Stage V0.5.153
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-adult-donor-stage-v05153.yml'
+  workflow_dispatch:
+
+jobs:
+  donor-stage:
+    name: AGCB-V05153-DONOR-STAGE
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 UAL donor
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/AnimationLibrary_Godot_Standard.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/AnimationLibrary_Godot_Standard.bin
+          curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/UAL_LICENSE.txt
+      - name: Verify donor and required clips
+        shell: python
+        run: |
+          import json,pathlib,hashlib,sys
+          g=pathlib.Path('/tmp/AnimationLibrary_Godot_Standard.gltf')
+          b=pathlib.Path('/tmp/AnimationLibrary_Godot_Standard.bin')
+          lic=pathlib.Path('/tmp/UAL_LICENSE.txt')
+          data=json.loads(g.read_text(encoding='utf8'))
+          names={a.get('name') for a in data.get('animations',[])}
+          required={'Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Jump_Start','Jump_Loop','Jump_Land'}
+          missing=sorted(required-names)
+          license_text=lic.read_text(encoding='utf8',errors='ignore')
+          errors=[]
+          if missing: errors.append('missing clips: '+','.join(missing))
+          if 'CC0' not in license_text and 'public domain' not in license_text.lower(): errors.append('CC0 marker missing')
+          report={
+            'evidenceId':'AGCB-V05153-DONOR-STAGE','release':'V0.5.153','environment':'TEST',
+            'sourceCommit':'e24c23cf2a1323488a3faa226ea7ea21f644b73e',
+            'gltfSha256':hashlib.sha256(g.read_bytes()).hexdigest(),
+            'binSha256':hashlib.sha256(b.read_bytes()).hexdigest(),
+            'animationCount':len(names),'requiredClips':sorted(required),'missing':missing,
+            'stage':'PASS' if not errors else 'FAIL','prodEligible':False,'prodPromotion':'HOLD','errors':errors}
+          pathlib.Path('/tmp/AGCB-V05153-DONOR-STAGE.json').write_text(json.dumps(report,indent=2),encoding='utf8')
+          print(json.dumps(report,indent=2))
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05153-DONOR-STAGE
+          path: |
+            /tmp/AnimationLibrary_Godot_Standard.gltf
+            /tmp/AnimationLibrary_Godot_Standard.bin
+            /tmp/UAL_LICENSE.txt
+            /tmp/AGCB-V05153-DONOR-STAGE.json
+          retention-days: 3
