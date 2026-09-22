@@ -11,5 +11,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo 'V0.5.204 workflow registration gate'
+          echo 'V0.5.204 workflow registration trigger after default-branch activation'
           echo 'TEST ONLY - PROD HOLD'
