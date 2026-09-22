@@ -1,7 +1,8 @@
-// AG Cute Blocks V0.5.202 — formal CC0 adult game runtime adapter.
+// AG Cute Blocks V0.5.203 — formal CC0 adult game runtime adapter.
 // TEST branch only. Uses the existing overlay contract: root / play / update / available.
 import * as THREE from 'three';
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+import {clone as cloneSkeleton} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 const TARGET_BASE='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE/';
 const UAL_BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF/';
 const UAL1=UAL_BASE+'AnimationLibrary_Godot_Standard.gltf';
@@ -20,19 +21,20 @@ function fitHeight(root,target=2){root.updateMatrixWorld(true);const box=new THR
 function chooseClip(clips,names){for(const n of names){const exact=clips.find(c=>c.name===n);if(exact)return exact}for(const n of names){const q=n.toLowerCase(),hit=clips.find(c=>String(c.name).toLowerCase().includes(q));if(hit)return hit}return null}
 async function create(sex='male'){
  const variant=sex==='female'?'female':'male',loader=new GLTFLoader();const [targetG,srcG]=await Promise.all([load(loader,MODELS[variant]),load(loader,UAL1)]);
- const root=targetG.scene.clone(true),source=srcG.scene.clone(true);root.name=`ag-formal-cc0-${variant}-v05202`;root.userData={agFormalCharacter:true,release:'V0.5.202',sex:variant};fitHeight(root,2);
- const sk=findSkeleton(root);if(!sk)throw new Error('V0.5.202 target skeleton missing');const src=sourceMap(source),dst=targetBones(sk),pairs=[];source.updateMatrixWorld(true);root.updateMatrixWorld(true);
+ // Object3D.clone(true) duplicates Bone nodes but leaves SkinnedMesh.skeleton.bones pointing at the original loaded scene.
+ // SkeletonUtils.clone rewires each cloned SkinnedMesh to the cloned Bone instances, so retarget writes affect this returned root.
+ const root=cloneSkeleton(targetG.scene),source=srcG.scene.clone(true);root.name=`ag-formal-cc0-${variant}-v05203`;root.userData={agFormalCharacter:true,release:'V0.5.203',sex:variant};fitHeight(root,2);
+ const sk=findSkeleton(root);if(!sk)throw new Error('V0.5.203 target skeleton missing');const src=sourceMap(source),dst=targetBones(sk),pairs=[];source.updateMatrixWorld(true);root.updateMatrixWorld(true);
+ const rootBoneSet=new Set();root.traverse(o=>{if(o.isBone)rootBoneSet.add(o)});const skeletonIdentityOK=sk.bones.every(b=>rootBoneSet.has(b));if(!skeletonIdentityOK)throw new Error('V0.5.203 target skeleton identity mismatch');
  for(const [sn,tn] of Object.entries(boneMap)){const s=src[sn],d=dst[tn];if(s&&d){const sb=new THREE.Quaternion(),db=new THREE.Quaternion();s.getWorldQuaternion(sb);d.getWorldQuaternion(db);pairs.push({s,d,sb,db})}}
- if(pairs.length<45)throw new Error(`V0.5.202 bone map insufficient ${pairs.length}`);
- const sourceHips=src['DEF-hips'],targetHips=dst['pelvis'];if(!sourceHips||!targetHips)throw new Error('V0.5.202 hips missing');const sourceHipsBind=sourceHips.position.clone(),targetHipsBind=targetHips.position.clone();
+ if(pairs.length<45)throw new Error(`V0.5.203 bone map insufficient ${pairs.length}`);
+ const sourceHips=src['DEF-hips'],targetHips=dst['pelvis'];if(!sourceHips||!targetHips)throw new Error('V0.5.203 hips missing');const sourceHipsBind=sourceHips.position.clone(),targetHipsBind=targetHips.position.clone();
  const clips=srcG.animations||[],mixer=new THREE.AnimationMixer(source),requested={idle:['Idle_Loop','Idle'],walk:['Walk_Loop','Walk'],run:['Jog_Fwd_Loop','Jog_Fwd','Jog'],jump:['Jump_Loop','Jump'],sit:['Sitting_Idle_Loop','Sitting_Idle'],swim:['Swim_Fwd_Loop','Swim_Fwd'],interact:['Interact'],dodge:['Roll']},actions={};
  const sourceNames=new Set();source.traverse(o=>{if(o.name)sourceNames.add(o.name)});
  function cloneBoundClip(clip){const tracks=clip.tracks.filter(t=>{const dot=t.name.indexOf('.');return dot>0&&sourceNames.has(t.name.slice(0,dot))}).map(t=>t.clone());return new THREE.AnimationClip(clip.name,clip.duration,tracks,clip.blendMode)}
- for(const [k,names] of Object.entries(requested)){const raw=chooseClip(clips,names);if(raw){const c=cloneBoundClip(raw);if(c.tracks.length)actions[k]=mixer.clipAction(c,source)}}actions.fish=actions.interact||actions.idle;actions.sleep=actions.sit||actions.idle;for(const required of ['idle','walk','run','jump'])if(!actions[required])throw new Error(`V0.5.202 required action missing ${required}`);
+ for(const [k,names] of Object.entries(requested)){const raw=chooseClip(clips,names);if(raw){const c=cloneBoundClip(raw);if(c.tracks.length)actions[k]=mixer.clipAction(c,source)}}actions.fish=actions.interact||actions.idle;actions.sleep=actions.sit||actions.idle;for(const required of ['idle','walk','run','jump'])if(!actions[required])throw new Error(`V0.5.203 required action missing ${required}`);
  let current=null,currentName='idle';function play(name='idle'){const routed=actions[name]?name:'idle',next=actions[routed];if(!next)return;if(next===current){currentName=routed;return}const once=['jump','interact','dodge'].includes(routed);current?.fadeOut(.14);next.reset();next.enabled=true;next.setEffectiveWeight(1);next.setLoop(once?THREE.LoopOnce:THREE.LoopRepeat,once?1:Infinity);next.clampWhenFinished=once;next.fadeIn(.14).play();current=next;currentName=routed}
- // Candidate018 comparison proved bind-first world-space delta can drive the target mesh.
- // Keep source/target bind orientations explicit and solve each destination bone in parent space.
  function retarget(){source.updateMatrixWorld(true);root.updateMatrixWorld(true);for(const p of pairs){const cur=new THREE.Quaternion(),parentQ=new THREE.Quaternion();p.s.getWorldQuaternion(cur);const delta=p.sb.clone().invert().multiply(cur),desired=p.db.clone().multiply(delta);if(p.d.parent)p.d.parent.getWorldQuaternion(parentQ);else parentQ.identity();p.d.quaternion.copy(parentQ.invert().multiply(desired));p.d.updateMatrixWorld(true)}const dy=sourceHips.position.y-sourceHipsBind.y;targetHips.position.copy(targetHipsBind);targetHips.position.y+=dy;root.updateMatrixWorld(true)}
- function update(dt){mixer.update(Math.max(0,Number(dt)||0));retarget()}play('idle');retarget();return{root,mixer,actions,clips,play,update,available:Object.keys(actions),animationLibraryStatus:`UAL1 Formal CC0 / mapped ${pairs.length} / bind-first`,styleStatus:`V0.5.202 ${variant} TEST`,forwardYaw:0,get action(){return currentName},get mappedBones(){return pairs.length}};
+ function update(dt){mixer.update(Math.max(0,Number(dt)||0));retarget()}play('idle');retarget();return{root,mixer,actions,clips,play,update,available:Object.keys(actions),animationLibraryStatus:`UAL1 Formal CC0 / mapped ${pairs.length} / skeleton-identity-ok`,styleStatus:`V0.5.203 ${variant} TEST`,forwardYaw:0,get action(){return currentName},get mappedBones(){return pairs.length},get skeletonIdentityOK(){return skeletonIdentityOK}};
 }
-globalThis.__AGCB_FORMAL_CC0_RUNTIME={version:202,release:'V0.5.202',status:'TEST_RUNTIME_ADAPTER_BIND_FIRST',models:MODELS,animations:UAL1,createMale:()=>create('male'),createFemale:()=>create('female'),create};export{create};
+globalThis.__AGCB_FORMAL_CC0_RUNTIME={version:203,release:'V0.5.203',status:'TEST_RUNTIME_ADAPTER_SKELETON_CLONE_FIX',models:MODELS,animations:UAL1,createMale:()=>create('male'),createFemale:()=>create('female'),create};export{create};
