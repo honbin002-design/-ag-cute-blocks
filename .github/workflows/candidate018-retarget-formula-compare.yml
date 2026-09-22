@@ -1,7 +1,7 @@
 name: Candidate 018 Retarget Formula Compare
 on:
   push:
-    branches: [dev-v0.1]
+    branches: [gate/runtime-integration-v05186]
     paths: ['.github/workflows/candidate018-retarget-formula-compare.yml']
   workflow_dispatch:
 jobs:
