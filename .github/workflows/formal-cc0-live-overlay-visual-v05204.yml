@@ -1,0 +1,15 @@
+name: AGCB V0.5.204 Formal CC0 Live Overlay Visual Gate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'formal-cc0-game-runtime-v05191.js'
+      - '.github/workflows/formal-cc0-live-overlay-visual-v05204.yml'
+  workflow_dispatch:
+jobs:
+  registration:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo 'V0.5.204 workflow registration gate'
+          echo 'TEST ONLY - PROD HOLD'
