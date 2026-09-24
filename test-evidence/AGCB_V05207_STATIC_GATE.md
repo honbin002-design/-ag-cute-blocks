@@ -47,3 +47,30 @@ Gate result:
 
 This is a direct structural inspection of the Drive GLB, not a visual/rendering claim.
 Netlify was not used.
+
+
+## Animation data integrity gate — PASS (2026-09-24)
+
+Directly parsed the animation samplers/channels from the same Drive GLB binary; no Netlify and no bridge token exposure.
+
+Observed clip timing:
+- Idle: 3.200000 s, 2 channels (chest rotation, head rotation)
+- Walk: 1.000000 s, 11 channels (bilateral arms/forearms/thighs/shins/feet rotations + hips translation)
+- Run: 0.650000 s, 11 channels (same body coverage + hips translation)
+- Jump: 1.000000 s, 6 channels (bilateral upper arms/thighs/shins rotations)
+- JointInspection: 4.000000 s, 4 channels
+
+Data checks:
+- all sampled animation values are finite
+- all sampled rotation quaternion norms remain approximately 1.0
+- Walk hips translation is finite/stable at Y ~= 0.608
+- Run hips translation is finite/stable at Y ~= 0.585
+- no animation sampler corruption detected
+
+Result:
+- ANIMATION_DATA_INTEGRITY_GATE = PASS
+- VISUAL_RENDER_GATE = PENDING
+- PLAYABLE_ROUTE_PROMOTION = HOLD
+- PROD_PROMOTION = HOLD
+
+This advances validation from name-only inspection to animation sampler/channel integrity. It still does not claim visual appearance, foot grounding, limb direction, or transition quality PASS.
