@@ -1,4 +1,5 @@
 name: AGCB V0.5.204 Formal CC0 Live Overlay Visual Gate
+# TEST trigger nonce: 20260923-visual-capture-1
 on:
   pull_request:
     branches: [main]

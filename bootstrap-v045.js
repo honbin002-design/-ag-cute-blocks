@@ -35,6 +35,8 @@ import './character-polish-runtime.js';
 // V0.4.92 keeps first-load-safe persistent asset caching before any GLB character-part fetch begins.
 import './asset-fetch-resilience-runtime.js?v=0.4.92';
 import './character-asset-runtime.js?v=0.4.92';
+// V0.5.207 passive TEST bridge: exposes verified Boy005 loader; does not replace the playable route until runtime PASS.
+import './agcb-boy005-bridge-runtime-v05207.js?v=0.5.207';
 // The prior Special3-based adult-female candidate is intentionally NOT imported here.
 // V0.4.80 automated eight-view renders proved Special3 is an anthropomorphic animal,
 // not the AG Model003 human study the user selected as the shape base. The diagnostic
@@ -57,4 +59,4 @@ import './sleep-routine.js?v=0.4.92';
 import './wildlife-live-runtime.js';
 import './weather-visual-runtime.js';
 
-globalThis.__AGCB_BOOTSTRAP={version:'0.4.92',loaded:true};
+globalThis.__AGCB_BOOTSTRAP={version:'0.5.207-test',loaded:true,boy005BridgePrepared:true};
