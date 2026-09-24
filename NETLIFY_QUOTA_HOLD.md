@@ -1,13 +1,18 @@
-# AG Cute Blocks — Netlify quota protection
+# AG Cute Blocks — Netlify permanent isolation rule
 
 Effective: 2026-09-24
+Authority: user directive / permanent project rule
 
-User directive: Netlify quota is low. Do not use Netlify for routine development, validation, visual capture, or automatic deploy attempts.
+Netlify previously exhausted its free operational quota during TEST activity. Therefore Netlify is permanently excluded from the AG Cute Blocks formal/PROD architecture.
 
-Rules:
-- No Netlify deploy-site calls for ongoing TEST development.
-- No deploy solely to inspect version/runtime state.
-- Prefer GitHub source validation and GitHub Actions/local-isolated test gates that do not consume Netlify deploy quota.
-- Keep the existing Netlify site unchanged unless the user explicitly authorizes a future Netlify deployment.
-- PROD remains untouched.
-- V0.5.207 source work may continue in GitHub without publishing to Netlify.
+Mandatory rules:
+- PROD / formal release MUST have zero dependency on Netlify.
+- Do not use Netlify for PROD hosting, deployment, fallback, runtime dependency, storage, API, build pipeline, validation, or release gate.
+- Do not use Netlify for routine TEST development or validation because its quota is too limited.
+- Existing historical Netlify TEST sites are legacy artifacts only. Their existence must not define or constrain the formal architecture.
+- Do not trigger Netlify deploy-site or automatic deployment attempts unless the user explicitly authorizes a one-off future action.
+- GitHub remains source/version truth for development; Google Drive remains the project-controlled data/file location where applicable.
+- Use zero-cost/non-Netlify isolated validation paths for ongoing development.
+- PROD remains untouched while TEST work proceeds.
+
+This supersedes the earlier temporary quota-hold wording. Netlify is not a candidate for the formal release architecture.
