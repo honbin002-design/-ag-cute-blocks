@@ -1,0 +1,39 @@
+name: AGCB V0.5.207 Boy005 Bridge Static Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev-v0.1]
+    paths:
+      - 'ag-cute-character-adapter-v05205.js'
+      - 'agcb-boy005-bridge-runtime-v05207.js'
+      - 'bootstrap-v0510.js'
+      - '.github/workflows/boy005-bridge-static-gate-v05207.yml'
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V0.5.207 fail-closed bridge wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          adapter=Path('ag-cute-character-adapter-v05205.js').read_text(encoding='utf-8')
+          bridge=Path('agcb-boy005-bridge-runtime-v05207.js').read_text(encoding='utf-8')
+          boot=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
+          required_bones=['Hips','Spine','Chest','Neck','Head','LeftUpperArm','LeftLowerArm','LeftHand','RightUpperArm','RightLowerArm','RightHand','LeftUpperLeg','LeftLowerLeg','LeftFoot','RightUpperLeg','RightLowerLeg','RightFoot','Root']
+          for bone in required_bones: assert repr(bone) in adapter or ('"'+bone+'"') in adapter, bone
+          for action in ['idle','walk','run','jump']: assert repr(action) in adapter or ('"'+action+'"') in adapter, action
+          assert "ASSET_KEY='boy005'" in bridge
+          assert "action:'READ_ASSET'" in bridge
+          assert "environment:'TEST'" in bridge
+          assert "crypto.subtle.digest('SHA-256'" in bridge
+          assert "arbitraryFileIdEnabled:false" in bridge
+          assert "prodEnabled:false" in bridge
+          assert 'fileId' not in bridge.split("body:JSON.stringify",1)[1].split("}),redirect",1)[0]
+          assert "agcb-boy005-bridge-runtime-v05207.js?v=0.5.207" in boot
+          assert "boy005Bridge:'prepared-not-promoted'" in boot
+          print('AGCB_V05207_STATIC_GATE=PASS')
+          print('PROD_PROMOTION=HOLD')
