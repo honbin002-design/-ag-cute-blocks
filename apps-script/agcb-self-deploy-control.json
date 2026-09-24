@@ -4,23 +4,23 @@
   "project": "AG Cute Blocks",
   "environment": "TEST",
   "deploymentId": "AKfycbx2kSQg7qx4b5MIRGnc-aPL0vjAXw8Fdbc3whvVf72KooBxmGUesF-pLBaMLopgE8gA",
-  "releaseId": "AGCB-AS-P3.4-RAW-CONTROL-20260913",
-  "commitSha": "5d8578245789e66d9afcbb80552c51f3b02eafc8",
+  "releaseId": "AGCB-AS-V05206-ASSET-BRIDGE-20260924",
+  "commitSha": "8706cae2790c76deab41887e17c0d55cf568c36a",
   "files": [
     {
       "name": "Code",
       "type": "SERVER_JS",
-      "path": "apps-script/agcb-save-bridge-v05111.gs"
+      "path": "apps-script/self-deploy-package/v05206/Code.gs"
     },
     {
       "name": "DeployRunner",
       "type": "SERVER_JS",
-      "path": "apps-script/agcb-self-deploy-runner-p34.gs"
+      "path": "apps-script/self-deploy-package/v05206/DeployRunner.gs"
     },
     {
       "name": "appsscript",
       "type": "JSON",
-      "path": "apps-script/appsscript-selfdeploy-p1.json"
+      "path": "apps-script/self-deploy-package/v05206/appsscript.json"
     }
   ]
 }
