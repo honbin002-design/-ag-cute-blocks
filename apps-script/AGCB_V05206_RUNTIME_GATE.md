@@ -40,3 +40,15 @@ Use the EXISTING AG TEST Apps Script project. Do not create a second project and
 
 ## Tool-state note
 At the 2026-09-23 safe stop, the available Google Drive connector does not expose Apps Script project source update, function execution, or Web App deployment actions. Plugin-directory search also found no separate Apps Script execution connector. Therefore Apps Script runtime PASS has NOT been claimed.
+
+
+## Self-deploy capability update — 2026-09-24
+- Existing TEST Apps Script contains P3.4 self-deploy runner; do not create a second runner or second Apps Script project.
+- Runner has Apps Script API content write/readback, version creation, existing deployment update/confirmation, immutable commit pinning, rollback/version checks, and TEST-only validation.
+- The earlier Tool-state note above is historical and MUST NOT be used to force manual deployment.
+- GitHub control file remains intentionally UNARMED until a lossless complete Apps Script project package is preserved.
+- Apps Script projects.updateContent replaces the complete project file set. Never arm a package that omits the live DeployRunner.gs or manifest.
+- PROD remains out of scope and disabled.
+
+### Current exact gate
+Preserve/export the live TEST project content losslessly (Code.gs, DeployRunner.gs, appsscript.json, and any required project files), commit that immutable package, then create the P3.4 control pinned to that commit. Do not reconstruct DeployRunner.gs from screenshots when a lossless source path is available.
