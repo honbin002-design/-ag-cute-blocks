@@ -1,0 +1,57 @@
+name: Adult female nose check
+
+on:
+  push:
+    branches: [main, dev-v0.1]
+    paths:
+      - 'adult-female-nose-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-nose-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'adult-female-nose-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-nose-check.yml'
+
+jobs:
+  adult-female-nose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse nose runtime
+        shell: bash
+        run: node --input-type=module --check < adult-female-nose-runtime.js
+      - name: Verify adult female nose v1 scope
+        shell: python
+        run: |
+          import pathlib,sys
+          nose=pathlib.Path('adult-female-nose-runtime.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          failures=[]
+          required=[
+            "c?.gender==='girl'&&c?.age==='adult'",
+            "agcb-adult-female-nose-bridge-v1",
+            "agcb-adult-female-nose-tip-v1",
+            "agcb-adult-female-nose-ala-l-v1",
+            "agcb-adult-female-nose-ala-r-v1",
+            "adult-female-soft-bridge-tip-v1",
+            "scope:'adult-female-nose-only'",
+            "geometry:'soft-bridge-tip-v1'",
+            "version:1"
+          ]
+          for token in required:
+            if token not in nose: failures.append(f'nose runtime missing {token}')
+          if "adult-female-nose-runtime.js?v=0.4.92" not in boot:
+            failures.append('bootstrap missing adult female nose runtime v0.4.92')
+          forbidden=["c?.gender==='boy'","c?.age==='child'","replaceChild","replaceAdultMale"]
+          for token in forbidden:
+            if token in nose: failures.append(f'nose runtime unexpectedly targets non-adult-female scope: {token}')
+          if "return c?.gender==='girl'&&c?.age==='adult'?replaceAdultFemaleNose(character):character;" not in nose:
+            failures.append('adult female routing guard missing or altered')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Adult female nose v1 scope and structure checks passed.')

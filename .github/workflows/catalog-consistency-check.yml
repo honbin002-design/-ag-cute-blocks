@@ -1,0 +1,31 @@
+name: Catalog consistency check
+
+on:
+  push:
+    branches: [main, dev-v0.1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify catalog classifications and supported models
+        shell: python
+        run: |
+          import pathlib,sys
+          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          failures=[]
+          furniture="'家具':[['chair','🪑','椅子'],['table','🍽️','桌子'],['sofa','🛋️','沙發'],['bed','🛏️','床'],['lamp','💡','燈'],['cabinet','🗄️','櫃子']]"
+          appliances="'家電':[['fridge','🧊','冰箱'],['stove','🍳','爐具'],['washer','🧺','洗衣機'],['tv','📺','電視']]"
+          if furniture not in app: failures.append('cabinet must be classified under furniture')
+          if appliances not in app: failures.append('appliance category must contain fridge/stove/washer/tv only')
+          if "['tv','📺','電視'],['cabinet','🗄️','櫃子']" in app: failures.append('cabinet is incorrectly exposed as an appliance')
+          for token in ["t==='cabinet'","t==='fridge'","t==='washer'","t==='tv'","t==='stove'","t==='door'","t==='window'","t==='fence'","t==='petBedRound'","t==='cloudLamp'","t==='flowerArch'","t==='swingGarden'","t==='starBed'"]:
+            if token not in app: failures.append(f'catalog-backed model implementation missing: {token}')
+          if "['roof','⌂','屋頂塊']" not in app or "['roof','🏠','屋瓦']" not in app: failures.append('roof shape/material dual semantics missing')
+          if "const shape=category==='形狀'||(category==='建築'&&selected==='stair')?selected:'cube',mat=category==='建材'?selected:selectedMat" not in app: failures.append('shape/material placement semantics changed unexpectedly')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Catalog classification, model coverage and roof dual-semantics checks passed.')

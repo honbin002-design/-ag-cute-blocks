@@ -1,0 +1,11 @@
+{
+  "name": "AG Cute Blocks",
+  "short_name": "Cute Blocks",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#9ed9ff",
+  "theme_color": "#9ed9ff",
+  "description": "A cute mobile-first creative block building sandbox."
+}

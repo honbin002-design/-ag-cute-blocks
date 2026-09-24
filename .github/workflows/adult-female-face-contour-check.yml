@@ -1,0 +1,41 @@
+name: Adult female face contour check
+
+on:
+  push:
+    paths:
+      - 'adult-female-face-contour-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-face-contour-check.yml'
+  pull_request:
+    paths:
+      - 'adult-female-face-contour-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-face-contour-check.yml'
+
+jobs:
+  contour-scope-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate adult female face contour contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          f='adult-female-face-contour-runtime.js'
+          b='bootstrap-v045.js'
+          test -f "$f"
+          test -f "$b"
+          grep -Fq "c?.gender==='girl'&&c?.age==='adult'" "$f"
+          grep -Fq "agcb-adult-female-cheek-jaw-shell-v1" "$f"
+          grep -Fq "agcb-adult-female-cheek-soft-l-v1" "$f"
+          grep -Fq "agcb-adult-female-cheek-soft-r-v1" "$f"
+          grep -Fq "adult-female-soft-cheek-jaw-v1" "$f"
+          grep -Fq "scope:'adult-female-cheek-jaw-only'" "$f"
+          grep -Fq "geometry:'soft-cheek-jaw-v1'" "$f"
+          grep -Fq "version:1" "$f"
+          grep -Fq "adult-female-face-contour-runtime.js?v=0.4.92" "$b"
+          if grep -Eq "gender==='boy'|age==='child'|adult-male" "$f"; then
+            echo 'Unexpected non-adult-female routing marker found in face contour runtime'
+            exit 1
+          fi
+          echo 'Adult female face contour v1 scope contract PASS'

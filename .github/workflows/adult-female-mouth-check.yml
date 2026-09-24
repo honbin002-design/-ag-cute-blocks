@@ -1,0 +1,40 @@
+name: Adult female mouth check
+
+on:
+  push:
+    paths:
+      - 'adult-female-mouth-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-mouth-check.yml'
+  workflow_dispatch:
+
+jobs:
+  adult-female-mouth-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify adult female mouth v1 scope contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          r=Path('adult-female-mouth-runtime.js').read_text()
+          b=Path('bootstrap-v045.js').read_text()
+          required=[
+            "c?.gender==='girl'&&c?.age==='adult'",
+            'agcb-adult-female-upper-lip-v1',
+            'agcb-adult-female-lower-lip-v1',
+            'agcb-adult-female-mouth-crease-v1',
+            "adult-female-soft-lips-v1",
+            "scope:'adult-female-mouth-only'",
+            "geometry:'soft-lips-v1'",
+            'version:1'
+          ]
+          missing=[x for x in required if x not in r]
+          assert not missing, f'missing runtime contract: {missing}'
+          assert "import './adult-female-mouth-runtime.js?v=0.4.92';" in b, 'bootstrap mouth runtime import missing or wrong version'
+          forbidden=["gender==='boy'","age==='child'","adult-male"]
+          bad=[x for x in forbidden if x in r]
+          assert not bad, f'cross-scope condition found: {bad}'
+          assert 'replaceAdultFemaleMouth(character):character' in r, 'adult female routing guard missing'
+          print('Adult female mouth v1 scope contract PASS')
+          PY

@@ -1,0 +1,33 @@
+name: Adult female hair check
+on:
+  push:
+    paths:
+      - 'adult-female-hair-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-hair-check.yml'
+  workflow_dispatch:
+
+jobs:
+  hair-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate adult female hair v1 scope and structure
+        run: |
+          set -euo pipefail
+          f='adult-female-hair-runtime.js'
+          b='bootstrap-v045.js'
+          test -f "$f"
+          grep -Fq "c?.gender==='girl'&&c?.age==='adult'" "$f"
+          grep -Fq "agcb-adult-female-hair-crown-v1" "$f"
+          grep -Fq "agcb-adult-female-side-lock-l-v1" "$f"
+          grep -Fq "agcb-adult-female-side-lock-r-v1" "$f"
+          grep -Fq "agcb-adult-female-fringe-" "$f"
+          grep -Fq "agcb-adult-female-back-lock-l-v1" "$f"
+          grep -Fq "agcb-adult-female-back-lock-r-v1" "$f"
+          grep -Fq "adult-female-soft-frame-hair-v1" "$f"
+          grep -Fq "scope:'adult-female-hair-only'" "$f"
+          grep -Fq "geometry:'soft-frame-hair-v1'" "$f"
+          grep -Fq "version:1" "$f"
+          grep -Fq "adult-female-hair-runtime.js?v=0.4.92" "$b"
+          ! grep -Eq "gender==='boy'.*refineAdultFemaleHair|age==='child'.*refineAdultFemaleHair" "$f"

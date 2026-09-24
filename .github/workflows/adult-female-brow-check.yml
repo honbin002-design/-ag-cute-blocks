@@ -1,0 +1,55 @@
+name: Adult female brow check
+
+on:
+  push:
+    branches: [main, dev-v0.1]
+    paths:
+      - 'adult-female-brow-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-brow-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'adult-female-brow-runtime.js'
+      - 'bootstrap-v045.js'
+      - '.github/workflows/adult-female-brow-check.yml'
+
+jobs:
+  adult-female-brow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse brow runtime
+        shell: bash
+        run: node --input-type=module --check < adult-female-brow-runtime.js
+      - name: Verify adult female brow v1 scope
+        shell: python
+        run: |
+          import pathlib,sys
+          brow=pathlib.Path('adult-female-brow-runtime.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          failures=[]
+          required=[
+            "c?.gender==='girl'&&c?.age==='adult'",
+            "agcb-adult-female-brow-l-v1",
+            "agcb-adult-female-brow-r-v1",
+            "adult-female-soft-arch-v1",
+            "scope:'adult-female-brows-only'",
+            "geometry:'soft-arch-v1'",
+            "version:1"
+          ]
+          for token in required:
+            if token not in brow: failures.append(f'brow runtime missing {token}')
+          if "adult-female-brow-runtime.js?v=0.4.92" not in boot:
+            failures.append('bootstrap missing adult female brow runtime v0.4.92')
+          forbidden=["c?.gender==='boy'","c?.age==='child'","replaceChild","replaceAdultMale"]
+          for token in forbidden:
+            if token in brow: failures.append(f'brow runtime unexpectedly targets non-adult-female scope: {token}')
+          if "return c?.gender==='girl'&&c?.age==='adult'?replaceAdultFemaleBrows(character):character;" not in brow:
+            failures.append('adult female brow routing guard missing')
+          if failures:
+            print('\n'.join(failures));sys.exit(1)
+          print('Adult female brow v1 scope and structure checks passed.')
