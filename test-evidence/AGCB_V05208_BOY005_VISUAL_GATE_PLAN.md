@@ -24,3 +24,19 @@ Execution rule:
 - Prefer the directly obtained TEST fixture bytes or a non-secret test artifact path.
 - Do not attach Boy005 to the playable route until this gate has real rendered evidence.
 - Do not touch PROD.
+
+
+## Render-input readiness update
+
+The direct Drive fixture has now passed all pre-render gates required to justify a visual run:
+- valid GLB 2.0 binary
+- SHA-256 captured
+- all 18 native AGCB bone identities present
+- all 21 skins bind to the common 18-joint skeleton
+- Idle / Walk / Run / Jump clips present
+- animation samplers/channels finite and quaternion data sane
+- browser loader validates hash before parse and cleans temporary object URLs
+
+Therefore the remaining gate is intentionally narrow: actual rendered visual/deformation/grounding/transition evidence.
+
+Do not add more static gates as a substitute for rendering. If no isolated renderer is available in the current execution environment, stop at this boundary rather than falsely declaring visual PASS.
