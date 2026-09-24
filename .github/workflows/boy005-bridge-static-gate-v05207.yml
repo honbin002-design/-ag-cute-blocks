@@ -23,9 +23,9 @@ jobs:
           adapter=Path('ag-cute-character-adapter-v05205.js').read_text(encoding='utf-8')
           bridge=Path('agcb-boy005-bridge-runtime-v05207.js').read_text(encoding='utf-8')
           boot=Path('bootstrap-v0510.js').read_text(encoding='utf-8')
-          required_bones=['Hips','Spine','Chest','Neck','Head','LeftUpperArm','LeftLowerArm','LeftHand','RightUpperArm','RightLowerArm','RightHand','LeftUpperLeg','LeftLowerLeg','LeftFoot','RightUpperLeg','RightLowerLeg','RightFoot','Root']
+          required_bones=['agcb-root','agcb-hips','agcb-spine','agcb-chest','agcb-neck','agcb-head','agcb-upper-arm-l','agcb-forearm-l','agcb-hand-l','agcb-upper-arm-r','agcb-forearm-r','agcb-hand-r','agcb-thigh-l','agcb-shin-l','agcb-foot-l','agcb-thigh-r','agcb-shin-r','agcb-foot-r']
           for bone in required_bones: assert repr(bone) in adapter or ('"'+bone+'"') in adapter, bone
-          for action in ['idle','walk','run','jump']: assert repr(action) in adapter or ('"'+action+'"') in adapter, action
+          for action in ['Idle','Walk','Run','Jump']: assert repr(action) in adapter or ('"'+action+'"') in adapter, action
           assert "ASSET_KEY='boy005'" in bridge
           assert "action:'READ_ASSET'" in bridge
           assert "environment:'TEST'" in bridge
