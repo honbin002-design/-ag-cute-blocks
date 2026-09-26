@@ -2,7 +2,7 @@
 // iOS browsers may defer/suppress a normal click while another finger keeps the joystick active.
 // Fire gameplay actions on pointer-down instead, while preserving the app's existing click pipeline.
 
-const ACTION_SELECTORS=['#jump','#add','#del','#rot','#lifeInteract','#cam','#lifeBtn','#runToggle','.sleepMorning','.sleepWake','#agWardrobeBtn','#agCastleDoorBtn'];
+const ACTION_SELECTORS=['#jump','#add','#del','#rot','#lifeInteract','#cam','#lifeBtn','#runToggle','.sleepMorning','.sleepWake','.furnitureExtra','#agWardrobeBtn','#agCastleDoorBtn'];
 const DIRECT_ACTION_IDS=new Set(['jump','add','del','rot']);
 const bound=new WeakSet();
 let movementPointer=null;
@@ -62,7 +62,7 @@ function install(){
 }
 
 install();
-// Late-created context controls (sleep/wardrobe/castle) must receive the same immediate iPhone press bridge.
+// Late-created context controls (sleep/furniture/wardrobe/castle) must receive the same immediate iPhone press bridge.
 const lateObserver=new MutationObserver(()=>install());lateObserver.observe(document.body,{childList:true,subtree:true});
 // Life UI is created by the main module; keep a short retry path for slow devices.
 let retries=0;const timer=setInterval(()=>{install();if(++retries>30||ACTION_SELECTORS.every(s=>document.querySelector(s)))clearInterval(timer)},100);
