@@ -39,9 +39,9 @@ btn.onclick=()=>{
   if(!isLying())return;
   const bedIdentity=activeBedIdentity();
   globalThis.AGCBCharacterPose?.('sleep');globalThis.__AGCB_TEST_CHARACTER_ACTION?.('sleep',0);
-  $('#saveNow')?.click();btn.disabled=true;fade.classList.add('on');
+  globalThis.__AGCB_DAY_ADVANCE_LOCK={owner:'sleep',startedAt:Date.now()};$('#saveNow')?.click();btn.disabled=true;fade.classList.add('on');
   setTimeout(()=>{
-    const world=read(WORLD_KEY,null),settings=read(SETTINGS_KEY,{}),careStore=read(CARE_KEY,{});if(!world){fade.innerHTML='<div>找不到世界存檔<small>請先離開床再試一次</small></div>';btn.disabled=false;return}
+    const world=read(WORLD_KEY,null),settings=read(SETTINGS_KEY,{}),careStore=read(CARE_KEY,{});if(!world){globalThis.__AGCB_DAY_ADVANCE_LOCK=null;fade.innerHTML='<div>找不到世界存檔<small>請先離開床再試一次</small></div>';btn.disabled=false;return}
     const fromDay=Number(settings.worldDay||1),tx={fromDay,toDay:fromDay+1,startedAt:Date.now(),world:null,settings:null};write(DAY_TX_KEY,tx);
     advanceOneDay(world,settings,careStore,bedIdentity);tx.world=world;tx.settings=settings;write(DAY_TX_KEY,tx);write(WORLD_KEY,world);write(SETTINGS_KEY,settings);localStorage.removeItem(DAY_TX_KEY);
     fade.innerHTML='<div>☀️ 早安！<small>新的一天準備好了</small></div>';
