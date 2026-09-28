@@ -104,9 +104,14 @@ const cameraPatches=[
     to:'farmYaw=Number.isFinite(Number(settings.farmYaw))?Number(settings.farmYaw):FARM_YAW;let thirdDistance=Math.max(THIRD_CAMERA_DISTANCE_MIN,Math.min(8,Number(settings.thirdDistance)||THIRD_CAMERA_DISTANCE_DEFAULT));let thirdPitch=Math.max(THIRD_CAMERA_PITCH_MIN,Math.min(THIRD_CAMERA_PITCH_MAX,Number.isFinite(Number(settings.thirdPitch))?Number(settings.thirdPitch):THIRD_CAMERA_PITCH_DEFAULT));\nlet playerColor='
   },
   {
-    id:'third-camera-orbit-save',
-    from:'cameraMode,farmDistance,farmPitch,farmYaw,season',
-    to:'cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season'
+    id:'third-camera-orbit-save-settings',
+    from:'function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,playerColor,cameraMode,farmDistance,farmPitch,farmYaw,season',
+    to:'function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,playerColor,cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season'
+  },
+  {
+    id:'third-camera-orbit-save-day-transaction',
+    from:'const world=snapshot(),nextSettings={...settings,playerColor,cameraMode,farmDistance,farmPitch,farmYaw,season',
+    to:'const world=snapshot(),nextSettings={...settings,playerColor,cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season'
   },
   {
     id:'furniture-camera-orbit-unlock',
