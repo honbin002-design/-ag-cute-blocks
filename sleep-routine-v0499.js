@@ -4,6 +4,7 @@ const VERSION='V0.5.79';
 const WORLD_KEY='ag_cute_blocks_world_v04';
 const SETTINGS_KEY='ag_cute_blocks_settings_v048_special_models_r2';
 const CARE_KEY='ag_cute_blocks_crop_care_v1';
+const DAY_TX_KEY='ag_cute_blocks_day_advance_tx_v1';
 const $=s=>document.querySelector(s);
 const read=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??fallback}catch{return fallback}};
 const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -15,6 +16,8 @@ document.head.appendChild(style);
 const btn=document.createElement('button');btn.className='sleepMorning';btn.textContent='😴 睡到天亮';btn.setAttribute('aria-label','睡到天亮');document.body.appendChild(btn);
 const fade=document.createElement('div');fade.className='sleepFade';fade.innerHTML='<div>🌙 晚安…<small>世界會安全存檔，明早再繼續</small></div>';document.body.appendChild(fade);
 
+function recoverDayTransaction(){const tx=read(DAY_TX_KEY,null);if(!tx?.world||!tx?.settings)return false;const current=read(SETTINGS_KEY,{}),currentDay=Number(current.worldDay||1),toDay=Number(tx.toDay||0);if(toDay&&currentDay<toDay){write(WORLD_KEY,tx.world);write(SETTINGS_KEY,tx.settings)}localStorage.removeItem(DAY_TX_KEY);return true}
+recoverDayTransaction();
 function isLying(){const status=$('#status')?.textContent||'',life=$('#lifeInteract')?.textContent||'';return status.includes('躺下休息')||(life.includes('起身')&&status.includes('躺下'))}
 let wasLying=false;
 function syncSleepPose(lying){if(lying===wasLying)return;wasLying=lying;document.body.classList.toggle('agcbSleeping',lying);if(lying){globalThis.AGCBCharacterPose?.('sleep');globalThis.__AGCB_TEST_CHARACTER_ACTION?.('sleep',0);window.dispatchEvent(new CustomEvent('agcb:sleep-state',{detail:{sleeping:true,version:VERSION}}))}else{globalThis.AGCBCharacterPose?.('wake');globalThis.__AGCB_TEST_CHARACTER_ACTION?.('wake',0);window.dispatchEvent(new CustomEvent('agcb:sleep-state',{detail:{sleeping:false,version:VERSION}}))}}
@@ -39,7 +42,8 @@ btn.onclick=()=>{
   $('#saveNow')?.click();btn.disabled=true;fade.classList.add('on');
   setTimeout(()=>{
     const world=read(WORLD_KEY,null),settings=read(SETTINGS_KEY,{}),careStore=read(CARE_KEY,{});if(!world){fade.innerHTML='<div>找不到世界存檔<small>請先離開床再試一次</small></div>';btn.disabled=false;return}
-    advanceOneDay(world,settings,careStore,bedIdentity);write(WORLD_KEY,world);write(SETTINGS_KEY,settings);
+    const fromDay=Number(settings.worldDay||1),tx={fromDay,toDay:fromDay+1,startedAt:Date.now(),world:null,settings:null};write(DAY_TX_KEY,tx);
+    advanceOneDay(world,settings,careStore,bedIdentity);tx.world=world;tx.settings=settings;write(DAY_TX_KEY,tx);write(WORLD_KEY,world);write(SETTINGS_KEY,settings);localStorage.removeItem(DAY_TX_KEY);
     fade.innerHTML='<div>☀️ 早安！<small>新的一天準備好了</small></div>';
     setTimeout(()=>location.reload(),650);
   },260);
