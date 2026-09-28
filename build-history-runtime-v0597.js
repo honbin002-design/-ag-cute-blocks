@@ -55,7 +55,7 @@ function redo(){if(applying||!stacks.redo.length)return false;applying=true;cons
 
 function trackedInvoke(original,name){
   if(applying||!['add','del','rot'].includes(name))return original(name);
-  forceSave();const before=readWorld();const result=original(name);forceSave();const after=readWorld();const change=diffWorld(before,after);if(change)push(change);return result;
+  forceSave();const before=readWorld();const beforeSavedAt=Number(before?.savedAt||0);const result=original(name);let after=readWorld();if(Number(after?.savedAt||0)<=beforeSavedAt){forceSave();after=readWorld()}const change=diffWorld(before,after);if(change)push(change);return result;
 }
 function installBridge(){
   const bridge=globalThis.__AGCB_GAME_ACTIONS;if(!bridge?.invoke||bridge.__historyWrapped)return false;
