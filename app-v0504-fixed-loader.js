@@ -67,8 +67,8 @@ const patches=[
   },
   {
     id:'wild-tree-regrowth-day-hook',
-    from:"function growDay(){const fromDay=worldDay;worldDay++;const earned=settleShipping(economy),careStore=readCropCare();",
-    to:"function growDay(){const fromDay=worldDay;worldDay++;globalThis.__AGCB_WORLD_TASK_API?.processTreeRegrowth?.();const earned=settleShipping(economy),careStore=readCropCare();"
+    from:"const fromDay=worldDay;worldDay++;const earned=settleShipping(economy),careStore=readCropCare();",
+    to:"const fromDay=worldDay;worldDay++;globalThis.__AGCB_WORLD_TASK_API?.processTreeRegrowth?.();const earned=settleShipping(economy),careStore=readCropCare();"
   }
 ];
 
