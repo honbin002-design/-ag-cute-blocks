@@ -1,4 +1,4 @@
-import {GAMEPLAY_CONTROL_SELECTOR as CONTROL_SELECTOR} from './gameplay-control-selectors.js';
+import {GAMEPLAY_CONTROL_SELECTOR as CONTROL_SELECTOR} from './gameplay-control-selectors.js?v=0.5.220';
 // AG Cute Blocks V0.5.74 — iPhone document-level third-person pinch bridge.
 // Safari can split two touches across canvas/HUD layers. Convert a background
 // two-finger pinch into the core's guarded third-person wheel zoom path.
