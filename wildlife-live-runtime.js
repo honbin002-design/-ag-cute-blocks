@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {createDeer,createRabbit,createFox,animateWildlife} from './wildlife-models.js';
-import {createWildlifePopulation,updateWildlifeEntity} from './wildlife-runtime-system.js';
+import {createWildlifePopulation,updateWildlifeEntity} from './wildlife-runtime-system.js?v=0.5.223';
 import {performanceBudget,creatureUpdateAllowed,shouldCastCreatureShadow} from './mobile-performance-system.js';
 
 let cachedAvatar=null;
