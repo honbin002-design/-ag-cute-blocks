@@ -16,7 +16,7 @@ document.head.appendChild(style);
 const btn=document.createElement('button');btn.className='sleepMorning';btn.textContent='😴 睡到天亮';btn.setAttribute('aria-label','睡到天亮');document.body.appendChild(btn);
 const fade=document.createElement('div');fade.className='sleepFade';fade.innerHTML='<div>🌙 晚安…<small>世界會安全存檔，明早再繼續</small></div>';document.body.appendChild(fade);
 
-function recoverDayTransaction(){const tx=read(DAY_TX_KEY,null);if(!tx?.world||!tx?.settings)return false;const current=read(SETTINGS_KEY,{}),currentDay=Number(current.worldDay||1),toDay=Number(tx.toDay||0);if(toDay&&currentDay<toDay){write(WORLD_KEY,tx.world);write(SETTINGS_KEY,tx.settings)}localStorage.removeItem(DAY_TX_KEY);return true}
+function recoverDayTransaction(){const tx=read(DAY_TX_KEY,null);if(!tx?.world||!tx?.settings)return false;const currentSettings=read(SETTINGS_KEY,{}),currentWorld=read(WORLD_KEY,null),toDay=Number(tx.toDay||0),settingsDay=Number(currentSettings.worldDay||1),txSavedAt=Number(tx.world.savedAt||0),worldSavedAt=Number(currentWorld?.savedAt||0);if(toDay&&settingsDay<toDay)write(SETTINGS_KEY,tx.settings);if(!currentWorld||worldSavedAt<txSavedAt)write(WORLD_KEY,tx.world);localStorage.removeItem(DAY_TX_KEY);return true}
 recoverDayTransaction();
 function isLying(){const status=$('#status')?.textContent||'',life=$('#lifeInteract')?.textContent||'';return status.includes('躺下休息')||(life.includes('起身')&&status.includes('躺下'))}
 let wasLying=false;
