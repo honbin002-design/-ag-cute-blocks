@@ -29,6 +29,9 @@ function localExit(x,z,rot,d=1.55){return {x:x+Math.sin(rot||0)*d,z:z+Math.cos(r
 function activeBedIdentity(){const s=globalThis.__AGCB_ACTIVE_FURNITURE_STATE,a=s?.anchor;if(!s?.active||s.mode!=='lie'||!a)return null;return {id:a.userData?.id||'',type:a.userData?.type||'',x:Number(a.position?.x)||0,z:Number(a.position?.z)||0,rot:Number(a.rotation?.y)||0}}
 function resolveExactBed(world,identity){if(!identity)return null;const objects=world?.objects||[];if(identity.id){const byId=objects.find(o=>o.id===identity.id);if(byId)return byId}return objects.find(o=>(o.type==='bed'||o.type==='starBed')&&Math.hypot((Number(o.x)||0)-identity.x,(Number(o.z)||0)-identity.z)<.15)||null}
 function advanceOneDay(world,settings,careStore,bedIdentity){
+  globalThis.__AGCB_WORLD_TASK_API?.processTreeRegrowth?.();
+  const refreshedWorld=read(WORLD_KEY,world);
+  if(refreshedWorld&&refreshedWorld!==world){Object.keys(world).forEach(k=>delete world[k]);Object.assign(world,refreshedWorld)}
   const result=advanceDailySnapshot(world,settings,careStore,{wakeMinute:360});
   settings.wakeMessage=result.earned?`早安！昨天的出貨收入 +${result.earned} 金幣`:'早安！新的一天開始了 ☀️';
   const bed=resolveExactBed(world,bedIdentity);if(bed&&world.player){const e=localExit(Number(bed.x||0),Number(bed.z||0),Number(bed.rot||0));world.player.x=e.x;world.player.z=e.z;world.player.y=0}
