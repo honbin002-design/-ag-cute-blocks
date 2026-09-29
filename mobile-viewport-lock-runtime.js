@@ -1,4 +1,4 @@
-import {GAMEPLAY_CONTROL_SELECTOR as CONTROL_SELECTOR} from './gameplay-control-selectors.js';
+import {GAMEPLAY_CONTROL_SELECTOR as CONTROL_SELECTOR} from './gameplay-control-selectors.js?v=0.5.220';
 // AG Cute Blocks V0.5.63 — hardened iPhone viewport/gesture lock.
 const VERSION='V0.5.63';
 function normalizeViewport(){let meta=document.querySelector('meta[name="viewport"]');if(!meta){meta=document.createElement('meta');meta.name='viewport';document.head.appendChild(meta)}meta.setAttribute('content','width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover');document.documentElement.style.webkitTextSizeAdjust='100%';document.documentElement.style.textSizeAdjust='100%'}
