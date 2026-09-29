@@ -42,8 +42,8 @@ const patches=[
   },
   {
     id:'wild-tree-regrowth-snapshot',
-    from:"objects:objects.map(o=>({id:o.userData.id,type:o.userData.type,x:o.position.x,z:o.position.z,rot:o.rotation.y,growth:o.userData.growth,affection:o.userData.affection,lastProductDay:o.userData.lastProductDay,productReady:o.userData.productReady,homeX:o.userData.home?.x,homeZ:o.userData.home?.y})),wildlife:globalThis.__AGCB_WILDLIFE_RUNTIME?.snapshot?.()||[]",
-    to:"objects:objects.map(o=>({id:o.userData.id,type:o.userData.type,x:o.position.x,z:o.position.z,rot:o.rotation.y,growth:o.userData.growth,affection:o.userData.affection,lastProductDay:o.userData.lastProductDay,productReady:o.userData.productReady,homeX:o.userData.home?.x,homeZ:o.userData.home?.y,treeState:o.userData.treeState,regrowDay:o.userData.regrowDay,regrowAt:o.userData.regrowAt}))"
+    from:"objects:objects.map(o=>({id:o.userData.id,type:o.userData.type,x:o.position.x,z:o.position.z,rot:o.rotation.y,growth:o.userData.growth,affection:o.userData.affection,lastProductDay:o.userData.lastProductDay,productReady:o.userData.productReady,homeX:o.userData.home?.x,homeZ:o.userData.home?.y}))",
+    to:"objects:objects.map(o=>({id:o.userData.id,type:o.userData.type,x:o.position.x,z:o.position.z,rot:o.rotation.y,growth:o.userData.growth,affection:o.userData.affection,lastProductDay:o.userData.lastProductDay,productReady:o.userData.productReady,homeX:o.userData.home?.x,homeZ:o.userData.home?.y,treeState:o.userData.treeState,regrowDay:o.userData.regrowDay,regrowAt:o.userData.regrowAt})),wildlife:globalThis.__AGCB_WILDLIFE_RUNTIME?.snapshot?.()||[]"
   },
   {
     id:'legacy-doubletap-blocker-suppress',
