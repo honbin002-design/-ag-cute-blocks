@@ -150,6 +150,11 @@ for(const patch of cameraPatches){
   if(count!==1)throw new Error(`V0.5.04 camera patch signature mismatch (${patch.id}): expected 1, got ${count}`);
   source=source.replace(patch.from,patch.to);cameraApplied.push(patch.id);
 }
+const safeSettingsFrom="function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,playerColor,cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season,weather,timeSpeed,simMinutes,worldDay,economy,avatar:avatarCustomization.role.startsWith('special')?'girl':player.userData.avatarStyle,avatarRole:avatarCustomization.role,avatarCustomization}))}";
+const safeSettingsTo="function saveSettings(){const payload=JSON.stringify({...settings,playerColor,cameraMode,thirdDistance,thirdPitch,farmDistance,farmPitch,farmYaw,season,weather,timeSpeed,simMinutes,worldDay,economy,avatar:avatarCustomization.role.startsWith('special')?'girl':player.userData.avatarStyle,avatarRole:avatarCustomization.role,avatarCustomization});const ok=safeLocalWrite(SETTINGS_KEY,payload);if(!ok)toast('設定儲存失敗，請勿關閉遊戲');return ok}";
+const safeSettingsCount=source.split(safeSettingsFrom).length-1;
+if(safeSettingsCount!==1)throw new Error(`V0.5.04 safe settings signature mismatch: expected 1, got ${safeSettingsCount}`);
+source=source.replace(safeSettingsFrom,safeSettingsTo);cameraApplied.push('safe-local-settings-write');
 
 source=source.replace(/(from\s*['"]|import\s*['"])(\.\/[^'"]+)(['"])/g,(all,prefix,spec,suffix)=>`${prefix}${new URL(spec,SOURCE_URL).href}${suffix}`);
 
