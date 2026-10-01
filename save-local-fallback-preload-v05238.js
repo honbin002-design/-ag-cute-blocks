@@ -12,11 +12,11 @@ try{
   if(!validWorld(current)){
     const legacyRaw=localStorage.getItem(OLD_SAVE_KEY),legacy=parseObject(legacyRaw);
     if(validWorld(legacy)){
-      if(currentRaw){try{localStorage.setItem(CORRUPT_BACKUP_KEY,currentRaw)}catch{}}
+      if(currentRaw&&!localStorage.getItem(CORRUPT_BACKUP_KEY)){try{localStorage.setItem(CORRUPT_BACKUP_KEY,currentRaw)}catch{}}
       localStorage.setItem(SAVE_KEY,legacyRaw);
       const verify=parseObject(localStorage.getItem(SAVE_KEY));
       status=validWorld(verify)?(currentRaw?'RECOVERED_CORRUPT_CURRENT':'MIGRATED_LEGACY'):'RECOVERY_WRITE_FAILED';
     }else status=currentRaw?'CURRENT_INVALID_NO_LEGACY':'NO_SAVE';
   }
 }catch(e){status='PRELOAD_ERROR';console.warn('[AGCB] local save fallback preload failed',e)}
-globalThis.__AGCB_LOCAL_SAVE_FALLBACK={version:1,status,currentKey:SAVE_KEY,legacyKey:OLD_SAVE_KEY,corruptBackupKey:CORRUPT_BACKUP_KEY};
+globalThis.__AGCB_LOCAL_SAVE_FALLBACK={version:2,status,currentKey:SAVE_KEY,legacyKey:OLD_SAVE_KEY,corruptBackupKey:CORRUPT_BACKUP_KEY};
