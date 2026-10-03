@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 const LIVE_CROPS=globalThis.__AGCB_LIVE_CROPS||(globalThis.__AGCB_LIVE_CROPS=new Set());
 const LIVE_TREES=globalThis.__AGCB_LIVE_TREES||(globalThis.__AGCB_LIVE_TREES=new Set());
 const M=(c,r=.92)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:.005});

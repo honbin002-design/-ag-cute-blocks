@@ -4,11 +4,11 @@ export const ECONOMY_SCHEMA=2;
 
 export const ITEM_NAMES={
   carrot:'紅蘿蔔',corn:'玉米',pumpkin:'南瓜',tomato:'番茄',strawberry:'草莓',cabbage:'高麗菜',potato:'馬鈴薯',
-  apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛'
+  apple:'蘋果',orange:'橘子',peach:'桃子',egg:'雞蛋',milk:'牛奶',wool:'羊毛',wood:'木材',smallFish:'小魚',riverFish:'河魚',goldFish:'金色稀有魚'
 };
 export const SELL_VALUES={
   carrot:18,corn:26,pumpkin:42,tomato:24,strawberry:30,cabbage:28,potato:20,
-  apple:24,orange:26,peach:30,egg:18,milk:34,wool:38
+  apple:24,orange:26,peach:30,egg:18,milk:34,wool:38,smallFish:18,riverFish:34,goldFish:88
 };
 export const SHOP_ITEMS=[
   {id:'sapling-peach',name:'特選桃樹苗',price:180,kind:'sapling',icon:'🌳'},
@@ -20,8 +20,10 @@ export const SHOP_ITEMS=[
 ];
 
 export function createEconomyState(saved={}){
-  const inventory={};for(const [k,v] of Object.entries(saved.inventory||{})){const n=Math.max(0,Math.floor(Number(v)||0));if(n)inventory[k]=n}
-  return {schema:ECONOMY_SCHEMA,coins:Math.max(0,Number(saved.coins)||0),inventory,shipping:Array.isArray(saved.shipping)?saved.shipping:[],owned:Array.isArray(saved.owned)?saved.owned:[]};
+  const inventory={};for(const [k,v] of Object.entries(saved.inventory||{})){const n=Math.max(0,Math.floor(Number(v)||0));if(n&&ITEM_NAMES[k])inventory[k]=n}
+  const shipping=[];for(const x of Array.isArray(saved.shipping)?saved.shipping:[]){if(!x||!SELL_VALUES[x.itemId])continue;const qty=Math.max(0,Math.floor(Number(x.qty)||0));if(!qty)continue;shipping.push({itemId:x.itemId,qty,unit:SELL_VALUES[x.itemId],addedAt:Number.isFinite(Number(x.addedAt))?Number(x.addedAt):Date.now()})}
+  const validShop=new Set(SHOP_ITEMS.map(x=>x.id)),seenOwned=new Set(),owned=[];for(const x of Array.isArray(saved.owned)?saved.owned:[]){if(!x||!validShop.has(x.itemId)||seenOwned.has(x.itemId))continue;seenOwned.add(x.itemId);owned.push({itemId:x.itemId,boughtAt:Number.isFinite(Number(x.boughtAt))?Number(x.boughtAt):Date.now()})}
+  return {schema:ECONOMY_SCHEMA,coins:Math.max(0,Number.isFinite(Number(saved.coins))?Number(saved.coins):0),inventory,shipping,owned};
 }
 export function addInventory(state,itemId,qty=1){qty=Math.max(1,Math.floor(qty));state.inventory[itemId]=(state.inventory[itemId]||0)+qty;return state.inventory[itemId]}
 export function inventoryCount(state,itemId){return Math.max(0,state.inventory[itemId]||0)}

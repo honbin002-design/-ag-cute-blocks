@@ -1,6 +1,6 @@
 // Lightweight screen-space weather for the mobile build. It is intentionally visual-only:
 // world rules remain in the existing season/weather systems, while this layer follows the same UI state.
-const SETTINGS_KEY='ag_cute_blocks_settings_v03';
+const SETTINGS_KEY='agcb_prod_v1_settings_v03';
 const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');Object.assign(canvas.style,{position:'fixed',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});
 const hud=document.querySelector('.hud');hud?.parentNode?.insertBefore(canvas,hud);const ctx=canvas.getContext('2d',{alpha:true});
 const particles=[];let w=1,h=1,lastWeather='',frame=0,nextFlashAt=0,flashUntil=0;

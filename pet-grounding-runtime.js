@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 // Runtime38: make visible dog/cat paws follow the animated leg pivots instead of
 // leaving decorative root-level paw meshes behind while the legs swing.

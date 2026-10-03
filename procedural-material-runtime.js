@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 // Original, generated-at-runtime building surfaces. No downloaded texture assets are used.
 // One tiny canvas texture is shared per material, keeping the mobile memory cost bounded.

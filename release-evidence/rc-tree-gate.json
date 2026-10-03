@@ -1,0 +1,40 @@
+{
+  "method": "Clean first-load PROD namespace fixture; normal tree record loaded and authoritative chop/save path invoked",
+  "runtime": {
+    "environment": "PROD",
+    "version": "V1.0.0-rc.1",
+    "worldTaskStatus": "AUTHORITATIVE_CORE_WITH_PERSISTENT_REALTIME_TREE_REGROWTH",
+    "before": [
+      {
+        "id": "rc-tree",
+        "itemId": "wood",
+        "x": 14,
+        "z": 12
+      }
+    ],
+    "result": {
+      "ok": true,
+      "id": "rc-tree",
+      "itemId": "wood",
+      "qty": 1,
+      "inventory": 1,
+      "regrowAt": 1791032987601,
+      "regrowMs": 161499
+    },
+    "persisted": {
+      "id": "rc-tree",
+      "type": "tree",
+      "x": 14,
+      "z": 12,
+      "rot": 0,
+      "growth": 1,
+      "affection": 0,
+      "lastProductDay": 0,
+      "productReady": false,
+      "treeState": "stump",
+      "regrowDay": 0,
+      "regrowAt": 1791032987601
+    }
+  },
+  "errors": []
+}

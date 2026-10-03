@@ -1,0 +1,62 @@
+{
+  "method": "Existing normal gameplay runtime; player repositioned to fixtures for focused interactions",
+  "errors": [],
+  "crop": {
+    "crop": {
+      "id": "9dca77b1-9804-4b43-a0fa-63a380d41af5",
+      "itemId": "carrot",
+      "x": 2,
+      "z": 14,
+      "growth": 1
+    },
+    "harvest": {
+      "ok": true,
+      "id": "9dca77b1-9804-4b43-a0fa-63a380d41af5",
+      "itemId": "carrot",
+      "qty": 1,
+      "inventory": 1
+    }
+  },
+  "animals": {
+    "pets": 1,
+    "wildlife": 9
+  },
+  "chair": {
+    "mode": "sit",
+    "type": "chair"
+  },
+  "bed": {
+    "mode": "lie",
+    "type": "bed"
+  },
+  "sleep": {
+    "from": 2,
+    "to": 3,
+    "mode": "free"
+  },
+  "terrain": {
+    "soil": {
+      "ok": true,
+      "stage": "soil",
+      "id": "ddbee6d8-542e-4898-93f3-88989612ac03",
+      "x": 12,
+      "z": 12
+    },
+    "water": {
+      "ok": true,
+      "stage": "water",
+      "id": "5b6b3dbb-be9f-4d05-9ef8-f754ad6a7ab4",
+      "x": 12,
+      "z": 12
+    }
+  },
+  "tree": {
+    "ok": true,
+    "path": "rc-tree-gate.json",
+    "method": "clean first-load PROD fixture; tree chop + wood inventory + stump persistence verified"
+  },
+  "isolation": {
+    "testWorld": "TEST_SENTINEL_DO_NOT_READ",
+    "testSettings": "TEST_SETTINGS_SENTINEL"
+  }
+}

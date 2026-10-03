@@ -2,7 +2,7 @@ name: Release chain sync
 
 on:
   push:
-    branches: [main]
+    branches: [legacy-release-chain-disabled]
     paths:
       - 'bootstrap-v045.js'
       - 'index.html'

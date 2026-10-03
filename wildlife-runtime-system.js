@@ -35,7 +35,7 @@ export function wildlifeLOD(distance,quality='normal'){
 }
 
 export function createWildlifePopulation(worldSeed='world-1',saved=[]){
-  if(Array.isArray(saved)&&saved.length)return saved.map((x,i)=>({...x,id:x.id||`wild-${i}`,schema:WILDLIFE_SCHEMA,moveX:Number(x.moveX)||0,moveZ:Number(x.moveZ)||-1}));
+  if(Array.isArray(saved)&&saved.length)return saved.slice(0,WILDLIFE_MAX_ACTIVE).map((raw,i)=>{const x=raw&&typeof raw==='object'?raw:{},zone=WILDLIFE_ZONES.find(z=>z.id===x.zoneId)||WILDLIFE_ZONES[i%WILDLIFE_ZONES.length],type=Object.prototype.hasOwnProperty.call(SPECIES,x.type)?x.type:'rabbit',finite=(v,fallback)=>Number.isFinite(Number(v))?Number(v):fallback,hx=finite(x.homeX,zone.x),hz=finite(x.homeZ,zone.z);return{schema:WILDLIFE_SCHEMA,id:String(x.id||`wild-${zone.id}-${i}`),type,zoneId:zone.id,x:finite(x.x,hx),z:finite(x.z,hz),homeX:hx,homeZ:hz,moveX:finite(x.moveX,0),moveZ:finite(x.moveZ,-1),phase:finite(x.phase,hash01(hashString(String(x.id||i)))*Math.PI*2),state:['idle','walk','eat','drink'].includes(x.state)?x.state:'idle'}});
   const seed=hashString(String(worldSeed)),out=[];let ordinal=0;
   for(const zone of WILDLIFE_ZONES){
     const candidates=Object.entries(SPECIES).filter(([,r])=>r.preferred.includes(zone.kind));

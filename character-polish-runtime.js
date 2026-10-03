@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 // Non-destructive V0.4.5 visual polish layered on top of the live procedural models.
 // Original geometry only; this runtime intentionally avoids replacing the base animation/state owners.

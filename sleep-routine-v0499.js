@@ -1,0 +1,55 @@
+import {advanceDailySnapshot} from './daily-progression-system.js';
+
+const VERSION='V0.5.79';
+const WORLD_KEY='agcb_prod_v1_world_v04';
+const SETTINGS_KEY='agcb_prod_v1_settings_v048_special_models_r2';
+const CARE_KEY='agcb_prod_v1_crop_care_v1';
+const DAY_TX_KEY='agcb_prod_v1_day_advance_tx_v1';
+const $=s=>document.querySelector(s);
+const read=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??fallback}catch{return fallback}};
+const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+const style=document.createElement('style');
+style.textContent=`
+ .sleepMorning{position:fixed;z-index:88;left:auto;right:max(104px,calc(env(safe-area-inset-right) + 96px));top:max(96px,calc(env(safe-area-inset-top) + 84px));transform:none;border:0;border-radius:18px;padding:11px 15px;background:#304766e8;color:white;font-size:13px;font-weight:900;box-shadow:0 5px 22px #0004;display:none;pointer-events:auto;touch-action:manipulation;white-space:nowrap}.sleepMorning.show{display:block}.sleepFade{position:fixed;z-index:180;inset:0;background:#263858;opacity:0;pointer-events:none;transition:opacity .42s ease;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:900}.sleepFade.on{opacity:1;pointer-events:auto}.sleepFade small{display:block;font-size:12px;text-align:center;margin-top:8px;opacity:.75}body.agcbSleeping canvas{pointer-events:auto!important;touch-action:none!important}body.agcbSleeping #status{pointer-events:none!important}@media(max-height:430px){.sleepMorning{top:max(92px,calc(env(safe-area-inset-top) + 80px));right:max(98px,calc(env(safe-area-inset-right) + 90px));padding:9px 13px;font-size:12px}}`;
+document.head.appendChild(style);
+const btn=document.createElement('button');btn.className='sleepMorning';btn.textContent='😴 睡到天亮';btn.setAttribute('aria-label','睡到天亮');document.body.appendChild(btn);
+const fade=document.createElement('div');fade.className='sleepFade';fade.innerHTML='<div>🌙 晚安…<small>世界會安全存檔，明早再繼續</small></div>';document.body.appendChild(fade);
+
+function recoverDayTransaction(){const tx=read(DAY_TX_KEY,null);if(!tx)return false;if(tx.phase==='prepared'||!tx.world||!tx.settings){localStorage.removeItem(DAY_TX_KEY);return false}const currentSettings=read(SETTINGS_KEY,{}),currentWorld=read(WORLD_KEY,null),toDay=Number(tx.toDay||0),settingsDay=Number(currentSettings.worldDay||1),txSavedAt=Number(tx.world.savedAt||0),worldSavedAt=Number(currentWorld?.savedAt||0);if(toDay&&settingsDay<toDay)write(SETTINGS_KEY,tx.settings);if(!currentWorld||worldSavedAt<txSavedAt)write(WORLD_KEY,tx.world);localStorage.removeItem(DAY_TX_KEY);return true}
+recoverDayTransaction();
+function isLying(){const status=$('#status')?.textContent||'',life=$('#lifeInteract')?.textContent||'';return status.includes('躺下休息')||(life.includes('起身')&&status.includes('躺下'))}
+let wasLying=false;
+function syncSleepPose(lying){if(lying===wasLying)return;wasLying=lying;document.body.classList.toggle('agcbSleeping',lying);if(lying){globalThis.AGCBCharacterPose?.('sleep');globalThis.__AGCB_TEST_CHARACTER_ACTION?.('sleep',0);window.dispatchEvent(new CustomEvent('agcb:sleep-state',{detail:{sleeping:true,version:VERSION}}))}else{globalThis.AGCBCharacterPose?.('wake');globalThis.__AGCB_TEST_CHARACTER_ACTION?.('wake',0);window.dispatchEvent(new CustomEvent('agcb:sleep-state',{detail:{sleeping:false,version:VERSION}}))}}
+function refresh(){const lying=isLying();btn.classList.toggle('show',lying);syncSleepPose(lying)}
+new MutationObserver(refresh).observe(document.body,{subtree:true,childList:true,characterData:true});
+setInterval(refresh,300);refresh();
+
+function localExit(x,z,rot,d=1.55){return {x:x+Math.sin(rot||0)*d,z:z+Math.cos(rot||0)*d}}
+function activeBedIdentity(){const s=globalThis.__AGCB_ACTIVE_FURNITURE_STATE,a=s?.anchor;if(!s?.active||s.mode!=='lie'||!a)return null;return {id:a.userData?.id||'',type:a.userData?.type||'',x:Number(a.position?.x)||0,z:Number(a.position?.z)||0,rot:Number(a.rotation?.y)||0}}
+function resolveExactBed(world,identity){if(!identity)return null;const objects=world?.objects||[];if(identity.id){const byId=objects.find(o=>o.id===identity.id);if(byId)return byId}return objects.find(o=>(o.type==='bed'||o.type==='starBed')&&Math.hypot((Number(o.x)||0)-identity.x,(Number(o.z)||0)-identity.z)<.15)||null}
+function advanceOneDay(world,settings,careStore,bedIdentity){
+  globalThis.__AGCB_WORLD_TASK_API?.processTreeRegrowth?.();
+  const refreshedWorld=read(WORLD_KEY,world);
+  if(refreshedWorld&&refreshedWorld!==world){Object.keys(world).forEach(k=>delete world[k]);Object.assign(world,refreshedWorld)}
+  const result=advanceDailySnapshot(world,settings,careStore,{wakeMinute:360});
+  settings.wakeMessage=result.earned?`早安！昨天的出貨收入 +${result.earned} 金幣`:'早安！新的一天開始了 ☀️';
+  const bed=resolveExactBed(world,bedIdentity);if(bed&&world.player){const e=localExit(Number(bed.x||0),Number(bed.z||0),Number(bed.rot||0));world.player.x=e.x;world.player.z=e.z;world.player.y=0}
+  return result;
+}
+
+btn.onclick=()=>{
+  if(!isLying())return;
+  const bedIdentity=activeBedIdentity();
+  globalThis.AGCBCharacterPose?.('sleep');globalThis.__AGCB_TEST_CHARACTER_ACTION?.('sleep',0);
+  globalThis.__AGCB_DAY_ADVANCE_LOCK={owner:'sleep',startedAt:Date.now()};$('#saveNow')?.click();btn.disabled=true;fade.classList.add('on');
+  setTimeout(()=>{
+    const world=read(WORLD_KEY,null),settings=read(SETTINGS_KEY,{}),careStore=read(CARE_KEY,{});if(!world){globalThis.__AGCB_DAY_ADVANCE_LOCK=null;fade.innerHTML='<div>找不到世界存檔<small>請先離開床再試一次</small></div>';btn.disabled=false;return}
+    const fromDay=Number(settings.worldDay||1),tx={phase:'prepared',owner:'sleep',fromDay,toDay:fromDay+1,startedAt:Date.now(),world:null,settings:null};write(DAY_TX_KEY,tx);
+    advanceOneDay(world,settings,careStore,bedIdentity);tx.phase='committed';tx.world=world;tx.settings=settings;write(DAY_TX_KEY,tx);write(WORLD_KEY,world);write(SETTINGS_KEY,settings);localStorage.removeItem(DAY_TX_KEY);
+    fade.innerHTML='<div>☀️ 早安！<small>新的一天準備好了</small></div>';
+    setTimeout(()=>location.reload(),650);
+  },260);
+};
+
+globalThis.__AGCB_SLEEP_ROUTINE={version:VERSION,settingsKey:SETTINGS_KEY,sameActiveSettingsKey:true,isLying,refresh,activeBedIdentity,resolveExactBed,status:'EXACT_ACTIVE_BED_WAKE_EXIT'};

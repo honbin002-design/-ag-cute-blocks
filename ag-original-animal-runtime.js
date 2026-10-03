@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 /*
  * AG Original Connected Animals — runtime55

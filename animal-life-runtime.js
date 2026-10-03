@@ -3,7 +3,7 @@ import {setAnimalVisualState} from './animal-models.js';
 import {setCutePetState} from './character-models.js';
 
 // Runtime activation is owned by bootstrap-v045.js. This module only owns animal-life decisions.
-const SETTINGS_KEY='ag_cute_blocks_settings_v03',WORLD_KEY='ag_cute_blocks_world_v04';
+const SETTINGS_KEY='agcb_prod_v1_settings_v03',WORLD_KEY='agcb_prod_v1_world_v04';
 const read=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};
 const livestock=()=>[...(globalThis.__AGCB_LIVE_LIVESTOCK||[])].filter(m=>m?.parent?.parent);
 const pets=()=>[...(globalThis.__AGCB_LIVE_PETS||[])].filter(m=>m?.parent?.parent);

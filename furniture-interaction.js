@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 const DEFINITIONS={
   chair:{action:'sit',label:'坐下',icon:'🪑',seatKind:'chair',anchor:new THREE.Vector3(0,-.08,.02),exit:new THREE.Vector3(0,0,1.0),yaw:0,secondary:['dine']},

@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 const M=(c,r=.92)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:.005});
 function ell(g,r,x,y,z,c,s=[1,1,1],seg=18){const m=new THREE.Mesh(new THREE.SphereGeometry(r,seg,Math.max(10,seg-6)),typeof c==='number'?M(c):c);m.position.set(x,y,z);m.scale.set(...s);m.castShadow=true;m.receiveShadow=true;g.add(m);return m}
 function cap(g,r,len,x,y,z,c){const p=new THREE.Group();p.position.set(x,y,z);const m=new THREE.Mesh(new THREE.CapsuleGeometry(r,Math.max(.01,len-r*2),5,9),typeof c==='number'?M(c):c);m.castShadow=true;p.add(m);g.add(p);return p}

@@ -1,0 +1,9 @@
+// AG Cute Blocks V0.5.58 — ensure placed construction pieces participate in solid/walkable collision.
+const VERSION='V0.5.58';
+const SHAPES=/^(block|cube|floor|wall|roof|slab|platform|stair|stairs)$/i;
+const SKIP=/door|water|river|lake|decoration|lamp|flag|window|glass/i;
+function shouldMark(o){if(!o?.isMesh)return false;const u=o.userData||{},shape=String(u.shape||''),kind=String(u.kind||''),name=String(o.name||'');if(SKIP.test(shape+' '+kind+' '+name))return false;if(u.ground||u.ranch||u.pet||u.wildlife||u.crop||u.treeKind)return false;return SHAPES.test(shape)||kind==='block'||u.stairTread===true}
+function mark(o){if(!shouldMark(o))return false;const u=o.userData||(o.userData={});const changed=u.solid!==true||u.kind!=='block'||u.walkable!==true;u.solid=true;u.kind='block';u.walkable=true;u.agWalkableVersion=VERSION;if(changed){globalThis.__AGCB_COLLISION_CACHE?.invalidateGeometry?.(o);globalThis.__AGCB_WORLD_HOTPATH?.reindexSolid?.(o)}return changed}
+function scan(root=document){let world=null;const live=[...(globalThis.__AGCB_LIVE_AVATARS||[])].filter(x=>x?.parent).at(-1);world=live?.parent||globalThis.scene||globalThis.world;if(!world?.traverse)return 0;let n=0;world.traverse(o=>{if(mark(o))n++});globalThis.__AGCB_BUILD_SURFACE_STATE={version:VERSION,updated:n,at:Date.now()};return n}
+function install(){scan();let queued=false;const observer=new MutationObserver(()=>{if(queued)return;queued=true;setTimeout(()=>{queued=false;scan()},80)});observer.observe(document.body,{childList:true,subtree:true});addEventListener('pageshow',()=>setTimeout(scan,80),{passive:true});setInterval(scan,1800);globalThis.__AGCB_BUILD_SURFACES={version:VERSION,scan,observer}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();

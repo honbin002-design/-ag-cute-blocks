@@ -1,6 +1,6 @@
 import {treeCanFruit} from './crop-models.js';
 
-const SAVE_KEY='ag_cute_blocks_world_v04',SETTINGS_KEY='ag_cute_blocks_settings_v03';
+const SAVE_KEY='agcb_prod_v1_world_v04',SETTINGS_KEY='agcb_prod_v1_settings_v03';
 const liveTrees=()=>[...(globalThis.__AGCB_LIVE_TREES||[])].filter(m=>m?.parent?.userData?.treeKind);
 const liveAvatars=()=>[...(globalThis.__AGCB_LIVE_AVATARS||[])].filter(a=>a?.parent);
 const read=(k,f={})=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};

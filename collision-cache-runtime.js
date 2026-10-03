@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 // The movement loop checks the same static blocks/furniture many times per second.
 // Cache their world bounds and keep the hot-path validation O(1): numeric transform values,

@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from './vendor/three-0.180.0/build/three.module.js';
 
 // The follow cameras only raycast a short segment behind/above the player.
 // The core now keeps a persistent static camera-target registry, while this layer further culls
