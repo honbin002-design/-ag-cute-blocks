@@ -255,3 +255,12 @@ Active PWA cache: `ag-cute-blocks-v045-runtime54`
 +4. 集中 iPhone 驗收人物視覺、Farm View 左右／上下／遠近操作，以及人物 turn／stop；不重測已通過的移動＋Jump 多點觸控。
 +5. 動物與人物批次穩定後，再繼續 incremental persistence / chunk migration。
 +
+
+
+## V1.0 PROD 發布里程碑 — 2026-10-05
+- Pages Source 已由使用者核准切換 GitHub Actions；main 非 force 推進至 197c98993030fcd0c9fae86c8d4d6a671b468d58。
+- Pages PROD run 37289718963 SUCCESS；完成 UTC 09:24:24／台北 17:24:24。
+- dev-v0.1 維持 9bdd69d；rollback/pre-v1.0-main 維持 03a6817。
+- 正式 URL 的 index.html 與 bootstrap-v0510.js 逐位元比對候選版一致；V1.0.0、PROD namespace agcb_prod_v1_。
+- 雲端瀏覽器 WebGL Disabled，啟動在 renderer 初始化失敗；正式人物、移動、存檔 Runtime 驗證受環境阻斷，不能宣告 PASS。RC 模擬測試證據仍有效，但不是新實機證據。
+- 下一步僅在可用 WebGL 瀏覽器驗證正式遊玩；Safe Stop，禁止開始 V1.1。詳細見 release-evidence/prod-deployment.json。

@@ -1,0 +1,26 @@
+{
+  "status": "DEPLOYED_RUNTIME_VERIFICATION_BLOCKED",
+  "source_sha": "197c98993030fcd0c9fae86c8d4d6a671b468d58",
+  "prod_sha": "197c98993030fcd0c9fae86c8d4d6a671b468d58",
+  "rc_sha": "b0a17533b02b8e181d20e7f25d167f6a359c5588",
+  "test_sha": "9bdd69d36e7bf06d50403cbf457281affadfdfac",
+  "rollback_sha": "03a68175cc9f04320b318df7bd18731730af88e7",
+  "workflow_run": 37289718963,
+  "deployment_completed_utc": "2026-10-05T09:24:24Z",
+  "promotion_minute_taipei": "2026-10-05T17:23+08:00",
+  "authority": "GitHub Actions / Pages PROD / main",
+  "live_url": "https://honbin002-design.github.io/-ag-cute-blocks/",
+  "live_static_checks": {
+    "index_matches_candidate": true,
+    "bootstrap_matches_candidate": true,
+    "version": "1.0.0",
+    "namespace": "agcb_prod_v1_"
+  },
+  "live_runtime": {
+    "status": "BLOCKED_BY_BROWSER_WEBGL_DISABLED",
+    "error": "THREE.WebGLRenderer: Error creating WebGL context; GL_VENDOR=Disabled, GL_RENDERER=Disabled",
+    "secondary_error": "Cannot access category before initialization after renderer failure",
+    "visual_gameplay_pass": false
+  },
+  "next": "Verify deployed game in WebGL-capable browser; do not start V1.1"
+}
