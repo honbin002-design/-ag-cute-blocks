@@ -1,0 +1,67 @@
+name: Formal CC0 Public Mirror Target Import V0.5.165
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-public-mirror-target-import-v05165.yml']
+  workflow_dispatch:
+jobs:
+  target-import:
+    name: AGCB-V05165-PUBLIC-MIRROR-TARGET-IMPORT
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire exact pinned CC0 target bytes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/agtarget
+          BASE='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'
+          for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fL --retry 3 "$BASE/$f" -o "/tmp/agtarget/$f"; done
+          echo 'e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4  /tmp/agtarget/Superhero_Male_FullBody.gltf' | sha256sum -c -
+          echo '459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f  /tmp/agtarget/Superhero_Male_FullBody.bin' | sha256sum -c -
+          echo 'adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4  /tmp/agtarget/Superhero_Female_FullBody.gltf' | sha256sum -c -
+          echo '3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208  /tmp/agtarget/Superhero_Female_FullBody.bin' | sha256sum -c -
+      - name: Acquire Godot 4.5.1
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip
+          unzip -q /tmp/g.zip -d /tmp/godot && chmod +x /tmp/godot/Godot_v4.5.1-stable_linux.x86_64
+      - name: Import real male and female targets in Godot
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/proj/targets
+          cp /tmp/agtarget/* /tmp/proj/targets/
+          cat > /tmp/proj/project.godot <<'EOF'
+          [application]
+          config/name="AGCB V05165 Target Import"
+          [rendering]
+          renderer/rendering_method="gl_compatibility"
+          EOF
+          /tmp/godot/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 20
+          cat > /tmp/proj/probe.gd <<'EOF'
+          extends SceneTree
+          func scan(n, out):
+              if n is Skeleton3D: out["skeletons"] += 1; out["bones"].append(n.get_bone_count())
+              if n is MeshInstance3D: out["meshes"] += 1
+              for c in n.get_children(): scan(c,out)
+          func _initialize():
+              var report={"evidenceId":"AGCB-V05165-PUBLIC-MIRROR-TARGET-IMPORT","release":"V0.5.165","environment":"TEST","prodEligible":false,"targets":{},"errors":[]}
+              for sex in ["Male","Female"]:
+                  var p="res://targets/Superhero_"+sex+"_FullBody.gltf"
+                  var r=load(p)
+                  if r==null: report.errors.append(sex+" load failed"); continue
+                  var inst=r.instantiate(); var x={"skeletons":0,"meshes":0,"bones":[]}; scan(inst,x); report.targets[sex]=x
+                  if x.skeletons<1 or x.meshes<1 or x.bones.is_empty() or x.bones[0]<60: report.errors.append(sex+" structural import gate failed")
+                  inst.free()
+              report["gate"]="PASS" if report.errors.is_empty() else "FAIL"
+              report["nextGate"]="GODOT4_REAL_TARGET_BONEMAP" if report.errors.is_empty() else "HOLD"
+              report["runtimePlayback"]="PENDING"; report["visualDeformation"]="PENDING"; report["prodPromotion"]="HOLD"
+              var f=FileAccess.open("/tmp/AGCB-V05165-PUBLIC-MIRROR-TARGET-IMPORT.json",FileAccess.WRITE); f.store_string(JSON.stringify(report,"  ")); f.close(); print(JSON.stringify(report)); quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/godot/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05165-PUBLIC-MIRROR-TARGET-IMPORT
+          path: /tmp/AGCB-V05165-PUBLIC-MIRROR-TARGET-IMPORT.json
+          retention-days: 3

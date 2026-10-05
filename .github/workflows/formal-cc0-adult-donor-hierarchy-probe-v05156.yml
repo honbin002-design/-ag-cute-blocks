@@ -1,0 +1,62 @@
+name: Formal CC0 Adult Donor Hierarchy Probe V0.5.156
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-adult-donor-hierarchy-probe-v05156.yml'
+  workflow_dispatch:
+
+jobs:
+  donor-hierarchy-probe:
+    name: AGCB-V05156-DONOR-HIERARCHY-PROBE
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 donor
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
+      - name: Derive actual skeleton roots and torso hierarchy
+        shell: python
+        run: |
+          import json,pathlib
+          g=json.load(open('/tmp/ual.gltf',encoding='utf8')); nodes=g.get('nodes',[])
+          parents={}
+          for i,n in enumerate(nodes):
+            for c in n.get('children',[]): parents[c]=i
+          skins=g.get('skins',[])
+          joints=sorted({j for s in skins for j in s.get('joints',[])})
+          jointset=set(joints)
+          roots=[j for j in joints if parents.get(j) not in jointset]
+          def nm(i): return nodes[i].get('name') or f'node#{i}'
+          def chain(i):
+            out=[]; seen=set()
+            while i is not None and i not in seen:
+              seen.add(i); out.append({'index':i,'name':nm(i),'translation':nodes[i].get('translation'),'rotation':nodes[i].get('rotation')}); i=parents.get(i)
+            return out
+          animated=set()
+          per_clip={}
+          for a in g.get('animations',[]):
+            targets=sorted({c.get('target',{}).get('node') for c in a.get('channels',[]) if c.get('target',{}).get('node') is not None})
+            per_clip[a.get('name')]=[{'index':i,'name':nm(i)} for i in targets]
+            animated.update(targets)
+          key_terms=('spine','pelvis','hip','thigh','root','body')
+          candidates=[]
+          for i in joints:
+            name=nm(i); low=name.lower()
+            if any(k in low for k in key_terms):
+              candidates.append({'index':i,'name':name,'parent':({'index':parents[i],'name':nm(parents[i])} if i in parents else None),'children':[{'index':c,'name':nm(c)} for c in nodes[i].get('children',[]) if c in jointset],'animated':i in animated,'ancestorChain':chain(i)[:8]})
+          required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Jump_Start','Jump_Loop','Jump_Land']
+          report={'evidenceId':'AGCB-V05156-DONOR-HIERARCHY-PROBE','release':'V0.5.156','environment':'TEST','prodEligible':False,
+            'skinCount':len(skins),'jointCount':len(joints),'skinRoots':[{'index':i,'name':nm(i),'children':[{'index':c,'name':nm(c)} for c in nodes[i].get('children',[]) if c in jointset]} for i in roots],
+            'candidates':candidates,'requiredClipTargets':{k:per_clip.get(k,[]) for k in required},
+            'nextGate':'REVIEW_HIERARCHY_EVIDENCE','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD'}
+          p=pathlib.Path('/tmp/AGCB-V05156-DONOR-HIERARCHY-PROBE.json'); p.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8'); print(p.read_text())
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AGCB-V05156-DONOR-HIERARCHY-PROBE
+          path: /tmp/AGCB-V05156-DONOR-HIERARCHY-PROBE.json
+          retention-days: 3

@@ -1,0 +1,47 @@
+name: Formal CC0 Target Drive Acquisition V0.5.164
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-target-drive-acquisition-v05164.yml'
+  workflow_dispatch:
+
+jobs:
+  target-drive-acquisition:
+    name: AGCB-V05164-TARGET-DRIVE-ACQUISITION
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install free Drive downloader
+        run: python -m pip install --disable-pip-version-check -q gdown
+      - name: Fetch three verified Drive split parts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ubc
+          gdown 'https://drive.google.com/uc?id=1En1yMUwJNEVOQ9of5po7-q-vo3bXW71F' -O /tmp/ubc/part001
+          gdown 'https://drive.google.com/uc?id=1Y7msXyMiiOAvMwXk3opTs_RsDXJo0V7I' -O /tmp/ubc/part002
+          gdown 'https://drive.google.com/uc?id=1u3l-nIJKXbawt7ILfZPQmofUIhFHs5im' -O /tmp/ubc/part003
+          cat /tmp/ubc/part001 /tmp/ubc/part002 /tmp/ubc/part003 > /tmp/ubc/ubc.zip
+          echo 'fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40  /tmp/ubc/ubc.zip' | sha256sum -c -
+      - name: Extract and verify adult target bytes
+        run: |
+          set -euo pipefail
+          cd /tmp/ubc
+          unzip -j ubc.zip '*Godot - UE/Superhero_Male_FullBody.gltf' '*Godot - UE/Superhero_Male_FullBody.bin' '*Godot - UE/Superhero_Female_FullBody.gltf' '*Godot - UE/Superhero_Female_FullBody.bin'
+          echo 'e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4  Superhero_Male_FullBody.gltf' | sha256sum -c -
+          echo '459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f  Superhero_Male_FullBody.bin' | sha256sum -c -
+          echo 'adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4  Superhero_Female_FullBody.gltf' | sha256sum -c -
+          echo '3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208  Superhero_Female_FullBody.bin' | sha256sum -c -
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('/tmp/ubc/AGCB-V05164-TARGET-DRIVE-ACQUISITION.json')
+          p.write_text(json.dumps({'evidenceId':'AGCB-V05164-TARGET-DRIVE-ACQUISITION','release':'V0.5.164','environment':'TEST','prodEligible':False,'gate':'PASS','archiveSha256':'fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40','targetBytes':'VERIFIED_AND_STAGED','nextGate':'GODOT4_TARGET_IMPORT','prodPromotion':'HOLD'},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05164-TARGET-DRIVE-ACQUISITION
+          path: /tmp/ubc/AGCB-V05164-TARGET-DRIVE-ACQUISITION.json
+          retention-days: 3

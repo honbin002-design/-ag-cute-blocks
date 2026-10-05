@@ -1,0 +1,74 @@
+name: Formal CC0 Adult Retarget Input Contract V0.5.154
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-adult-retarget-input-contract-v05154.yml'
+  workflow_dispatch:
+
+jobs:
+  retarget-input-contract:
+    name: AGCB-V05154-RETARGET-INPUT-CONTRACT
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 UAL donor metadata
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/AnimationLibrary_Godot_Standard.bin
+          curl -fL --retry 3 "$BASE/LICENSE" -o /tmp/UAL_LICENSE.txt
+      - name: Verify deterministic donor-to-target contract
+        shell: python
+        run: |
+          import json,pathlib,hashlib,sys
+          ual=json.load(open('/tmp/ual.gltf','r',encoding='utf8'))
+          node_names={n.get('name') for n in ual.get('nodes',[]) if n.get('name')}
+          anim_names={a.get('name') for a in ual.get('animations',[]) if a.get('name')}
+          required_clips=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Jump_Start','Jump_Loop','Jump_Land']
+          target_core=['hips','spine','chest','neck','head','leftShoulder','leftUpperArm','leftLowerArm','leftHand','rightShoulder','rightUpperArm','rightLowerArm','rightHand','leftUpperLeg','leftLowerLeg','leftFoot','rightUpperLeg','rightLowerLeg','rightFoot']
+          donor_semantics={
+            'hips':['DEF-pelvis','pelvis','Hips','hips'],
+            'spine':['DEF-spine','spine','Spine'],
+            'chest':['DEF-spine.001','DEF-spine.002','chest','Chest'],
+            'neck':['DEF-neck','neck','Neck'],
+            'head':['DEF-head','head','Head'],
+            'leftUpperArm':['DEF-upper_arm.L','upper_arm.L','LeftArm'],
+            'leftLowerArm':['DEF-forearm.L','forearm.L','LeftForeArm'],
+            'leftHand':['DEF-hand.L','hand.L','LeftHand'],
+            'rightUpperArm':['DEF-upper_arm.R','upper_arm.R','RightArm'],
+            'rightLowerArm':['DEF-forearm.R','forearm.R','RightForeArm'],
+            'rightHand':['DEF-hand.R','hand.R','RightHand'],
+            'leftUpperLeg':['DEF-thigh.L','thigh.L','LeftUpLeg'],
+            'leftLowerLeg':['DEF-shin.L','shin.L','LeftLeg'],
+            'leftFoot':['DEF-foot.L','foot.L','LeftFoot'],
+            'rightUpperLeg':['DEF-thigh.R','thigh.R','RightUpLeg'],
+            'rightLowerLeg':['DEF-shin.R','shin.R','RightLeg'],
+            'rightFoot':['DEF-foot.R','foot.R','RightFoot']}
+          resolved={k:next((x for x in v if x in node_names),None) for k,v in donor_semantics.items()}
+          errors=[]
+          missing_clips=[x for x in required_clips if x not in anim_names]
+          if missing_clips: errors.append('missing donor clips: '+','.join(missing_clips))
+          missing_core=[k for k,v in resolved.items() if v is None]
+          if missing_core: errors.append('missing donor core semantics: '+','.join(missing_core))
+          lic=pathlib.Path('/tmp/UAL_LICENSE.txt').read_text(encoding='utf8',errors='ignore')
+          if 'CC0' not in lic and 'public domain' not in lic.lower(): errors.append('CC0 marker missing')
+          report={
+            'evidenceId':'AGCB-V05154-RETARGET-INPUT-CONTRACT','release':'V0.5.154','environment':'TEST','prodEligible':False,
+            'donor':{'sourceCommit':'e24c23cf2a1323488a3faa226ea7ea21f644b73e','gltfSha256':hashlib.sha256(pathlib.Path('/tmp/ual.gltf').read_bytes()).hexdigest(),'binSha256':hashlib.sha256(pathlib.Path('/tmp/AnimationLibrary_Godot_Standard.bin').read_bytes()).hexdigest(),'animationCount':len(anim_names),'resolvedCore':resolved},
+            'targets':{'formalCc0Male01':{'jointCount':65,'sourceSha256':{'gltf':'e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4','bin':'459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f'}},'formalCc0Female01':{'jointCount':65,'sourceSha256':{'gltf':'adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4','bin':'3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208'}}},
+            'targetRequiredCore':target_core,'requiredClips':required_clips,
+            'retargetRules':['bind-pose rotational delta','bilateral shoulders independent','gameplay controller owns root translation'],
+            'contract':'PASS' if not errors else 'FAIL','nextGate':'RETARGET_BINARY_MATERIALIZATION' if not errors else 'HOLD','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD','errors':errors}
+          pathlib.Path('/tmp/AGCB-V05154-RETARGET-INPUT-CONTRACT.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05154-RETARGET-INPUT-CONTRACT
+          path: /tmp/AGCB-V05154-RETARGET-INPUT-CONTRACT.json
+          retention-days: 3

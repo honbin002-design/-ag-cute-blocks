@@ -1,0 +1,73 @@
+name: Formal CC0 Godot4 Retarget API Probe V0.5.162
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-godot4-retarget-api-probe-v05162.yml'
+  workflow_dispatch:
+
+jobs:
+  retarget-api-probe:
+    name: AGCB-V05162-GODOT4-RETARGET-API-PROBE
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned official Godot 4
+        run: |
+          set -euo pipefail
+          V='4.5.1-stable'; F='Godot_v4.5.1-stable_linux.x86_64.zip'
+          curl -fL --retry 3 "https://github.com/godotengine/godot/releases/download/${V}/${F}" -o /tmp/godot4.zip
+          unzip -q /tmp/godot4.zip -d /tmp/godot4
+          chmod +x /tmp/godot4/Godot_v4.5.1-stable_linux.x86_64
+      - name: Probe retarget classes and humanoid profile
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/agprobe
+          cat > /tmp/agprobe/project.godot <<'EOF'
+          [application]
+          config/name="AGCB Retarget Probe"
+          [rendering]
+          renderer/rendering_method="gl_compatibility"
+          EOF
+          cat > /tmp/agprobe/probe.gd <<'EOF'
+          extends SceneTree
+          func _initialize():
+              var report = {}
+              report["engine"] = Engine.get_version_info()
+              report["bone_map_exists"] = ClassDB.class_exists("BoneMap")
+              report["skeleton_profile_exists"] = ClassDB.class_exists("SkeletonProfile")
+              report["skeleton_profile_humanoid_exists"] = ClassDB.class_exists("SkeletonProfileHumanoid")
+              var profile = SkeletonProfileHumanoid.new()
+              report["humanoid_bone_count"] = profile.get_bone_size()
+              var bones = []
+              for i in range(profile.get_bone_size()):
+                  bones.append(str(profile.get_bone_name(i)))
+              report["humanoid_bones"] = bones
+              var bm = BoneMap.new()
+              bm.profile = profile
+              report["bone_map_profile_attached"] = bm.profile != null
+              var f = FileAccess.open("/tmp/AGCB-V05162-GODOT4-RETARGET-API-PROBE.json", FileAccess.WRITE)
+              f.store_string(JSON.stringify(report, "  "))
+              f.close()
+              print(JSON.stringify(report))
+              quit(0 if report["bone_map_exists"] and report["skeleton_profile_humanoid_exists"] and report["bone_map_profile_attached"] else 2)
+          EOF
+          /tmp/godot4/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/agprobe --script res://probe.gd
+      - name: Verify probe evidence
+        shell: python
+        run: |
+          import json,pathlib,sys
+          p=pathlib.Path('/tmp/AGCB-V05162-GODOT4-RETARGET-API-PROBE.json')
+          d=json.loads(p.read_text())
+          ok=bool(d.get('bone_map_exists') and d.get('skeleton_profile_humanoid_exists') and d.get('bone_map_profile_attached') and d.get('humanoid_bone_count',0)>0)
+          d.update({'evidenceId':'AGCB-V05162-GODOT4-RETARGET-API-PROBE','release':'V0.5.162','environment':'TEST','prodEligible':False,'gate':'PASS' if ok else 'FAIL','nextGate':'GODOT4_TARGET_IMPORT_AND_BONEMAP' if ok else 'HOLD','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD'})
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)); print(p.read_text())
+          if not ok: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05162-GODOT4-RETARGET-API-PROBE
+          path: /tmp/AGCB-V05162-GODOT4-RETARGET-API-PROBE.json
+          retention-days: 3

@@ -1,0 +1,45 @@
+name: Formal CC0 Godot4 Acquisition V0.5.161
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-godot4-acquisition-v05161.yml'
+  workflow_dispatch:
+
+jobs:
+  godot4-acquisition:
+    name: AGCB-V05161-GODOT4-ACQUISITION
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned official Godot 4 Linux editor
+        run: |
+          set -euo pipefail
+          VERSION='4.5.1-stable'
+          FILE='Godot_v4.5.1-stable_linux.x86_64.zip'
+          URL="https://github.com/godotengine/godot/releases/download/${VERSION}/${FILE}"
+          curl -fL --retry 3 "$URL" -o /tmp/godot4.zip
+          unzip -q /tmp/godot4.zip -d /tmp/godot4
+          chmod +x /tmp/godot4/Godot_v4.5.1-stable_linux.x86_64
+          /tmp/godot4/Godot_v4.5.1-stable_linux.x86_64 --headless --version | tee /tmp/godot4-version.txt
+      - name: Verify Godot 4 capability
+        shell: python
+        run: |
+          import json,pathlib,subprocess,sys
+          exe='/tmp/godot4/Godot_v4.5.1-stable_linux.x86_64'
+          p=subprocess.run([exe,'--headless','--version'],capture_output=True,text=True)
+          version=(p.stdout or p.stderr).strip()
+          ok=version.startswith('4.')
+          report={'evidenceId':'AGCB-V05161-GODOT4-ACQUISITION','release':'V0.5.161','environment':'TEST','prodEligible':False,'source':'official godotengine/godot GitHub release','requestedVersion':'4.5.1-stable','runnerVersion':version,'headlessExecutable':exe,'gate':'PASS' if ok else 'FAIL','nextGate':'GODOT4_RETARGET_MATERIALIZATION' if ok else 'HOLD','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD'}
+          pathlib.Path('/tmp/AGCB-V05161-GODOT4-ACQUISITION.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8'); print(json.dumps(report,ensure_ascii=False,indent=2))
+          if not ok: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05161-GODOT4-ACQUISITION
+          path: |
+            /tmp/AGCB-V05161-GODOT4-ACQUISITION.json
+            /tmp/godot4-version.txt
+          retention-days: 3

@@ -1,0 +1,74 @@
+name: Formal CC0 Retarget Contract V0.5.157
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-retarget-contract-v05157.yml'
+  workflow_dispatch:
+
+jobs:
+  retarget-contract:
+    name: AGCB-V05157-RETARGET-CONTRACT
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 donor
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
+      - name: Verify hierarchy-derived retarget contract
+        shell: python
+        run: |
+          import json,pathlib,sys
+          g=json.load(open('/tmp/ual.gltf',encoding='utf8')); nodes=g.get('nodes',[])
+          names={n.get('name'):i for i,n in enumerate(nodes) if n.get('name')}
+          parents={}
+          for i,n in enumerate(nodes):
+            for c in n.get('children',[]): parents[c]=i
+          expected={
+            'root':'root','hips':'DEF-hips','spine':'DEF-spine.001',
+            'leftThigh':'DEF-thigh.L','rightThigh':'DEF-thigh.R'
+          }
+          errors=[]
+          for role,name in expected.items():
+            if name not in names: errors.append(f'missing {role}: {name}')
+          if not errors:
+            root,hips,spine=[names[expected[k]] for k in ('root','hips','spine')]
+            if parents.get(hips)!=root: errors.append('DEF-hips is not direct child of root')
+            if parents.get(spine)!=hips: errors.append('DEF-spine.001 is not direct child of DEF-hips')
+            for role in ('leftThigh','rightThigh'):
+              if parents.get(names[expected[role]])!=hips: errors.append(f'{expected[role]} is not direct child of DEF-hips')
+          required=['Idle_Loop','Walk_Loop','Jog_Fwd_Loop','Jump_Start','Jump_Loop','Jump_Land']
+          clips={a.get('name'):a for a in g.get('animations',[])}
+          required_nodes=[expected['root'],expected['hips'],expected['spine'],expected['leftThigh'],expected['rightThigh']]
+          coverage={}
+          for clip in required:
+            a=clips.get(clip)
+            if not a:
+              errors.append('missing clip: '+clip); continue
+            targets={nodes[c['target']['node']].get('name') for c in a.get('channels',[]) if c.get('target',{}).get('node') is not None}
+            missing=[n for n in required_nodes if n not in targets]
+            coverage[clip]={'requiredNodesPresent':not missing,'missing':missing}
+            if missing: errors.append(f'{clip} missing channels: '+','.join(missing))
+          contract={
+            'evidenceId':'AGCB-V05157-RETARGET-CONTRACT','release':'V0.5.157','environment':'TEST','prodEligible':False,
+            'sourceEvidence':'AGCB-V05156-DONOR-HIERARCHY-PROBE',
+            'mapping':expected,
+            'hierarchyRules':['root > DEF-hips','DEF-hips > DEF-spine.001','DEF-hips > DEF-thigh.L','DEF-hips > DEF-thigh.R'],
+            'clipCoverage':coverage,
+            'retargetRules':['bind-pose rotational delta','bilateral shoulders independent','gameplay controller owns root translation'],
+            'contractGate':'PASS' if not errors else 'FAIL',
+            'nextGate':'RETARGET_BINARY_MATERIALIZATION' if not errors else 'HOLD',
+            'runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD','errors':errors
+          }
+          p=pathlib.Path('/tmp/AGCB-V05157-RETARGET-CONTRACT.json'); p.write_text(json.dumps(contract,ensure_ascii=False,indent=2),encoding='utf8'); print(p.read_text())
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05157-RETARGET-CONTRACT
+          path: /tmp/AGCB-V05157-RETARGET-CONTRACT.json
+          retention-days: 3

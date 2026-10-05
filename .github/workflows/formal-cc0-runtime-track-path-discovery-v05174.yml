@@ -1,0 +1,44 @@
+name: Formal CC0 Runtime Track Path Discovery V0.5.174
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-runtime-track-path-discovery-v05174.yml']
+  workflow_dispatch:
+jobs:
+  discover:
+    name: AGCB-V05174-RUNTIME-TRACK-PATH-DISCOVERY
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned targets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/targets
+          TB='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'; for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fsSL "$TB/$f" -o "/tmp/proj/targets/$f"; done
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64; printf '[application]\nconfig/name="AGCB V05174"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot; /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25
+      - name: Discover exact Skeleton3D paths and validate resolvable bone NodePaths
+        run: |
+          cat > /tmp/proj/probe.gd <<'EOF'
+          extends SceneTree
+          var core=["root","pelvis","spine_01","spine_02","spine_03","neck_01","Head","clavicle_l","upperarm_l","lowerarm_l","hand_l","clavicle_r","upperarm_r","lowerarm_r","hand_r","thigh_l","calf_l","foot_l","ball_l","thigh_r","calf_r","foot_r","ball_r"]
+          func find_sk(n):
+              if n is Skeleton3D:return n
+              for c in n.get_children():
+                  var x=find_sk(c);if x:return x
+              return null
+          func _initialize():
+              var report={"evidenceId":"AGCB-V05174-RUNTIME-TRACK-PATH-DISCOVERY","release":"V0.5.174","environment":"TEST","prodEligible":false,"targets":{},"errors":[]}
+              for sex in ["Male","Female"]:
+                  var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();get_root().add_child(r);var sk=find_sk(r);var parent=sk.get_parent();var ap=AnimationPlayer.new();parent.add_child(ap);var rel=ap.get_path_to(sk);var resolved=0;var paths={}
+                  for b in core:
+                      var np=NodePath(str(rel)+":"+b);var node=ap.get_node_or_null(NodePath(str(rel)));var ok=node==sk and sk.find_bone(b)>=0;if ok:resolved+=1;paths[b]={"trackPath":str(np),"resolved":ok}
+                  report.targets[sex]={"skeletonName":sk.name,"skeletonPathFromRoot":str(r.get_path_to(sk)),"animationPlayerParent":parent.name,"relativePathFromPlayer":str(rel),"resolvedCore":resolved,"paths":paths};if resolved!=23:report.errors.append(sex+" resolved "+str(resolved)+"/23");r.queue_free()
+              report.gate="PASS" if report.errors.is_empty() else "FAIL";report.nextGate="CORRECT_RUNTIME_PLAYBACK" if report.errors.is_empty() else "HOLD";report.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05174-RUNTIME-TRACK-PATH-DISCOVERY.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close();print(JSON.stringify(report));quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05174-RUNTIME-TRACK-PATH-DISCOVERY
+          path: /tmp/AGCB-V05174-RUNTIME-TRACK-PATH-DISCOVERY.json
+          retention-days: 3

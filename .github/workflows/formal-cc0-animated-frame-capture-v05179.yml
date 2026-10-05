@@ -1,0 +1,102 @@
+name: Formal CC0 Animated Frame Capture V0.5.179
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-animated-frame-capture-v05179.yml']
+  workflow_dispatch:
+jobs:
+  capture:
+    name: AGCB-V05179-ANIMATED-FRAME-CAPTURE
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned donor target assets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor /tmp/proj/targets
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/a.gltf; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          API='https://api.github.com/repos/BoQsc/gpu-marching-cubes/contents/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE?ref=54368c0875c5f72be00160fafb040c6ce5c4e760'; curl -fsSL "$API" -o /tmp/list.json
+          python3 - <<'PY'
+          import json,urllib.request,os,shutil
+          p='/tmp/proj/targets'
+          for x in json.load(open('/tmp/list.json')):
+            n=x['name']
+            if n.startswith(('Superhero_Male_FullBody','Superhero_Female_FullBody','T_Hair_','T_Eye_','T_Superhero_Male_','T_Superhero_Female_')): urllib.request.urlretrieve(x['download_url'],p+'/'+n)
+          for s,d in {'T_Eye_Normal.png':'T_Eye_Normal_png.png','T_Hair_1_Normal.png':'T_Hair_1_Normal_png.png','T_Hair_2_Normal.png':'T_Hair_2_Normal_png.png'}.items():
+            if os.path.exists(p+'/'+s) and not os.path.exists(p+'/'+d): shutil.copyfile(p+'/'+s,p+'/'+d)
+          PY
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05179"\nrun/main_scene="res://capture.tscn"\n[display]\nwindow/size/viewport_width=900\nwindow/size/viewport_height=900\nwindow/size/window_width_override=900\nwindow/size/window_height_override=900\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25 >/tmp/import.log 2>&1
+          ! grep -q "couldn't be loaded" /tmp/import.log; ! grep -q "Can't open file from path" /tmp/import.log
+      - name: Render male female six real animation poses
+        run: |
+          cat > /tmp/proj/capture.gd <<'EOF'
+          extends Node3D
+          var clips=["Idle","Walk","Jog_Fwd","Jump","Jump_Start","Jump_Land"]
+          var sexes=["Male","Female"]
+          var bm={"root":"root","DEF-hips":"pelvis","DEF-spine.001":"spine_01","DEF-spine.002":"spine_02","DEF-spine.003":"spine_03","DEF-neck":"neck_01","DEF-head":"Head","DEF-shoulder.L":"clavicle_l","DEF-upper_arm.L":"upperarm_l","DEF-forearm.L":"lowerarm_l","DEF-hand.L":"hand_l","DEF-shoulder.R":"clavicle_r","DEF-upper_arm.R":"upperarm_r","DEF-forearm.R":"lowerarm_r","DEF-hand.R":"hand_r","DEF-thigh.L":"thigh_l","DEF-shin.L":"calf_l","DEF-foot.L":"foot_l","DEF-toe.L":"ball_l","DEF-thigh.R":"thigh_r","DEF-shin.R":"calf_r","DEF-foot.R":"foot_r","DEF-toe.R":"ball_r"}
+          var src={}
+          func scan(n,s,p):
+            if n is Skeleton3D:s.append(n)
+            if n is AnimationPlayer:p.append(n)
+            for c in n.get_children():scan(c,s,p)
+          func make_lib(track_base):
+            var out=AnimationLibrary.new()
+            for cn in clips:
+              var a=src[cn];var b=Animation.new();b.length=a.length;b.loop_mode=a.loop_mode
+              for i in range(a.get_track_count()):
+                var bone=str(a.track_get_path(i)).get_slice(":",1)
+                if not bm.has(bone):continue
+                var ni=b.add_track(a.track_get_type(i));b.track_set_path(ni,NodePath(track_base+":"+bm[bone]));b.track_set_interpolation_type(ni,a.track_get_interpolation_type(i))
+                for k in range(a.track_get_key_count(i)):b.track_insert_key(ni,a.track_get_key_time(i,k),a.track_get_key_value(i,k),a.track_get_key_transition(i,k))
+              out.add_animation(cn,b)
+            return out
+          func _ready():
+            var env=WorldEnvironment.new();var e=Environment.new();e.background_mode=Environment.BG_COLOR;e.background_color=Color(0.82,0.84,0.88);e.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;e.ambient_light_color=Color.WHITE;e.ambient_light_energy=1.2;env.environment=e;add_child(env)
+            var light=DirectionalLight3D.new();light.rotation_degrees=Vector3(-35,-25,0);light.light_energy=1.8;add_child(light)
+            var cam=Camera3D.new();cam.position=Vector3(0,1.05,3.2);cam.look_at_from_position(cam.position,Vector3(0,1.0,0));cam.current=true;add_child(cam)
+            var dr=load("res://donor/a.gltf").instantiate();var ds=[];var dp=[];scan(dr,ds,dp)
+            for ln in dp[0].get_animation_library_list():
+              var l=dp[0].get_animation_library(ln)
+              for an in l.get_animation_list():src[str(an)]=l.get_animation(an)
+            dr.free();call_deferred("capture_all")
+          func capture_all():
+            for sex in sexes:
+              var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();r.name="Subject";add_child(r);var ss=[];var pp=[];scan(r,ss,pp);var sk=ss[0];var ap=AnimationPlayer.new();r.add_child(ap);ap.root_node=NodePath("..");var track_base=str(r.get_path_to(sk));ap.add_animation_library("",make_lib(track_base))
+              for cn in clips:
+                sk.reset_bone_poses();ap.play(cn);ap.seek(min(src[cn].length*0.5,0.6),true)
+                for i in range(5):await get_tree().process_frame
+                var img=get_viewport().get_texture().get_image();var err=img.save_png("/tmp/AGCB-V05179-"+sex+"-"+cn+".png");print("CAPTURE ",sex," ",cn," err=",err)
+              r.queue_free();await get_tree().process_frame
+            get_tree().quit()
+          EOF
+          cat > /tmp/proj/capture.tscn <<'EOF'
+          [gd_scene load_steps=2 format=3]
+          [ext_resource path="res://capture.gd" type="Script" id="1"]
+          [node name="Capture" type="Node3D"]
+          script = ExtResource("1")
+          EOF
+          set +e; xvfb-run -a /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --path /tmp/proj --rendering-method gl_compatibility --audio-driver Dummy >/tmp/capture.log 2>&1; rc=$?; set -e; cat /tmp/capture.log; test $rc -eq 0
+          ! grep -q "couldn't resolve track" /tmp/capture.log
+          python3 - <<'PY'
+          import os,json
+          clips=['Idle','Walk','Jog_Fwd','Jump','Jump_Start','Jump_Land']; sexes=['Male','Female']; r={'evidenceId':'AGCB-V05179-ANIMATED-FRAME-CAPTURE','release':'V0.5.179','environment':'TEST','prodEligible':False,'frames':{},'errors':[]}
+          for s in sexes:
+            r['frames'][s]={}
+            for c in clips:
+              p=f'/tmp/AGCB-V05179-{s}-{c}.png'
+              if not os.path.exists(p):r['errors'].append(f'{s} {c} missing');continue
+              z=os.path.getsize(p);r['frames'][s][c]={'bytes':z};
+              if z<10000:r['errors'].append(f'{s} {c} suspiciously small')
+          r['gate']='PASS' if not r['errors'] else 'FAIL';r['nextGate']='ANIMATED_VISUAL_REVIEW' if not r['errors'] else 'HOLD';r['prodPromotion']='HOLD';open('/tmp/AGCB-V05179.json','w').write(json.dumps(r,indent=2));print(json.dumps(r));raise SystemExit(0 if not r['errors'] else 2)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05179-ANIMATED-FRAME-CAPTURE
+          path: |
+            /tmp/AGCB-V05179-*.png
+            /tmp/AGCB-V05179.json
+            /tmp/capture.log
+          retention-days: 3

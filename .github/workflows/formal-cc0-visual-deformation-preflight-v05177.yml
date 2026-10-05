@@ -1,0 +1,80 @@
+name: Formal CC0 Visual Deformation Preflight V0.5.177
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-visual-deformation-preflight-v05177.yml']
+  workflow_dispatch:
+jobs:
+  preflight:
+    name: AGCB-V05177-VISUAL-DEFORMATION-PREFLIGHT
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned targets with exact texture URI aliases
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/proj/targets
+          API='https://api.github.com/repos/BoQsc/gpu-marching-cubes/contents/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE?ref=54368c0875c5f72be00160fafb040c6ce5c4e760'
+          curl -fsSL "$API" -o /tmp/list.json
+          python3 - <<'PY'
+          import json,urllib.request,os
+          for x in json.load(open('/tmp/list.json')):
+              n=x['name']
+              if n.startswith(('Superhero_Male_FullBody','Superhero_Female_FullBody','T_Hair_','T_Eye_','T_Superhero_Male_','T_Superhero_Female_')):
+                  urllib.request.urlretrieve(x['download_url'],'/tmp/proj/targets/'+n)
+          p='/tmp/proj/targets'
+          aliases={'T_Eye_Normal.png':'T_Eye_Normal_png.png','T_Hair_1_Normal.png':'T_Hair_1_Normal_png.png','T_Hair_2_Normal.png':'T_Hair_2_Normal_png.png'}
+          for src,dst in aliases.items():
+              if os.path.exists(os.path.join(p,src)) and not os.path.exists(os.path.join(p,dst)):
+                  import shutil; shutil.copyfile(os.path.join(p,src),os.path.join(p,dst))
+          PY
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip
+          unzip -q /tmp/g.zip -d /tmp/g
+          chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05177"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25 2>&1 | tee /tmp/import.log
+          ! grep -q "couldn't be loaded" /tmp/import.log
+          ! grep -q "Can't open file from path" /tmp/import.log
+      - name: Validate mesh skeleton bindings and finite rest transforms
+        run: |
+          cat > /tmp/proj/check.gd <<'EOF'
+          extends SceneTree
+          func scan(n,sk,mi):
+              if n is Skeleton3D:sk.append(n)
+              if n is MeshInstance3D:mi.append(n)
+              for c in n.get_children():scan(c,sk,mi)
+          func finite_t(t):
+              var vals=[t.origin.x,t.origin.y,t.origin.z,t.basis.x.x,t.basis.x.y,t.basis.x.z,t.basis.y.x,t.basis.y.y,t.basis.y.z,t.basis.z.x,t.basis.z.y,t.basis.z.z]
+              for v in vals:
+                  if is_nan(v) or is_inf(v):return false
+              return true
+          func _initialize():
+              var report={"evidenceId":"AGCB-V05177-VISUAL-DEFORMATION-PREFLIGHT","release":"V0.5.177","environment":"TEST","prodEligible":false,"targets":{},"errors":[]}
+              for sex in ["Male","Female"]:
+                  var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();get_root().add_child(r);var ss=[];var mm=[];scan(r,ss,mm);var sk=ss[0];var finite=true
+                  for i in range(sk.get_bone_count()):
+                      if not finite_t(sk.get_bone_rest(i)):finite=false
+                  var bound=0;var meshes=[]
+                  for m in mm:
+                      var has_skin=m.skin!=null
+                      var resolves=false
+                      if has_skin:
+                          var p=m.get_node_or_null(m.skeleton);resolves=p==sk
+                      if has_skin and resolves:bound+=1
+                      meshes.append({"name":m.name,"hasSkin":has_skin,"skeletonPath":str(m.skeleton),"resolvesTarget":resolves})
+                  report.targets[sex]={"boneCount":sk.get_bone_count(),"finiteRest":finite,"meshCount":mm.size(),"boundMeshCount":bound,"meshes":meshes}
+                  if not finite:report.errors.append(sex+" non-finite rest transform")
+                  if mm.size()==0 or bound==0:report.errors.append(sex+" no mesh bound to target skeleton")
+                  r.queue_free()
+              report.gate="PASS" if report.errors.is_empty() else "FAIL";report.materialDependencies="PASS";report.meshSkeletonBinding="PASS" if report.errors.is_empty() else "FAIL";report.nextGate="VISUAL_FRAME_CAPTURE" if report.errors.is_empty() else "HOLD";report.visualDeformation="PREFLIGHT_PASS" if report.errors.is_empty() else "FAIL";report.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05177-VISUAL-DEFORMATION-PREFLIGHT.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close();print(JSON.stringify(report));quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://check.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05177-VISUAL-DEFORMATION-PREFLIGHT
+          path: |
+            /tmp/AGCB-V05177-VISUAL-DEFORMATION-PREFLIGHT.json
+            /tmp/import.log
+          retention-days: 3

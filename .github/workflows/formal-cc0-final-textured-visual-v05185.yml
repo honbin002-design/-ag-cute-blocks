@@ -1,0 +1,107 @@
+name: Formal CC0 Final Textured Visual V0.5.185
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-final-textured-visual-v05185.yml']
+  workflow_dispatch:
+jobs:
+  verify:
+    name: AGCB-V05185-FINAL-TEXTURED-VISUAL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned textured targets and donor
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/targets /tmp/proj/donor
+          API='https://api.github.com/repos/BoQsc/gpu-marching-cubes/contents/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE?ref=54368c0875c5f72be00160fafb040c6ce5c4e760'
+          curl -fsSL "$API" -o /tmp/manifest.json
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          root=pathlib.Path('/tmp/proj/targets'); m=json.loads(pathlib.Path('/tmp/manifest.json').read_text()); files={x['name']:x.get('download_url') for x in m if x.get('type')=='file'}
+          core=['Superhero_Male_FullBody.gltf','Superhero_Male_FullBody.bin','Superhero_Female_FullBody.gltf','Superhero_Female_FullBody.bin']
+          for n in core:
+            urllib.request.urlretrieve(files[n],root/n)
+          req=set()
+          for sex in ('Male','Female'):
+            d=json.loads((root/f'Superhero_{sex}_FullBody.gltf').read_text()); req.update(x['uri'] for x in d.get('images',[]) if x.get('uri'))
+          # Resolve known upstream naming defects without modifying GLTF semantics beyond URI repair.
+          aliases={'T_Eye_Normal_png.png':'T_Eye_Normal.png','T_Hair_1_Normal_png.png':'T_Hair_1_Normal.png'}
+          for uri in sorted(req):
+            src=uri if uri in files else aliases.get(uri)
+            if src and src in files: urllib.request.urlretrieve(files[src],root/uri)
+          PY
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/a.gltf; curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05185"\nrun/main_scene="res://verify.tscn"\n[display]\nwindow/size/viewport_width=1200\nwindow/size/viewport_height=1200\nwindow/size/window_width_override=1200\nwindow/size/window_height_override=1200\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 30 >/tmp/import.log 2>&1
+      - name: Render final textured animation evidence
+        run: |
+          cat > /tmp/proj/verify.gd <<'EOF'
+          extends Node3D
+          var clips=["Idle","Walk","Jog_Fwd","Jump"]
+          var bm={"root":"root","DEF-hips":"pelvis","DEF-spine.001":"spine_01","DEF-spine.002":"spine_02","DEF-spine.003":"spine_03","DEF-neck":"neck_01","DEF-head":"Head","DEF-shoulder.L":"clavicle_l","DEF-upper_arm.L":"upperarm_l","DEF-forearm.L":"lowerarm_l","DEF-hand.L":"hand_l","DEF-shoulder.R":"clavicle_r","DEF-upper_arm.R":"upperarm_r","DEF-forearm.R":"lowerarm_r","DEF-hand.R":"hand_r","DEF-thigh.L":"thigh_l","DEF-shin.L":"calf_l","DEF-foot.L":"foot_l","DEF-toe.L":"ball_l","DEF-thigh.R":"thigh_r","DEF-shin.R":"calf_r","DEF-foot.R":"foot_r","DEF-toe.R":"ball_r"}
+          var src={}
+          func scan(n,s,p,m):
+            if n is Skeleton3D:s.append(n)
+            if n is AnimationPlayer:p.append(n)
+            if n is MeshInstance3D:m.append(n)
+            for c in n.get_children():scan(c,s,p,m)
+          func lib(base,sk):
+            var o=AnimationLibrary.new()
+            for cn in clips:
+              var a=src[cn];var b=Animation.new();b.length=a.length;b.loop_mode=a.loop_mode
+              for i in range(a.get_track_count()):
+                var db=str(a.track_get_path(i)).get_slice(":",1)
+                if not bm.has(db):continue
+                var tb=bm[db]
+                if sk.find_bone(tb)<0:continue
+                var ni=b.add_track(a.track_get_type(i));b.track_set_path(ni,NodePath(base+":"+tb));b.track_set_interpolation_type(ni,a.track_get_interpolation_type(i))
+                for k in range(a.track_get_key_count(i)):b.track_insert_key(ni,a.track_get_key_time(i,k),a.track_get_key_value(i,k),a.track_get_key_transition(i,k))
+              o.add_animation(cn,b)
+            return o
+          func _ready():
+            var env=WorldEnvironment.new();var e=Environment.new();e.background_mode=Environment.BG_COLOR;e.background_color=Color(0.12,0.14,0.18);e.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;e.ambient_light_color=Color.WHITE;e.ambient_light_energy=1.2;env.environment=e;add_child(env)
+            var key=DirectionalLight3D.new();key.rotation_degrees=Vector3(-35,-30,0);key.light_energy=2.0;add_child(key);var fill=DirectionalLight3D.new();fill.rotation_degrees=Vector3(-15,145,0);fill.light_energy=0.9;add_child(fill)
+            var cam=Camera3D.new();cam.position=Vector3(0,1.05,2.45);cam.look_at_from_position(cam.position,Vector3(0,1.0,0));cam.current=true;add_child(cam)
+            var d=load("res://donor/a.gltf").instantiate();var ss=[];var pp=[];var mm=[];scan(d,ss,pp,mm)
+            for ln in pp[0].get_animation_library_list():
+              var l=pp[0].get_animation_library(ln)
+              for an in l.get_animation_list():src[str(an)]=l.get_animation(an)
+            d.free();call_deferred("go")
+          func go():
+            var rep={"evidenceId":"AGCB-V05185-FINAL-TEXTURED-VISUAL","release":"V0.5.185","environment":"TEST","targets":{},"errors":[]}
+            for sex in ["Male","Female"]:
+              var r=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate();r.name="Subject";add_child(r);var ss=[];var pp=[];var meshes=[];scan(r,ss,pp,meshes);var sk=ss[0];var ap=AnimationPlayer.new();r.add_child(ap);ap.root_node=NodePath("..");ap.add_animation_library("",lib(str(r.get_path_to(sk)),sk));var textured=0
+              for mi in meshes:
+                for si in range(mi.mesh.get_surface_count()):
+                  var mat=mi.get_active_material(si)
+                  if mat is BaseMaterial3D and mat.albedo_texture!=null:textured+=1
+              var sr={"meshCount":meshes.size(),"texturedMaterials":textured,"frames":{}}
+              if textured<3:rep.errors.append(sex+" expected 3 textured materials, got "+str(textured))
+              for cn in clips:
+                sk.reset_bone_poses();ap.play(cn);ap.seek(min(src[cn].length*0.5,0.6),true)
+                for i in range(8):await get_tree().process_frame
+                var p="/tmp/AGCB-V05185-"+sex+"-"+cn+".png";var er=get_viewport().get_texture().get_image().save_png(p);var bytes=FileAccess.get_file_as_bytes(p).size();sr.frames[cn]={"saveError":er,"bytes":bytes}
+                if er!=OK or bytes<5000:rep.errors.append(sex+" "+cn+" capture invalid")
+              rep.targets[sex]=sr;r.queue_free();await get_tree().process_frame
+            rep.gate="PASS" if rep.errors.is_empty() else "FAIL";rep.nextGate="HUMAN_FINAL_VISUAL_REVIEW" if rep.errors.is_empty() else "TEXTURE_OR_CAPTURE_CORRECTION";rep.prodPromotion="HOLD";var f=FileAccess.open("/tmp/AGCB-V05185.json",FileAccess.WRITE);f.store_string(JSON.stringify(rep,"  "));f.close();print(JSON.stringify(rep));get_tree().quit(0 if rep.errors.is_empty() else 1)
+          EOF
+          cat > /tmp/proj/verify.tscn <<'EOF'
+          [gd_scene load_steps=2 format=3]
+          [ext_resource path="res://verify.gd" type="Script" id="1"]
+          [node name="Verify" type="Node3D"]
+          script = ExtResource("1")
+          EOF
+          xvfb-run -a /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --path /tmp/proj --rendering-method gl_compatibility --audio-driver Dummy >/tmp/v05185.log 2>&1
+          cat /tmp/v05185.log; test -f /tmp/AGCB-V05185.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05185-FINAL-TEXTURED-VISUAL
+          path: |
+            /tmp/AGCB-V05185-*.png
+            /tmp/AGCB-V05185.json
+            /tmp/v05185.log
+            /tmp/import.log
+          retention-days: 3

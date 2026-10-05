@@ -1,0 +1,63 @@
+name: Formal CC0 Live Retarget Input Probe V0.5.169
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/formal-cc0-live-retarget-input-probe-v05169.yml']
+  workflow_dispatch:
+jobs:
+  probe:
+    name: AGCB-V05169-LIVE-RETARGET-INPUT-PROBE
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned donor targets and Godot
+        run: |
+          set -euo pipefail; mkdir -p /tmp/proj/donor /tmp/proj/targets
+          DB='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e/glTF'
+          curl -fsSL "$DB/AnimationLibrary_Godot_Standard.gltf" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.gltf
+          curl -fsSL "$DB/AnimationLibrary_Godot_Standard.bin" -o /tmp/proj/donor/AnimationLibrary_Godot_Standard.bin
+          TB='https://raw.githubusercontent.com/BoQsc/gpu-marching-cubes/54368c0875c5f72be00160fafb040c6ce5c4e760/models/entities/player/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE'
+          for f in Superhero_Male_FullBody.gltf Superhero_Male_FullBody.bin Superhero_Female_FullBody.gltf Superhero_Female_FullBody.bin; do curl -fsSL "$TB/$f" -o "/tmp/proj/targets/$f"; done
+          curl -fsSL 'https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip' -o /tmp/g.zip; unzip -q /tmp/g.zip -d /tmp/g; chmod +x /tmp/g/Godot_v4.5.1-stable_linux.x86_64
+          printf '[application]\nconfig/name="AGCB V05169"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n' > /tmp/proj/project.godot
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --editor --path /tmp/proj --quit-after 25
+      - name: Probe donor AnimationPlayer skeleton tracks and target readiness
+        run: |
+          cat > /tmp/proj/probe.gd <<'EOF'
+          extends SceneTree
+          func walk(n, out):
+              if n is Skeleton3D: out.skeletons.append(n)
+              if n is AnimationPlayer: out.players.append(n)
+              for c in n.get_children(): walk(c,out)
+          func _initialize():
+              var report={"evidenceId":"AGCB-V05169-LIVE-RETARGET-INPUT-PROBE","release":"V0.5.169","environment":"TEST","prodEligible":false,"donor":{},"targets":{},"errors":[]}
+              var donor=load("res://donor/AnimationLibrary_Godot_Standard.gltf").instantiate(); var d={"skeletons":[],"players":[]}; walk(donor,d)
+              report.donor.skeletonCount=d.skeletons.size(); report.donor.playerCount=d.players.size()
+              if d.skeletons.is_empty(): report.errors.append("donor Skeleton3D missing")
+              if d.players.is_empty(): report.errors.append("donor AnimationPlayer missing")
+              if not d.skeletons.is_empty():
+                  var sk=d.skeletons[0]; var names=[]; for i in range(sk.get_bone_count()): names.append(str(sk.get_bone_name(i)))
+                  report.donor.boneCount=sk.get_bone_count(); report.donor.bones=names
+              var required=["Idle_Loop","Walk_Loop","Jog_Fwd_Loop","Jump_Start","Jump_Loop","Jump_Land"]; var found=[]
+              for p in d.players:
+                  for libname in p.get_animation_library_list():
+                      var lib=p.get_animation_library(libname)
+                      for a in lib.get_animation_list(): if a in required and not found.has(a): found.append(a)
+              found.sort(); report.donor.requiredClipsFound=found
+              if found.size()!=required.size(): report.errors.append("required donor clips not all imported")
+              for sex in ["Male","Female"]:
+                  var inst=load("res://targets/Superhero_"+sex+"_FullBody.gltf").instantiate(); var x={"skeletons":[],"players":[]}; walk(inst,x)
+                  report.targets[sex]={"skeletonCount":x.skeletons.size(),"boneCount":x.skeletons[0].get_bone_count() if not x.skeletons.is_empty() else 0}
+                  if x.skeletons.is_empty(): report.errors.append(sex+" target Skeleton3D missing")
+                  inst.free()
+              donor.free(); report.gate="PASS" if report.errors.is_empty() else "FAIL"; report.nextGate="LIVE_RETARGET_MATERIALIZATION" if report.errors.is_empty() else "HOLD"; report.runtimePlayback="PENDING"; report.visualDeformation="PENDING"; report.prodPromotion="HOLD"
+              var f=FileAccess.open("/tmp/AGCB-V05169-LIVE-RETARGET-INPUT-PROBE.json",FileAccess.WRITE); f.store_string(JSON.stringify(report,"  ")); f.close(); print(JSON.stringify(report)); quit(0 if report.errors.is_empty() else 2)
+          EOF
+          /tmp/g/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/proj --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05169-LIVE-RETARGET-INPUT-PROBE
+          path: /tmp/AGCB-V05169-LIVE-RETARGET-INPUT-PROBE.json
+          retention-days: 3

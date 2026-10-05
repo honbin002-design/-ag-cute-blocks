@@ -1,0 +1,52 @@
+name: Formal CC0 Retarget Binary Materialization V0.5.158
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-retarget-binary-materialization-v05158.yml'
+  workflow_dispatch:
+
+jobs:
+  binary-materialization-input:
+    name: AGCB-V05158-BINARY-MATERIALIZATION-INPUT
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned CC0 donor binary
+        run: |
+          set -euo pipefail
+          BASE='https://raw.githubusercontent.com/J-Ponzo/gltf-universal-animation-library/e24c23cf2a1323488a3faa226ea7ea21f644b73e'
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.gltf" -o /tmp/ual.gltf
+          curl -fL --retry 3 "$BASE/glTF/AnimationLibrary_Godot_Standard.bin" -o /tmp/ual.bin
+      - name: Build deterministic binary materialization manifest
+        shell: python
+        run: |
+          import json,pathlib,hashlib,sys
+          g=json.load(open('/tmp/ual.gltf',encoding='utf8')); nodes=g.get('nodes',[])
+          names={n.get('name'):i for i,n in enumerate(nodes) if n.get('name')}
+          mapping={'root':'root','hips':'DEF-hips','spine':'DEF-spine.001','leftThigh':'DEF-thigh.L','rightThigh':'DEF-thigh.R'}
+          clips={'Idle':'Idle_Loop','Walk':'Walk_Loop','Run':'Jog_Fwd_Loop','Jump_Start':'Jump_Start','Jump_Loop':'Jump_Loop','Jump_Land':'Jump_Land'}
+          errors=[]
+          for role,name in mapping.items():
+            if name not in names: errors.append(f'missing mapping node {role}:{name}')
+          anim={a.get('name'):a for a in g.get('animations',[])}
+          for logical,source in clips.items():
+            if source not in anim: errors.append(f'missing animation {logical}:{source}')
+          targets={
+            'formalCc0Male01':{'jointCount':65,'gltfSha256':'e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4','binSha256':'459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f','output':'formalCc0Male01-retarget-v05158.glb'},
+            'formalCc0Female01':{'jointCount':65,'gltfSha256':'adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4','binSha256':'3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208','output':'formalCc0Female01-retarget-v05158.glb'}
+          }
+          manifest={'evidenceId':'AGCB-V05158-BINARY-MATERIALIZATION-INPUT','release':'V0.5.158','environment':'TEST','prodEligible':False,'sourceContract':'AGCB-V05157-RETARGET-CONTRACT','donor':{'commit':'e24c23cf2a1323488a3faa226ea7ea21f644b73e','gltfSha256':hashlib.sha256(pathlib.Path('/tmp/ual.gltf').read_bytes()).hexdigest(),'binSha256':hashlib.sha256(pathlib.Path('/tmp/ual.bin').read_bytes()).hexdigest()},'mapping':mapping,'clipMap':clips,'targets':targets,'retargetRules':['bind-pose rotational delta','bilateral shoulders independent','gameplay controller owns root translation'],'inputGate':'PASS' if not errors else 'FAIL','binaryBuild':'READY' if not errors else 'HOLD','runtimePlayback':'PENDING','visualDeformation':'PENDING','prodPromotion':'HOLD','errors':errors}
+          p=pathlib.Path('/tmp/AGCB-V05158-BINARY-MATERIALIZATION-INPUT.json'); p.write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf8'); print(p.read_text())
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05158-BINARY-MATERIALIZATION-INPUT
+          path: |
+            /tmp/ual.gltf
+            /tmp/ual.bin
+            /tmp/AGCB-V05158-BINARY-MATERIALIZATION-INPUT.json
+          retention-days: 3

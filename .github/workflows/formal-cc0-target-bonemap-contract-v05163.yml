@@ -1,0 +1,63 @@
+name: Formal CC0 Target BoneMap Contract V0.5.163
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-target-bonemap-contract-v05163.yml'
+  workflow_dispatch:
+
+jobs:
+  target-bonemap-contract:
+    name: AGCB-V05163-TARGET-BONEMAP-CONTRACT
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned official Godot 4
+        run: |
+          set -euo pipefail
+          V='4.5.1-stable'; F='Godot_v4.5.1-stable_linux.x86_64.zip'
+          curl -fL --retry 3 "https://github.com/godotengine/godot/releases/download/${V}/${F}" -o /tmp/godot4.zip
+          unzip -q /tmp/godot4.zip -d /tmp/godot4
+          chmod +x /tmp/godot4/Godot_v4.5.1-stable_linux.x86_64
+      - name: Verify target-to-humanoid BoneMap in real Godot
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/agprobe
+          cat > /tmp/agprobe/project.godot <<'EOF'
+          [application]
+          config/name="AGCB Target BoneMap"
+          EOF
+          cat > /tmp/agprobe/probe.gd <<'EOF'
+          extends SceneTree
+          func _initialize():
+              var target = {
+                  "Root":"root", "Hips":"pelvis", "Spine":"spine_01", "Chest":"spine_02", "UpperChest":"spine_03",
+                  "Neck":"neck_01", "Head":"head",
+                  "LeftShoulder":"clavicle_l", "LeftUpperArm":"upperarm_l", "LeftLowerArm":"lowerarm_l", "LeftHand":"hand_l",
+                  "RightShoulder":"clavicle_r", "RightUpperArm":"upperarm_r", "RightLowerArm":"lowerarm_r", "RightHand":"hand_r",
+                  "LeftUpperLeg":"thigh_l", "LeftLowerLeg":"calf_l", "LeftFoot":"foot_l", "LeftToes":"ball_l",
+                  "RightUpperLeg":"thigh_r", "RightLowerLeg":"calf_r", "RightFoot":"foot_r", "RightToes":"ball_r"
+              }
+              var profile = SkeletonProfileHumanoid.new()
+              var bm = BoneMap.new(); bm.profile = profile
+              var profile_names = {}
+              for i in range(profile.get_bone_size()): profile_names[str(profile.get_bone_name(i))] = true
+              var errors = []
+              for human_name in target.keys():
+                  if not profile_names.has(human_name):
+                      errors.append("profile missing " + human_name)
+                  else:
+                      bm.set_skeleton_bone_name(human_name, target[human_name])
+                      if str(bm.get_skeleton_bone_name(human_name)) != target[human_name]: errors.append("mapping write/read mismatch " + human_name)
+              var report = {"evidenceId":"AGCB-V05163-TARGET-BONEMAP-CONTRACT","release":"V0.5.163","environment":"TEST","prodEligible":false,"engine":Engine.get_version_info()["string"],"targetMapping":target,"mappedCount":target.size(),"errors":errors,"gate":"PASS" if errors.is_empty() else "FAIL","nextGate":"TARGET_BYTES_IMPORT" if errors.is_empty() else "HOLD","runtimePlayback":"PENDING","visualDeformation":"PENDING","prodPromotion":"HOLD"}
+              var f=FileAccess.open("/tmp/AGCB-V05163-TARGET-BONEMAP-CONTRACT.json",FileAccess.WRITE); f.store_string(JSON.stringify(report,"  ")); f.close(); print(JSON.stringify(report)); quit(0 if errors.is_empty() else 2)
+          EOF
+          /tmp/godot4/Godot_v4.5.1-stable_linux.x86_64 --headless --path /tmp/agprobe --script res://probe.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05163-TARGET-BONEMAP-CONTRACT
+          path: /tmp/AGCB-V05163-TARGET-BONEMAP-CONTRACT.json
+          retention-days: 3

@@ -1,0 +1,49 @@
+name: Formal CC0 Adult Target Recovery V0.5.152
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/formal-cc0-adult-target-recovery-v05152.yml'
+  workflow_dispatch:
+
+jobs:
+  target-recovery:
+    name: AGCB-V05152-TARGET-RECOVERY
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover pinned CC0 target archive
+        run: |
+          set -euo pipefail
+          URL='https://quaternius.com/patreon/UniversalBaseCharacters.zip'
+          curl -fL --retry 3 "$URL" -o /tmp/targets.zip
+          echo 'fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40  /tmp/targets.zip' | sha256sum -c -
+          unzip -q /tmp/targets.zip -d /tmp/targets
+      - name: Verify exact adult target binaries
+        shell: python
+        run: |
+          import pathlib,hashlib,json,sys
+          expected={
+            'Superhero_Male_FullBody.gltf':'e7fcea214ecf8855afbf910b50de6f9c7d1decfb71ca28bad8a4481452dafeb4',
+            'Superhero_Male_FullBody.bin':'459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f',
+            'Superhero_Female_FullBody.gltf':'adedf28000a0716f689b009a70314506fc62f827498f77ba852acb5610f3f3f4',
+            'Superhero_Female_FullBody.bin':'3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208'}
+          found={}; errors=[]
+          for name,sha in expected.items():
+            matches=list(pathlib.Path('/tmp/targets').rglob(name))
+            if len(matches)!=1: errors.append(f'{name}: expected one file, got {len(matches)}'); continue
+            actual=hashlib.sha256(matches[0].read_bytes()).hexdigest()
+            found[name]={'path':str(matches[0]),'sha256':actual,'match':actual==sha}
+            if actual!=sha: errors.append(f'{name}: sha mismatch')
+          report={'evidenceId':'AGCB-V05152-TARGET-RECOVERY','environment':'TEST','archiveSha256':'fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40','files':found,'targetRecovery':'PASS' if not errors else 'FAIL','nextGate':'RETARGET_BINARY_MATERIALIZATION' if not errors else 'HOLD','prodEligible':False,'prodPromotion':'HOLD','errors':errors}
+          pathlib.Path('/tmp/AGCB-V05152-TARGET-RECOVERY.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          if errors: sys.exit(1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AGCB-V05152-TARGET-RECOVERY
+          path: /tmp/AGCB-V05152-TARGET-RECOVERY.json
+          retention-days: 3
