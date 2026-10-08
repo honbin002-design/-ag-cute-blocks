@@ -89,3 +89,14 @@ Resume procedure:
 6. Keep technical/runtime PASS separate from AG visual approval.
 
 Rollback: if a new TEST candidate or retarget fails, remove/disable only that new TEST candidate/reference and return here. Preserve the source archive, provenance evidence, historical TEST/HOLD candidates, PROD, and all locked PASS functionality.
+
+
+## V1.0.1 正式人物修正
+- 使用者已要求直接修正正式版；PROD main=b70dd3f5dfdd20912cb63c97907888599be04905，Pages PROD run 37709014328 SUCCESS。
+- 恢復原先特殊角色3 / Candidate 018 接入鏈；預設 test3。Boy005 bridge 只是 TEST 讀取工具，並非漏載它就造成回退，先前該歸因已更正。
+- 正式角色3 模型改為同站16分片，總15321932 bytes；入口、bootstrap、人物 loader、16分片正式 HTTP 反讀均逐位元吻合。
+- 正式選擇 key=agcb_prod_v1_character_selection，TEST 不讀取不遷移；既有世界與存檔格式不改。
+- Node 實際 GLB 解析77個蒙皮網格；idle/walk/run/jump有限值、角色掛載、舊角色隱藏與TEST sentinel隔離 PASS。測試stub紋理，不代表視覺PASS。
+- 雲端 WebGL Disabled；實際畫面與iPhone視覺尚未PASS。使用者下一次開啟確認V1.0.1；不得假稱最終造型驗收完成。
+- Rollback rollback/pre-v1.0.1-character=197c98993030fcd0c9fae86c8d4d6a671b468d58。
+- 本次此dev更新僅Checkpoint，TEST Runtime未變更。Safe Stop，不開始V1.1。
