@@ -100,3 +100,7 @@ Rollback: if a new TEST candidate or retarget fails, remove/disable only that ne
 - 雲端 WebGL Disabled；實際畫面與iPhone視覺尚未PASS。使用者下一次開啟確認V1.0.1；不得假稱最終造型驗收完成。
 - Rollback rollback/pre-v1.0.1-character=197c98993030fcd0c9fae86c8d4d6a671b468d58。
 - 本次此dev更新僅Checkpoint，TEST Runtime未變更。Safe Stop，不開始V1.1。
+
+
+## V1.0.2 — visible character selector repair
+User screenshot confirms V1.0.1 with special5 selected but test3 still displayed. Root causes: original #avatar handler and extra #agTestCharacterSelect controlled separate states; livePlayer selected detached historical player. Unified original dropdown, migrated explicit special2/5 choices, selected attached player, hid base after replacement. main: 69c466d5853a0d10ca0917e1328b5177eaedf06d; tree: 3a948de86b86dc16f3507de0c6501df9b666f63b. Pages PROD run 37744690734. tests/prod-character-v102.mjs verifies menu 3/2/5, male restore, attached-player replacement and migration with model doubles. v101 actual GLB test still passes. These are NOT WebGL visual acceptance. No new character artwork; final appearance remains unaccepted. TEST runtime unchanged. Previous PROD b70dd3f5dfdd20912cb63c97907888599be04905 remains parent rollback point.
