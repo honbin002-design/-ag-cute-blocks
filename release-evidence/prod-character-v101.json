@@ -1,0 +1,15 @@
+{
+  "realGlbParsed": true,
+  "skinnedMeshes": 77,
+  "actions": [
+    "idle",
+    "walk",
+    "run",
+    "jump"
+  ],
+  "finiteTransforms": true,
+  "oldVisualHidden": true,
+  "correctModelAttached": true,
+  "testStorageUntouched": true,
+  "visualRendering": "NOT_TESTED_WEBGL_DISABLED"
+}
