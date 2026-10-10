@@ -1,12 +1,12 @@
 // AG Cute Blocks - protected special character integration v19 / V1.0.3.
 // V1.0.1: formal selection is isolated from TEST; no silent legacy fallback.
-const STORAGE_KEY='agcb_prod_v1_character_selection',PROTECTED=new Set(['test3','ual3','special2','special5']);
+const STORAGE_KEY='agcb_prod_v1_character_selection',PROTECTED=new Set(['test3','ual3','special2','special5','boy005']);
 let current='',overlay=null,busy=false,requestSeq=0,lastPos=null,lastT=performance.now(),forcedAction='',forcedUntil=0,visibilitySnapshot=[],overlayHost=null,hiddenHost=null,hiddenVisual=null,sleeping=false;
 let locomotionState='idle',jumpUntil=0,lastGroundLike=0;
 const MOVE_ENTER=.12,MOVE_EXIT=.055,JUMP_ASCEND=.025,JUMP_MIN_MS=430,JUMP_MAX_MS=950;
 function runtime(id=current){if(id==='ual3')return globalThis.__AGCB_UAL_CHARACTER3_RUNTIME;return globalThis.__AGCB_TEST_CHARACTER_RUNTIME}
 function livePlayer(){const source=globalThis.__AGCB_LIVE_AVATARS;const list=source?Array.from(source).reverse().filter(g=>g?.parent):[];return list.find(g=>g?.userData?.entityId==='player-local')||list.find(g=>g?.userData?.isPlayer)||list.find(g=>g?.userData?.avatarCustomization)||list[0]||null}
-const roleToCharacter=value=>({special3:'test3',special2:'special2',special5:'special5',ual3:'ual3'}[value]||'');
+const roleToCharacter=value=>({boy005:'boy005',special3:'test3',special2:'special2',special5:'special5',ual3:'ual3'}[value]||'');
 const characterToRole=value=>value==='test3'?'special3':value;
 function syncSelector(){const sel=document.getElementById('avatar');if(sel&&current)sel.value=characterToRole(current)}
 function visualOf(player){return player?.userData?.visual||player}function remember(obj){if(obj&&!visibilitySnapshot.some(x=>x[0]===obj))visibilitySnapshot.push([obj,obj.visible])}
@@ -24,9 +24,10 @@ function installUI(){
  if(!sel||sel.dataset.agcbUnifiedCharacter)return;
  sel.dataset.agcbUnifiedCharacter='true';
  const option=document.createElement('option');option.value='ual3';option.textContent='⭐ Candidate 018（正式動態角色）';sel.appendChild(option);
+ const boyOption=document.createElement('option');boyOption.value='boy005';boyOption.textContent='Boy005（新測試角色）';sel.appendChild(boyOption);
  const indicator=document.createElement('small');indicator.id='agTestCharacterIndicator';indicator.style.cssText='display:block;margin-top:4px;white-space:normal';indicator.textContent='正式角色';sel.parentNode.appendChild(indicator);
  const legacyChange=sel.onchange;
- sel.onchange=e=>{const role=e.target.value;if(role!=='ual3')legacyChange?.call(sel,e);return select(roleToCharacter(role))};
+ sel.onchange=e=>{const role=e.target.value;if(!['ual3','boy005'].includes(role))legacyChange?.call(sel,e);return select(roleToCharacter(role))};
  let saved=localStorage.getItem(STORAGE_KEY)||'';
  if(!saved||['boy','girl'].includes(saved))saved=roleToCharacter(sel.value)||'test3';
  // Respect explicit special-role choices made through the previously disconnected menu.

@@ -1,0 +1,23 @@
+{
+  "status": "CANDIDATE_NOT_VISUALLY_ACCEPTED",
+  "rootCause": "Object.assign on frozen characters throws before integration module",
+  "fix": "new frozen registry with special2 and special5, preserving original registry",
+  "boy005SourceDriveId": "1PumNgfL_cr12kG9wIBwu_XKUaOgAIpt9",
+  "boy005Bytes": 2296868,
+  "boy005Sha256": "4e9cea628c95a6d50544a2cd70407ac67c5725b7578102cae4dbb3888fdae5fb",
+  "wrongTestViewerBlob": "c94ad4281d5f2c219f8b4f224a7d2f1a3cdceeb6",
+  "wrongViewerProblem": "base64 text named glb; decoded length 786444 does not match header 983248; wrong model 92 nodes versus original 41",
+  "tests": [
+    "real module chain",
+    "Candidate018 and Boy005 option construction",
+    "real Boy005 parse, 21 skinned meshes",
+    "idle/walk/run/jump embedded animation evaluation",
+    "actual player attachment and old visual hiding"
+  ],
+  "remaining": [
+    "WebGL visual acceptance",
+    "Candidate018 actual asset loading and retarget integration",
+    "Boy005 gameplay actions beyond four native clips"
+  ],
+  "productionUnchanged": "2b86eeee630988e76c52a54759b7dc403bac3df1"
+}
