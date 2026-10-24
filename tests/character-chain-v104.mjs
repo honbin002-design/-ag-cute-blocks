@@ -29,4 +29,10 @@ console.log(nodes.status.textContent);
 assert.equal(api.selected,'boy005');assert.equal(api.candidate.root.parent,player);assert.equal(visual.visible,false);
 const candidate=api.candidate;let skins=0;candidate.root.traverse(o=>{if(o.isSkinnedMesh)skins++});assert(skins>0);
 for(const a of ['idle','walk','run','jump']){assert(candidate.actions[a],a);candidate.play(a);for(let i=0;i<30;i++)candidate.update(1/60);candidate.root.traverse(o=>assert([...o.position,...o.quaternion,...o.scale].every(Number.isFinite)))}
+const rt=globalThis.__AGCB_TEST_CHARACTER_RUNTIME,create=rt.create;
+rt.create=async()=>{throw new Error('fixture load failure')};
+await api.select('special2');assert.equal(api.selected,'boy005');assert.equal(api.candidate,candidate);assert.equal(visual.visible,false);
+api.restore();assert.equal(visual.visible,true);
+await api.select('special2');assert.equal(api.selected,'special2');assert.equal(api.candidate,null);assert.equal(visual.visible,false);assert.equal(globalThis.__AGCB_BOOTSTRAP.characterRuntimeGate,'BLOCKED');
+rt.create=create;
 console.log(JSON.stringify({realModuleChain:true,options:sel.options.map(o=>o.value),boy005SkinnedMeshes:skins,realEmbeddedActions:['idle','walk','run','jump'],attached:true,baseHidden:true,visualRendering:'NOT_VERIFIED'},null,2));

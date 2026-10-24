@@ -53,8 +53,8 @@ async function create(){
   }
   function update(dt){mixer.update(dt);retarget(dt)}
   restore(targetRest);vrm.humanoid.update();play('idle');retarget(0);
-  return{root,mixer,actions,clips,play,update,available:Object.keys(actions),animationLibraryStatus:`UAL1:Candidate018 W0 / mapped ${pairs.length}`,styleStatus:'Candidate 018 FINAL PASS・VRM normalized W0',forwardYaw:0,get action(){return currentName},get mappedBones(){return pairs.length}};
+  return{root,mixer,actions,clips,play,update,available:Object.keys(actions),animationLibraryStatus:`UAL1:Candidate018 W0 / mapped ${pairs.length}`,styleStatus:'Candidate 018・VRM normalized W0',forwardYaw:0,get action(){return currentName},get mappedBones(){return pairs.length}};
 }
 
-globalThis.__AGCB_UAL_CHARACTER3_RUNTIME={version:18,release:'V0.5.89',candidate:'018',retarget:'VRM normalized humanoid + W0 world-space delta',create,model:DONOR,animations:UAL1,status:'FINAL_PASS_GAME_RUNTIME'};
+globalThis.__AGCB_UAL_CHARACTER3_RUNTIME={version:18,release:'V0.5.89',candidate:'018',retarget:'VRM normalized humanoid + W0 world-space delta',create,model:DONOR,animations:UAL1,status:'CANDIDATE_PENDING_VISUAL_REVIEW'};
 export{create};
