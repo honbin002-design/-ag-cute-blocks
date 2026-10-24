@@ -19,11 +19,17 @@ try{
   const state=await page.evaluate(()=>{const x=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION,p=x.player,c=x.candidate;return{selected:x.selected,attached:!!c&&c.root.parent===p,visible:!!c&&c.root.visible,baseVisible:p?.userData?.visual?.visible,gate:globalThis.__AGCB_BOOTSTRAP?.characterRuntimeGate,meshes:c?.root?.children?.length||0,indicator:document.getElementById('agTestCharacterIndicator')?.textContent}});
   report.push({role,...state});
   if(!state.attached||!state.visible||state.baseVisible!==false||state.gate!=='READY')throw Error(`${role}: ${JSON.stringify(state)}`);
+  const poses={};
   for(const action of ['idle','walk','run','jump']){
-   await page.evaluate(action=>{const c=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.candidate;c.play(action);c.update(1/30)},action);
-   await page.waitForTimeout(200);
+   await page.evaluate(action=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force(action,5000),action);
+   await page.waitForTimeout(350);
+   poses[action]=await page.evaluate(()=>{const bones=[];globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.candidate.root.traverse(o=>{if(o.isBone)bones.push(...o.quaternion.toArray())});return bones});
    await page.screenshot({path:`${dir}/${role}-${action}.png`});
   }
+  const poseDistance=(a,b)=>a.reduce((sum,v,i)=>sum+Math.abs(v-b[i]),0);
+  const movement={walk:poseDistance(poses.walk,poses.idle),run:poseDistance(poses.run,poses.idle),jump:poseDistance(poses.jump,poses.idle)};
+  report.at(-1).movement=movement;
+  if(Object.values(movement).some(n=>n<.01))throw Error(`${role}: animation did not change pose ${JSON.stringify(movement)}`);
  }
  if(errors.length)throw Error(`Browser errors: ${errors.join('\n')}`);
 }finally{
