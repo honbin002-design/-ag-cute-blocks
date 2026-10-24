@@ -11,6 +11,8 @@ const report=[];
 try{
  await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION?.player,{timeout:60000});
+ if((await page.locator('#cam').textContent())?.includes('第一人稱'))await page.locator('#cam').click();
+ if(!(await page.locator('#cam').textContent())?.includes('第三人稱'))throw Error('視覺驗收相機不是第三人稱');
  for(const role of ['boy005','ual3','special2','special5','test3']){
   await page.evaluate(role=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select(role),role);
   await page.waitForFunction(role=>{const x=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION;return x?.selected===role&&x.candidate?.root?.parent===x.player&&globalThis.__AGCB_BOOTSTRAP?.characterRuntimeGate==='READY'},role,{timeout:90000});
