@@ -23,14 +23,16 @@ try{
   console.log('Rendering',role);
   await page.evaluate(()=>{const p=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.player;p.rotation.y=0});
   for(const action of ['idle','walk','run','jump']){
-   await page.evaluate(action=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force(action,5000),action);
-   await page.waitForTimeout(650);
+   await page.evaluate(action=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.force(action,60000),action);
+   await page.evaluate(()=>new Promise(resolve=>{let frames=0;const tick=()=>++frames>=8?resolve():requestAnimationFrame(tick);requestAnimationFrame(tick)}));
    poses[action]=await page.evaluate(()=>{const bones=[];globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.candidate.root.traverse(o=>{if(o.isBone)bones.push(...o.quaternion.toArray())});return bones});
    await page.screenshot({path:`${dir}/${role}-${action}.png`});
   }
   const poseDistance=(a,b)=>a.reduce((sum,v,i)=>sum+Math.abs(v-b[i]),0);
   const movement={walk:poseDistance(poses.walk,poses.idle),run:poseDistance(poses.run,poses.idle),jump:poseDistance(poses.jump,poses.idle)};
   report.at(-1).movement=movement;
+  await page.evaluate(()=>{const a=globalThis.__AGCB_TEST_CHARACTER_INTEGRATION;a.force('idle',60000);a.candidate.root.rotation.y+=Math.PI});
+  await page.waitForTimeout(250);await page.screenshot({path:`${dir}/${role}-front.png`});
   if(Object.values(movement).some(n=>n<.01))throw Error(`${role}: animation did not change pose ${JSON.stringify(movement)}`);
  }
  await page.evaluate(()=>globalThis.__AGCB_TEST_CHARACTER_INTEGRATION.select('ual3'));

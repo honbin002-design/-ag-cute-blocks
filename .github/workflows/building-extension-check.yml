@@ -28,12 +28,12 @@ jobs:
         shell: python
         run: |
           import pathlib,sys,re
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          app=pathlib.Path('app-v0504.js').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           mat=pathlib.Path('procedural-material-runtime.js').read_text(encoding='utf-8')
           collision=pathlib.Path('collision-cache-runtime.js').read_text(encoding='utf-8')
           ray=pathlib.Path('raycast-budget-runtime.js').read_text(encoding='utf-8')
-          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
           failures=[]
           required_app=["['stair','🪜','樓梯']","function stairSurfaceY","function standSurfaceY","'建材':","'建築':","'家電':","t==='door'","t==='window'","t==='fence'","registerSolid","unregisterSolid","reindexSolid","SOLID_CELL=4","solidGrid=new Map()","buildAimTargets","registerBuildAimTarget","unregisterBuildAimTarget","globalThis.__AGCB_GAME_ACTIONS"]
@@ -61,7 +61,7 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          app=pathlib.Path('app-v0504.js').read_text(encoding='utf-8')
           viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
           inputjs=pathlib.Path('mobile-input-runtime.js').read_text(encoding='utf-8')
           controls=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
@@ -73,7 +73,7 @@ jobs:
           legacy="document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()" in app
           if legacy and 'legacyBlanketTouchBlockerSuppressed' not in viewport:
             failures.append('legacy blanket two-touch blocker exists without suppression guard')
-          if 'direct-game-actions-v3' not in inputjs or 'bridge?.invoke?.(el.id)' not in inputjs: failures.append('direct mobile action bridge missing')
+          if 'direct-game-actions-v4' not in inputjs or 'bridge?.invoke?.(el.id)' not in inputjs: failures.append('direct mobile action bridge missing')
           if 'crosshairVisualOnly:true' not in controls: failures.append('crosshair visual-only runtime marker missing')
           if 'pointer-events:none!important' not in css: failures.append('crosshair CSS still captures input')
           if 'right:max(18px' not in sleep: failures.append('sleep-to-morning button is not kept on right side')
@@ -85,7 +85,7 @@ jobs:
         shell: python
         run: |
           import pathlib,re,sys
-          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
+          boot=pathlib.Path('bootstrap-v0510.js').read_text(encoding='utf-8')
           sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)

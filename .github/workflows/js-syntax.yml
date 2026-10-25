@@ -33,9 +33,11 @@ jobs:
           export_re=re.compile(r'export\s+(?:async\s+)?(?:function|class|const|let|var)\s+([A-Za-z_$][\w$]*)')
           export_list_re=re.compile(r'export\s*\{([^}]+)\}')
           import_re=re.compile(r'import\s*\{([^}]+)\}\s*from\s*[\'\"](\./[^\'\"]+)[\'\"]')
-          for source_name,source in files.items():
+          for source_name,source in list(files.items()):
             for names,target in import_re.findall(source):
-              target_name=pathlib.Path(target.split('?')[0]).name
+              target_name=target.split('?')[0].removeprefix('./')
+              if target_name not in files and pathlib.Path(target_name).is_file():
+                files[target_name]=pathlib.Path(target_name).read_text(encoding='utf-8')
               if target_name not in files:
                 failures.append(f'{source_name}: missing relative module {target}')
                 continue
@@ -43,7 +45,7 @@ jobs:
               exports=set(export_re.findall(target_src))
               for block in export_list_re.findall(target_src):
                 for item in block.split(','):
-                  raw=item.strip().split(' as ')[0].strip()
+                  raw=item.strip().split(' as ')[-1].strip()
                   if raw: exports.add(raw)
               for item in names.split(','):
                 imported=item.strip().split(' as ')[0].strip()
@@ -54,49 +56,7 @@ jobs:
           print('Relative named-import validation passed.')
 
       - name: Verify current runtime chain
-        shell: python
-        run: |
-          import pathlib,re,sys
-          boot=pathlib.Path('bootstrap-v045.js').read_text(encoding='utf-8')
-          sw=pathlib.Path('sw.js').read_text(encoding='utf-8')
-          motion=pathlib.Path('character-motion-fix-runtime.js').read_text(encoding='utf-8')
-          mobile=pathlib.Path('mobile-controls-runtime.js').read_text(encoding='utf-8')
-          viewport=pathlib.Path('mobile-viewport-lock-runtime.js').read_text(encoding='utf-8')
-          aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
-          persist=pathlib.Path('movement-mode-persistence-runtime.js').read_text(encoding='utf-8')
-          sleep=pathlib.Path('sleep-routine.js').read_text(encoding='utf-8')
-          resilience=pathlib.Path('asset-fetch-resilience-runtime.js').read_text(encoding='utf-8')
-          m=re.search(r"__AGCB_BOOTSTRAP=\{version:'([^']+)'",boot)
-          if not m: sys.exit('bootstrap version missing')
-          v=m.group(1)
-          expected=f'V{v}'
-          failures=[]
-          if expected not in motion: failures.append('visible runtime version does not match bootstrap')
-          for target,query_version in re.findall(r"import ['\"](\./[^'\"]+)\?v=([0-9.]+)['\"]",boot):
-            if query_version!=v: failures.append(f'bootstrap query mismatch: {target}?v={query_version} != {v}')
-          css_match=re.search(r"mobile-controls\.css\?v=([0-9.]+)",mobile)
-          if not css_match or css_match.group(1)!=v: failures.append('mobile controls CSS query does not match bootstrap version')
-          for name in ['app-v043.js','building-extension-runtime.js','asset-fetch-resilience-runtime.js','character-asset-runtime.js','character-motion-fix-runtime.js','mobile-controls-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','mobile-input-runtime.js','sleep-routine.js','mobile-viewport-lock-runtime.js']:
-            if name not in boot: failures.append(f'bootstrap missing {name}')
-          if boot.find('asset-fetch-resilience-runtime.js')>boot.find('character-asset-runtime.js'): failures.append('asset resilience must load before character asset runtime')
-          for name in ['asset-fetch-resilience-runtime.js','mobile-controls-runtime.js','mobile-controls.css','mobile-viewport-lock-runtime.js','aim-reticle-runtime.js','movement-mode-persistence-runtime.js','character-motion-fix-runtime.js','sleep-routine.js']:
-            if name not in sw: failures.append(f'service worker missing {name}')
-          for token in ['gesturestart','gesturechange','gestureend','dblclick','touchmove','controlAwareTouchGuard:true']:
-            if token not in viewport: failures.append(f'viewport lock missing {token}')
-          if "crosshairVisualOnly:true" not in mobile: failures.append('mobile crosshair visual-only base marker missing')
-          for token in ['firstPersonCentered:true','thirdFarmDraggable:true',"setProperty('pointer-events','auto','important')","cross.style.left='50%'","cross.style.top='50%'"]:
-            if token not in aim: failures.append(f'aim reticle missing {token}')
-          active_key='ag_cute_blocks_settings_v048_special_models_r2'
-          if active_key not in sleep: failures.append('sleep routine is not using active settings key')
-          if active_key not in persist or 'persistsWalkRun:true' not in persist: failures.append('walk/run persistence runtime missing active settings key')
-          if 'ignoreSearch:true' not in sw: failures.append('service worker does not match local versioned URLs to precache')
-          if "event.request.mode==='navigate'" not in sw: failures.append('service worker navigation-only offline fallback missing')
-          if 'postMixerArmSwing:true' not in motion or 'runClipRouting:true' not in motion: failures.append('walk/run correction markers missing')
-          for token in ["/assets/characters/","cache:'reload'","characterOnly:true"]:
-            if token not in resilience: failures.append(f'asset resilience missing {token}')
-          if failures:
-            print('\n'.join(failures)); sys.exit(1)
-          print(f'Runtime chain, settings, resilience and offline checks passed for {expected}. Index release alignment is validated by Release chain sync.')
+        run: node tests/release-chain-v104.mjs
 
       - name: Verify centralized daily progression rules
         shell: bash
@@ -117,7 +77,7 @@ jobs:
         shell: python
         run: |
           import pathlib,sys
-          app=pathlib.Path('app-v043.js').read_text(encoding='utf-8')
+          app=pathlib.Path('app-v0504.js').read_text(encoding='utf-8')
           css=pathlib.Path('mobile-controls.css').read_text(encoding='utf-8')
           ext=pathlib.Path('building-extension-runtime.js').read_text(encoding='utf-8')
           aim=pathlib.Path('aim-reticle-runtime.js').read_text(encoding='utf-8')
