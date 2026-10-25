@@ -1,4 +1,4 @@
-// AG Cute Blocks - protected special character integration v19 / V1.0.3.
+// AG Cute Blocks - protected special character integration v19 / V1.0.4-rc1.
 // V1.0.1: formal selection is isolated from TEST; no silent legacy fallback.
 const STORAGE_KEY='agcb_prod_v1_character_selection',PROTECTED=new Set(['test3','ual3','special2','special5','boy005']);
 let current='',overlay=null,busy=false,requestSeq=0,lastPos=null,lastT=performance.now(),forcedAction='',forcedUntil=0,visibilitySnapshot=[],overlayHost=null,hiddenHost=null,hiddenVisual=null,sleeping=false;
@@ -53,4 +53,4 @@ function tick(now){requestAnimationFrame(tick);const player=livePlayer();if(!ove
   const wasMoving=locomotionState==='walk'||locomotionState==='run',moving=wasMoving?hSpeed>MOVE_EXIT:hSpeed>MOVE_ENTER;
   locomotionState=moving?(running?'run':'walk'):'idle';overlay.play(locomotionState);
 }
-globalThis.__AGCB_TEST_CHARACTER_INTEGRATION={version:19,release:'V1.0.3',select,restore:restoreOriginal,get selected(){return current},get player(){return livePlayer()},get candidate(){return overlay},get sleeping(){return sleeping},get locomotion(){return locomotionState},force};bindActions();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installUI,{once:true});else installUI();requestAnimationFrame(tick);
+globalThis.__AGCB_TEST_CHARACTER_INTEGRATION={version:19,release:'V1.0.4-rc1',select,restore:restoreOriginal,get selected(){return current},get player(){return livePlayer()},get candidate(){return overlay},get sleeping(){return sleeping},get locomotion(){return locomotionState},force};bindActions();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installUI,{once:true});else installUI();requestAnimationFrame(tick);
