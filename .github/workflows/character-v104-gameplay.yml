@@ -1,0 +1,37 @@
+name: Character v1.0.4 gameplay
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/character-v104-gameplay.yml'
+      - 'tests/character-v104-gameplay.mjs'
+      - '*character*.js'
+      - 'bootstrap-v0510.js'
+permissions:
+  contents: read
+jobs:
+  gameplay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          cd /tmp
+          npm init -y
+          npm install playwright@1.55.0 --no-save
+          npx playwright install --with-deps chromium
+      - name: Verify phone-size controls and character persistence
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/agcb-server.log 2>&1 &
+          NODE_PATH=/tmp/node_modules node tests/character-v104-gameplay.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: character-v104-gameplay
+          path: character-v104-gameplay/*
+          if-no-files-found: warn
+          retention-days: 14
